@@ -3,13 +3,12 @@
   flex-wrap: wrap;
 }
 .target {
-  flex: 1 0 0;
+  flex: 1 0 300px;
   display: flex;
   flex-direction: column;
   text-align: center;
   align-items: center;
   padding: 20px;
-  min-width: 300px;
 }
 .target .flex {
   min-height: 20px;

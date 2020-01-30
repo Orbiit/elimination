@@ -1,0 +1,55 @@
+.profile {
+  padding: 20px;
+  max-width: 1000px;
+  align-self: center;
+}
+.actual-content {
+  margin: 0 20px;
+}
+.name {
+  font-weight: normal;
+  font-size: 48px;
+  margin: 0;
+}
+.username {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.description {
+  font-size: 16px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: pre-wrap;
+}
+.stats {
+  text-align: center;
+}
+.lists {
+  display: flex;
+  flex-wrap: wrap;
+}
+.list {
+  flex: 1 0 400px;
+  margin: 20px;
+  border-top: 10px solid var(--blood);
+}
+.list h2 {
+  font-weight: normal;
+  font-size: 28px;
+}
+.item {
+  display: block;
+  padding: 10px;
+}
+.item-name {
+  color: #faa;
+  font-size: 16px;
+  display: block;
+}
+.item:hover .item-name {
+  text-decoration: underline;
+}
+.item-info {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 16px;
+}
