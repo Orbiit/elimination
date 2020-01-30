@@ -1,0 +1,53 @@
+.targets {
+  display: flex;
+  flex-wrap: wrap;
+}
+.target {
+  flex: 1 0 0;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  align-items: center;
+  padding: 20px;
+  min-width: 300px;
+}
+.target .flex {
+  min-height: 20px;
+}
+.target-label {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.target-name {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+.kill-code {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.code {
+  color: transparent;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 2px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.code:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+.code.revealed {
+  background-color: transparent;
+  color: white;
+  cursor: auto;
+}
+.kill-code .link {
+  color: #faa;
+}
+.game-link {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.3);
+}
+.game-link:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
