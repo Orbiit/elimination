@@ -34,7 +34,7 @@
   flex-wrap: wrap;
 }
 .list {
-  flex: 1 0 400px;
+  flex-basis: 400px;
   margin: 20px;
   border-top: 10px solid var(--blood);
 }
