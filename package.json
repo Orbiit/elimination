@@ -1,0 +1,23 @@
+{
+  "name": "elimination",
+  "version": "1.0.0",
+  "description": "Aka assassination",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard --verbose | snazzy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Orbiit/elimination.git"
+  },
+  "author": "Ovinus Real",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Orbiit/elimination/issues"
+  },
+  "homepage": "https://github.com/Orbiit/elimination#readme",
+  "devDependencies": {
+    "snazzy": "^8.0.0",
+    "standard": "^14.3.1"
+  }
+}
