@@ -34,7 +34,7 @@
         <a href="./user.html" class="target-name link">Bob</a>
         <a href="#" class="button kill-btn">Eliminate</a>
         <span class="flex"></span>
-        <span class="kill-code">Click to reveal your kill code: <span class="code revealed">plum apple grape cherry</span> &mdash; <a href="#" class="link">What is this for?</a></span>
+        <span class="kill-code">Click to reveal your kill code: <span class="code">plum apple grape cherry</span> &mdash; <a href="#" class="link">What is this for?</a></span>
         <span class="flex"></span>
       </article>
     </div>
@@ -43,5 +43,15 @@
       <span class="flex"></span>
       <span><a href="./privacy.html" class="link">Privacy policy</a> &middot; <a href="./terms.html" class="link">Terms of use</a></span>
     </footer>
+    <script type="text/javascript">
+      for (const target of document.querySelectorAll('.target')) {
+        target.style.backgroundColor = `rgba(255, 0, 0, ${Math.random() * 0.2})`
+      }
+      document.addEventListener('click', e => {
+        if (e.target.classList.contains('code')) {
+          e.target.classList.add('revealed')
+        }
+      })
+    </script>
   </body>
 </html>
