@@ -1,9 +1,13 @@
 h1 {
   display: flex;
+  align-items: center;
   font-weight: normal;
   font-size: 36px;
   margin: 0;
   margin-bottom: 10px;
+}
+h1 .button {
+  margin-left: 10px;
 }
 h2 {
   font-weight: normal;
