@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>User settings - Signed in</title>
+    <meta name="description" content="User settings design for Elimination"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link href="https://fonts.googleapis.com/css?family=Playfair+Display:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./main.css">
+    <link rel="stylesheet" href="./settings.css">
+    <script src="../js/tab-key-focus.js" charset="utf-8"></script>
+  </head>
+  <body class="focus-visible">
+    <header class="header">
+      <a href="./front-page.html" class="title link">Elimination</a>
+      <span class="flex"></span>
+      <a href="./user-settings.html" class="link profile-link">Username</a>
+    </header>
+    <div class="content text-content">
+      <h1>User settings<span class="flex"> </span><button class="button">Sign out</button></h1>
+      <div class="input-row">
+        <label class="input-wrapper">
+          <span class="label">Display name</span>
+          <div class="input">
+            <input type="text" value="Jean Placier">
+            <span class="count">13/50</span>
+          </div>
+        </label>
+        <label class="input-wrapper">
+          <span class="label">Email</span>
+          <div class="input">
+            <input type="email" value="billy@example.com">
+          </div>
+        </label>
+      </div>
+      <div class="input-row">
+        <label class="input-wrapper">
+          <span class="label">Bio</span>
+          <div class="input">
+            <textarea>I like to ski!</textarea>
+            <span class="count">11/1000</span>
+          </div>
+        </label>
+      </div>
+      <h2>Change your password</h2>
+      <p class="requirements">Must be at least 3 poop emojis long.</p>
+      <div class="input-row">
+        <label class="input-wrapper problem">
+          <span class="label">New password</span>
+          <div class="input">
+            <input type="password">
+          </div>
+          <span class="error">Password too short.</span>
+        </label>
+        <label class="input-wrapper">
+          <span class="label">Old password</span>
+          <div class="input">
+            <input type="password">
+          </div>
+        </label>
+      </div>
+      <button class="button save-btn" disabled>Save</button>
+    </div>
+    <footer class="footer">
+      <span>Created by the creators of <a href="https://gunn.app/" rel="noopener noreferrer" target="_blank" class="link">UGWA</a>.</span>
+      <span class="flex"></span>
+      <span><a href="./privacy.html" class="link">Privacy policy</a> &middot; <a href="./terms.html" class="link">Terms of use</a></span>
+    </footer>
+  </body>
+</html>

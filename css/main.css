@@ -55,6 +55,9 @@ button {
 .button:active {
   box-shadow: 0 1px rgba(0, 0, 0, 0.5);
 }
+.button:disabled {
+  background-color: #999;
+}
 .focus-visible .button:focus {
   outline-color: rgba(255, 255, 255, 0.8);
 }
@@ -92,10 +95,12 @@ a {
 }
 
 .content {
+  box-sizing: border-box;
   flex: auto;
 }
 .text-content {
   padding: 20px;
+  width: 100%;
   max-width: 1000px;
   align-self: center;
 }

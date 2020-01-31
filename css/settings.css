@@ -1,0 +1,81 @@
+h1 {
+  display: flex;
+  font-weight: normal;
+  font-size: 36px;
+  margin: 0;
+  margin-bottom: 10px;
+}
+h2 {
+  font-weight: normal;
+  font-size: 24px;
+  margin: 0;
+  margin-top: 10px;
+}
+.requirements {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.input-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+.input-wrapper {
+  flex: 300px;
+  margin: 0 10px;
+}
+.label {
+  display: block;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 10px 0;
+}
+.sublabel {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 10px 0;
+}
+.input {
+  margin: 10px 0;
+  position: relative;
+}
+.input input,
+.input textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+.problem input,
+.problem textarea {
+  color: red;
+  background-color: rgba(255, 0, 0, 0.1);
+  border-color: rgba(255, 0, 0, 0.5);
+}
+.input textarea {
+  resize: vertical;
+}
+.count {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin: 10px;
+  display: flex;
+  font-size: 16px;
+}
+.problem .count {
+  color: red;
+}
+.hidden {
+  display: none;
+}
+.save-btn {
+  display: block;
+  margin: 0 auto;
+  margin-top: 20px;
+}
+.problem .error {
+  font-size: 16px;
+  color: red;
+}
