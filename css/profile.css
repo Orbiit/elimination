@@ -7,9 +7,11 @@
   font-weight: normal;
   font-size: 48px;
   margin: 0;
+  word-break: break-word;
 }
 .join-btn {
   margin-top: 15px;
+  word-break: normal;
 }
 .username {
   font-size: 14px;
@@ -20,6 +22,7 @@
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.9);
   white-space: pre-wrap;
+  word-break: break-word;
 }
 .stats {
   text-align: center;
@@ -48,6 +51,7 @@
   color: #faa;
   font-size: 16px;
   display: block;
+  word-break: break-word;
 }
 .item:hover .item-name {
   text-decoration: underline;
