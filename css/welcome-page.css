@@ -1,0 +1,22 @@
+.header {
+  border-bottom: none;
+}
+.title {
+  /* Keep the box so that the navbar doesn't change size or whatever */
+  visibility: hidden;
+}
+.front-text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: calc(100vh - 50px);
+  background-image: linear-gradient(transparent, var(--blood));
+}
+.website-title {
+  font-size: 64px;
+  font-weight: normal;
+}
+p {
+  font-size: 16px;
+}
