@@ -84,12 +84,25 @@ a {
 .profile-link {
   font-size: 16px;
 }
+.auth-btn {
+  font-size: 16px;
+}
+.auth-btn:hover {
+  text-decoration: underline;
+}
 
 .content {
   flex: auto;
 }
+.text-content {
+  padding: 20px;
+  max-width: 1000px;
+  align-self: center;
+}
 
 .footer {
+  display: flex;
+  flex-wrap: wrap;
   font-size: 14px;
   padding: 10px;
   border-top: 1px solid rgba(255, 0, 0, 0.2);

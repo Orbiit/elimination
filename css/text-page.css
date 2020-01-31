@@ -1,0 +1,17 @@
+.content h1 {
+  font-size: 36px;
+  font-weight: normal;
+}
+.content p {
+  font-size: 16px;
+  line-height: 1.8;
+}
+.content ul {
+  font-size: 16px;
+}
+.content li {
+  margin: 10px 0;
+}
+.content .link {
+  color: #faa;
+}
