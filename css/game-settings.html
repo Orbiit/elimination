@@ -14,6 +14,20 @@
     <header class="header">
       <a href="./front-page.html" class="title link">Elimination</a>
       <span class="flex"></span>
+      <div class="auth-wrapper">
+        <button class="icon-btn auth-btn notifications-btn"></button>
+        <div class="auth-form notifications">
+          <h2 class="notifications-header">Notifications<span class="flex"> </span><label class="email-notifications"><input type="checkbox" class="checkbox"> Send notifications to my email</label></h2>
+          <div class="notification">
+            <span class="timestamp">2020-01-13 at 16:01</span>
+            <span class="notification-msg"><a href="./user.html" class="link">Jame Sooth</a> has just eliminated you in <a href="./game.html" class="link">Practice elimination round 6</a>.</span>
+          </div>
+          <div class="notification">
+            <span class="timestamp">2019-12-01 at 06:39</span>
+            <span class="notification-msg">You were kicked from <a href="./game.html" class="link">Test round. DO NOT JOIN.</a> because "boomer".</span>
+          </div>
+        </div>
+      </div>
       <a href="./user-settings.html" class="link profile-link">Username</a>
     </header>
     <div class="content text-content">
@@ -96,6 +110,7 @@
       <span class="flex"></span>
       <span><a href="./privacy.html" class="link">Privacy policy</a> &middot; <a href="./terms.html" class="link">Terms of use</a></span>
     </footer>
+    <script src="./navbar-btns.js" charset="utf-8"></script>
     <script type="text/javascript">
       window.addEventListener('load', e => {
         for (const textarea of document.querySelectorAll('textarea')) {
