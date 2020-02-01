@@ -107,6 +107,12 @@
           elem.parentNode.classList.add('open')
         })
       }
+      document.addEventListener('click', e => {
+        if (e.target.closest('.auth-wrapper')) return
+        if (document.querySelector('.open')) {
+          document.querySelector('.open').classList.remove('open')
+        }
+      })
     </script>
   </body>
 </html>
