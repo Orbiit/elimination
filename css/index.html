@@ -84,21 +84,6 @@
       <span class="flex"></span>
       <span><a href="./privacy.html" class="link">Privacy policy</a> &middot; <a href="./terms.html" class="link">Terms of use</a></span>
     </footer>
-    <script type="text/javascript">
-      for (const elem of document.querySelectorAll('.auth-btn')) {
-        elem.addEventListener('click', e => {
-          if (document.querySelector('.open')) {
-            document.querySelector('.open').classList.remove('open')
-          }
-          elem.parentNode.classList.add('open')
-        })
-      }
-      document.addEventListener('click', e => {
-        if (e.target.closest('.auth-wrapper')) return
-        if (document.querySelector('.open')) {
-          document.querySelector('.open').classList.remove('open')
-        }
-      })
-    </script>
+    <script src="./navbar-btns.js" charset="utf-8"></script>
   </body>
 </html>

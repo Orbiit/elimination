@@ -62,6 +62,29 @@ input[type=submit] {
 .focus-visible .button:focus {
   outline-color: rgba(255, 255, 255, 0.8);
 }
+.icon-btn {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  padding: 10px;
+  box-sizing: content-box;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 24px;
+}
+.checkbox {
+  vertical-align: bottom;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  width: 1em;
+  height: 1em;
+  cursor: pointer;
+}
+.checkbox:checked {
+  background-image: url('../images/material-check_box-check.svg');
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
 :disabled {
   opacity: 0.5;
   cursor: auto;
@@ -86,9 +109,41 @@ a {
   margin: 0;
   font-size: 24px;
 }
+
+.notifications-btn {
+  background-image: url('../images/material-notifications.svg');
+  margin-right: 10px;
+}
+.notifications-header {
+  display: flex;
+  align-items: flex-start;
+  font-size: 24px;
+  font-weight: normal;
+  margin: 0;
+}
+.email-notifications {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 10px;
+}
+.notification {
+  margin-top: 10px;
+}
+.timestamp {
+  display: block;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.notification-msg {
+  font-size: 16px;
+}
+.notifications .link {
+  color: #faa;
+}
 .profile-link {
   font-size: 16px;
 }
+
 .auth-btn {
   font-size: 16px;
 }
