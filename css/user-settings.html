@@ -18,50 +18,52 @@
     </header>
     <div class="content text-content">
       <h1>User settings<span class="flex"> </span><a href="./user.html" class="button">View profile</a><button class="button">Sign out</button></h1>
-      <div class="input-row">
-        <label class="input-wrapper">
-          <span class="label">Display name</span>
-          <span class="sublabel">Let others be able to find and eliminate you</span>
-          <div class="input">
-            <input type="text" value="Leuf Munkler">
-            <span class="count">13/50</span>
-          </div>
-        </label>
-        <label class="input-wrapper">
-          <span class="label">Email</span>
-          <span class="sublabel">We will send password reset forms to this email</span>
-          <div class="input">
-            <input type="email" value="lmunkler@example.com">
-          </div>
-        </label>
-      </div>
-      <div class="input-row">
-        <label class="input-wrapper">
-          <span class="label">Bio</span>
-          <div class="input">
-            <textarea>Hello. I pride myself in my many achievements in science and technology, and I hope to share them with you today in my class. I often teach science and physics, but due to limited funding in our department, I am only able to teach the latter half of physics. This includes kinematic motion and angular velocity, among other exciting concepts. I treat all my students with excessive love and respect, and my students often reciprocate similarly.</textarea>
-            <span class="count">11/1000</span>
-          </div>
-        </label>
-      </div>
-      <h2>Change your password</h2>
-      <p class="subtitle">Must be at least 3 poop emojis long.</p>
-      <div class="input-row">
-        <label class="input-wrapper problem">
-          <span class="label">New password</span>
-          <div class="input">
-            <input type="password">
-          </div>
-          <span class="error">Password too short.</span>
-        </label>
-        <label class="input-wrapper">
-          <span class="label">Old password</span>
-          <div class="input">
-            <input type="password">
-          </div>
-        </label>
-      </div>
-      <button class="button save-btn" disabled>Save</button>
+      <form>
+        <div class="input-row">
+          <label class="input-wrapper">
+            <span class="label">Display name</span>
+            <span class="sublabel">Let others be able to find and eliminate you</span>
+            <div class="input">
+              <input type="text" value="Leuf Munkler" name="name" placeholder="Billy Chelontuvier" required>
+              <span class="count">13/50</span>
+            </div>
+          </label>
+          <label class="input-wrapper">
+            <span class="label">Email</span>
+            <span class="sublabel">We will send password reset forms to this email</span>
+            <div class="input">
+              <input type="email" value="lmunkler@example.com" name="email" placeholder="billygamer5@example.com" required>
+            </div>
+          </label>
+        </div>
+        <div class="input-row">
+          <label class="input-wrapper">
+            <span class="label">Bio</span>
+            <div class="input">
+              <textarea name="bio" placeholder="Introduce yourself here" required>Hello. I pride myself in my many achievements in science and technology, and I hope to share them with you today in my class. I often teach science and physics, but due to limited funding in our department, I am only able to teach the latter half of physics. This includes kinematic motion and angular velocity, among other exciting concepts. I treat all my students with excessive love and respect, and my students often reciprocate similarly.</textarea>
+              <span class="count">11/1000</span>
+            </div>
+          </label>
+        </div>
+        <h2>Change your password</h2>
+        <p class="subtitle">Must be at least 3 poop emoji long.</p>
+        <div class="input-row">
+          <label class="input-wrapper problem">
+            <span class="label">New password</span>
+            <div class="input">
+              <input type="password" name="password" placeholder="hunter2">
+            </div>
+            <span class="error">Password too short.</span>
+          </label>
+          <label class="input-wrapper">
+            <span class="label">Old password</span>
+            <div class="input">
+              <input type="password" name="oldPassword" placeholder="hunter2">
+            </div>
+          </label>
+        </div>
+        <input type="submit" value="Save" class="button submit-btn" disabled>
+      </form>
     </div>
     <footer class="footer">
       <span>Created by the creators of <a href="https://gunn.app/" rel="noopener noreferrer" target="_blank" class="link">UGWA</a>.</span>

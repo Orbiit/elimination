@@ -41,7 +41,8 @@ textarea {
   color: inherit;
   font: inherit;
 }
-button {
+button,
+input[type=submit] {
   cursor: pointer;
 }
 .button {
@@ -76,6 +77,7 @@ a {
 
 .header {
   display: flex;
+  position: relative;
   align-items: center;
   padding: 10px 15px;
   border-bottom: 1px solid rgba(255, 0, 0, 0.2);
@@ -93,6 +95,21 @@ a {
 .auth-btn:hover {
   text-decoration: underline;
 }
+.auth-form {
+  display: none;
+}
+.open .auth-form {
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 400px;
+}
 
 .content {
   box-sizing: border-box;
@@ -103,6 +120,76 @@ a {
   width: 100%;
   max-width: 1000px;
   align-self: center;
+}
+
+.input-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+.input-wrapper {
+  flex: 300px;
+  margin: 0 10px;
+}
+.label {
+  display: block;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 10px 0;
+}
+.sublabel {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 10px 0;
+}
+.input {
+  margin: 10px 0;
+  position: relative;
+}
+.input input,
+.input textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+.input input:focus,
+.input textarea:focus {
+  border-color: rgba(255, 255, 255, 0.7);
+  outline: none;
+}
+.problem input,
+.problem textarea {
+  color: red;
+  background-color: rgba(255, 0, 0, 0.1);
+  border-color: rgba(255, 0, 0, 0.5);
+}
+.input textarea {
+  resize: vertical;
+}
+.count {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin: 10px;
+  display: flex;
+  font-size: 16px;
+}
+.problem .count {
+  color: red;
+}
+.hidden {
+  display: none;
+}
+.submit-btn {
+  display: block;
+  margin: 0 auto;
+  margin-top: 20px;
+}
+.problem .error {
+  font-size: 16px;
+  color: red;
 }
 
 .footer {
