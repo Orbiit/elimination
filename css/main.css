@@ -159,6 +159,7 @@ a {
 .open .auth-form {
   display: block;
   position: absolute;
+  z-index: 10;
   right: 0;
   top: 100%;
   background-color: rgba(0, 0, 0, 0.95);
