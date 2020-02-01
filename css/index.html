@@ -12,10 +12,66 @@
   </head>
   <body class="focus-visible">
     <header class="header">
-      <a href="./front-page.html" class="title link">Elimination</a>
+      <a href="./" class="title link">Elimination</a>
       <span class="flex"></span>
-      <button class="auth-btn">Log in</button>
-      <button class="auth-btn">Sign up</button>
+      <div class="auth-wrapper">
+        <button class="auth-btn">Log in</button>
+        <form class="auth-form">
+          <label class="input-wrapper">
+            <span class="label">Username</span>
+            <div class="input">
+              <input type="text" placeholder="billygamer5" required>
+            </div>
+          </label>
+          <label class="input-wrapper">
+            <span class="label">Password</span>
+            <div class="input">
+              <input type="password" placeholder="hunter2" required>
+            </div>
+          </label>
+          <input type="submit" value="Log in" class="button submit-btn">
+        </form>
+      </div>
+      <div class="auth-wrapper">
+        <button class="auth-btn">Sign up</button>
+        <form class="auth-form">
+          <label class="input-wrapper">
+            <span class="label">Username</span>
+            <span class="sublabel">Only letters, digits, underscores, and hyphens are allowed.</span>
+            <div class="input">
+              <input type="text" placeholder="billygamer5" required>
+            </div>
+          </label>
+          <label class="input-wrapper">
+            <span class="label">Full name</span>
+            <span class="sublabel">Allows others to be able to find you for elimination, which makes the game fair.</span>
+            <div class="input">
+              <input type="text" placeholder="Billy Chelontuvier" required>
+            </div>
+          </label>
+          <label class="input-wrapper">
+            <span class="label">Email</span>
+            <span class="sublabel">For password reset forms.</span>
+            <div class="input">
+              <input type="email" placeholder="billygamer5@example.com" required>
+            </div>
+          </label>
+          <label class="input-wrapper">
+            <span class="label">Password</span>
+            <span class="sublabel">Must be at least 3 poop emoji long.</span>
+            <div class="input">
+              <input type="password" placeholder="hunter2" required>
+            </div>
+          </label>
+          <label class="input-wrapper">
+            <span class="label">Password again</span>
+            <div class="input">
+              <input type="password" placeholder="hunter2" required>
+            </div>
+          </label>
+          <input type="submit" value="Sign up" class="button submit-btn">
+        </form>
+      </div>
     </header>
     <div class="front-text">
       <h1 class="website-title">Elimination</h1>
@@ -28,5 +84,21 @@
       <span class="flex"></span>
       <span><a href="./privacy.html" class="link">Privacy policy</a> &middot; <a href="./terms.html" class="link">Terms of use</a></span>
     </footer>
+    <script type="text/javascript">
+      for (const elem of document.querySelectorAll('.auth-btn')) {
+        elem.addEventListener('click', e => {
+          if (document.querySelector('.open')) {
+            document.querySelector('.open').classList.remove('open')
+          }
+          elem.parentNode.classList.add('open')
+        })
+      }
+      document.addEventListener('click', e => {
+        if (e.target.closest('.auth-wrapper')) return
+        if (document.querySelector('.open')) {
+          document.querySelector('.open').classList.remove('open')
+        }
+      })
+    </script>
   </body>
 </html>
