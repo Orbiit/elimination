@@ -17,7 +17,7 @@
       <a href="./user-settings.html" class="link profile-link">Username</a>
     </header>
     <div class="content text-content">
-      <h1>Game settings<span class="flex"> </span><a href="./user.html" class="button">View game page</a></h1>
+      <h1>Game settings<span class="flex"> </span><button class="button" disabled>Start game</button><a href="./game.html" class="button">View game page</a></h1>
       <div class="input-row">
         <label class="input-wrapper">
           <span class="label">Name</span>
@@ -43,7 +43,51 @@
         </label>
       </div>
       <button class="button save-btn" disabled>Save</button>
-      <!-- TODO: Members list, kick, start game, shuffle targets, join code, etc -->
+      <div class="members">
+        <h2 class="members-header">Participants (6)<span class="flex"> </span><button class="button">Shuffle targets</button></h2>
+        <div class="member-item">
+          <div class="member">
+            <a href="./user.html" class="link member-link">Ern Seth</a>
+            <span class="member-info">Joined 2020-01-23 &middot; 0 eliminations</span>
+          </div>
+          <button class="button kick-btn">Kick</button>
+        </div>
+        <div class="member-item">
+          <div class="member">
+            <a href="./user.html" class="link member-link">Sergo Neristo</a>
+            <span class="member-info">Joined 2020-01-23 &middot; 1 eliminations</span>
+          </div>
+          <button class="button kick-btn">Kick</button>
+        </div>
+        <div class="member-item">
+          <div class="member">
+            <a href="./user.html" class="link member-link">Jame Sooth</a>
+            <span class="member-info">Joined 2020-01-22 &middot; 2 eliminations</span>
+          </div>
+          <button class="button kick-btn">Kick</button>
+        </div>
+        <div class="member-item">
+          <div class="member">
+            <a href="./user.html" class="link member-link">Eghten Siuvoulet</a>
+            <span class="member-info">Joined 2020-01-21 &middot; 0 eliminations</span>
+          </div>
+          <button class="button kick-btn">Kick</button>
+        </div>
+        <div class="member-item">
+          <div class="member">
+            <a href="./user.html" class="link member-link">Zuck Ergostan</a>
+            <span class="member-info">Joined 2020-01-19 &middot; 0 eliminations</span>
+          </div>
+          <button class="button kick-btn">Kick</button>
+        </div>
+        <div class="member-item">
+          <div class="member">
+            <a href="./user.html" class="link member-link">Memphie Ratch</a>
+            <span class="member-info">Joined 2020-01-15 &middot; 0 eliminations</span>
+          </div>
+          <button class="button kick-btn">Kick</button>
+        </div>
+      </div>
     </div>
     <footer class="footer">
       <span>Created by the creators of <a href="https://gunn.app/" rel="noopener noreferrer" target="_blank" class="link">UGWA</a>.</span>
