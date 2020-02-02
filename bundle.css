@@ -116,10 +116,10 @@ h2 {
   color: rgba(255, 255, 255, 0.7);
   font-size: 16px;
 }
-.header {
+.on-welcome-page .header {
   border-bottom: none;
 }
-.title {
+.on-welcome-page .title {
   /* Keep the box so that the navbar doesn't change size or whatever */
   visibility: hidden;
 }
@@ -140,7 +140,7 @@ h2 {
     font-size: 48px;
   }
 }
-p {
+.welcome p {
   font-size: 16px;
 }
 .stats {
@@ -230,24 +230,6 @@ p {
 }
 .game-link:hover {
   color: rgba(255, 255, 255, 0.7);
-}
-.content h1 {
-  font-size: 36px;
-  font-weight: normal;
-  margin: 0;
-}
-.content p {
-  font-size: 16px;
-  line-height: 1.8;
-}
-.content ul {
-  font-size: 16px;
-}
-.content li {
-  margin: 10px 0;
-}
-.content .link {
-  color: #faa;
 }
 :root {
   --blood: #8a0303;
@@ -550,5 +532,23 @@ a {
   color: #a77;
 }
 .footer a:hover {
+  color: #faa;
+}
+.content h1 {
+  font-size: 36px;
+  font-weight: normal;
+  margin: 0;
+}
+.content p {
+  font-size: 16px;
+  line-height: 1.8;
+}
+.content ul {
+  font-size: 16px;
+}
+.content li {
+  margin: 10px 0;
+}
+.content .link {
   color: #faa;
 }

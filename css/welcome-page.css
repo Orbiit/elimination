@@ -1,7 +1,7 @@
-.header {
+.on-welcome-page .header {
   border-bottom: none;
 }
-.title {
+.on-welcome-page .title {
   /* Keep the box so that the navbar doesn't change size or whatever */
   visibility: hidden;
 }
@@ -22,7 +22,7 @@
     font-size: 48px;
   }
 }
-p {
+.welcome p {
   font-size: 16px;
 }
 .stats {
