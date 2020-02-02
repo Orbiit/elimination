@@ -4,6 +4,7 @@
   "description": "Aka assassination",
   "main": "index.js",
   "scripts": {
+    "build": "NODE_ENV=production rollup --config",
     "test": "standard --verbose | snazzy",
     "watch": "rollup --config --watch"
   },
@@ -18,9 +19,13 @@
   },
   "homepage": "https://github.com/Orbiit/elimination#readme",
   "devDependencies": {
+    "rollup-plugin-css-only": "^2.0.0",
     "rollup-plugin-elm": "^2.0.2",
     "rollup-plugin-serve": "^1.0.1",
     "snazzy": "^8.0.0",
     "standard": "^14.3.1"
+  },
+  "dependencies": {
+    "rollup-plugin-terser": "^5.2.0"
   }
 }
