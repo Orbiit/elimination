@@ -33,6 +33,17 @@
     <article class="content text-content profile">
       <div class="actual-content">
         <h1 class="name"><a href="./game.html" class="link">Pistolita High School Elimination 2020</a><span class="flex"> </span><a href="./game-settings.html" class="icon-btn settings-btn">Settings</a><button class="button join-btn">Join</button></h1>
+        <div class="modal-back">
+          <form class="modal join-modal">
+            <label class="input-wrapper">
+              <span class="label">Passphrase</span>
+              <div class="input">
+                <input type="text" name="password" placeholder="hunter2" required>
+              </div>
+            </label>
+            <input type="submit" value="Join" class="button submit-btn">
+          </form>
+        </div>
         <p class="description">Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur inside classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck, Pizzas!</p>
         <p class="description stats">Ongoing &middot; 3 of 6 participants alive</p>
       </div>
@@ -72,5 +83,15 @@
       <span><a href="./privacy.html" class="link">Privacy policy</a> &middot; <a href="./terms.html" class="link">Terms of use</a></span>
     </footer>
     <script src="./navbar-btns.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      document.querySelector('.join-btn').addEventListener('click', e => {
+        document.querySelector('.modal-back').classList.add('show')
+      })
+      document.querySelector('.modal-back').addEventListener('click', e => {
+        if (!e.target.closest('.modal')) {
+          document.querySelector('.modal-back').classList.remove('show')
+        }
+      })
+    </script>
   </body>
 </html>

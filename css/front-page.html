@@ -37,9 +37,20 @@
         <span class="flex"></span>
         <span class="target-label">Your target is</span>
         <a href="./user.html" class="target-name link">Borus Jiu</a>
-        <a href="#" class="button kill-btn">Eliminate</a>
+        <button class="button kill-btn">Eliminate</button>
+        <div class="modal-back">
+          <form class="modal join-modal">
+            <label class="input-wrapper">
+              <span class="label">Target's elimination sequence</span>
+              <div class="input">
+                <input type="text" name="password" placeholder="hunter2" required>
+              </div>
+            </label>
+            <input type="submit" value="Join" class="button submit-btn">
+          </form>
+        </div>
         <span class="flex"></span>
-        <span class="kill-code">Click to reveal your kill code: <span class="code">correct horse battery staple</span> &mdash; <a href="#" class="link">What is this for?</a></span>
+        <span class="kill-code">Click to reveal your elimination sequence: <span class="code">correct horse battery staple</span> &mdash; <a href="#" class="link">What is this for?</a></span>
         <span class="flex"></span>
       </article>
       <article class="target" style="background-color: rgba(255, 0, 0, 0.08)">
@@ -47,9 +58,20 @@
         <span class="flex"></span>
         <span class="target-label">Your target is</span>
         <a href="./user.html" class="target-name link">Lamentien Senotu</a>
-        <a href="#" class="button kill-btn">Eliminate</a>
+        <button class="button kill-btn">Eliminate</button>
+        <div class="modal-back">
+          <form class="modal join-modal">
+            <label class="input-wrapper">
+              <span class="label">Target's elimination sequence</span>
+              <div class="input">
+                <input type="text" name="password" placeholder="hunter2" required>
+              </div>
+            </label>
+            <input type="submit" value="Join" class="button submit-btn">
+          </form>
+        </div>
         <span class="flex"></span>
-        <span class="kill-code">Click to reveal your kill code: <span class="code">plum apple grape cherry</span> &mdash; <a href="#" class="link">What is this for?</a></span>
+        <span class="kill-code">Click to reveal your elimination sequence: <span class="code">plum apple grape cherry</span> &mdash; <a href="#" class="link">What is this for?</a></span>
         <span class="flex"></span>
       </article>
     </div>
@@ -68,6 +90,16 @@
           e.target.classList.add('revealed')
         }
       })
+      for (const btn of document.querySelectorAll('.kill-btn')) {
+        btn.addEventListener('click', e => {
+          btn.nextElementSibling.classList.add('show')
+        })
+        btn.nextElementSibling.addEventListener('click', e => {
+          if (!e.target.closest('.modal')) {
+            btn.nextElementSibling.classList.remove('show')
+          }
+        })
+      }
     </script>
   </body>
 </html>
