@@ -4,6 +4,8 @@
   "description": "Aka assassination",
   "main": "index.js",
   "scripts": {
+    "elm:build": "elm make src/Main.elm --output build/app.js",
+    "elm:buildProduction": "elm make src/Main.elm --output dist/app.js --optimize",
     "test": "standard --verbose | snazzy"
   },
   "repository": {
