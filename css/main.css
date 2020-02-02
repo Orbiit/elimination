@@ -113,7 +113,7 @@ a {
 
 .notifications-btn {
   background-image: url('../images/material-notifications.svg');
-  margin-right: 10px;
+  margin-left: 10px;
 }
 .notifications-header {
   display: flex;
@@ -143,12 +143,14 @@ a {
 }
 .profile-link {
   font-size: 16px;
+  margin-left: 10px;
 }
 
-.auth-btn {
+.actually-auth-btn {
   font-size: 16px;
+  margin-left: 10px;
 }
-.auth-btn:hover {
+.actually-auth-btn:hover {
   text-decoration: underline;
 }
 .open .auth-btn {
