@@ -9,8 +9,13 @@
   margin: 0;
   word-break: break-word;
 }
+.settings-btn {
+  margin-top: 15px;
+  background-image: url('../images/material-settings.svg');
+}
 .join-btn {
   margin-top: 15px;
+  margin-left: 10px;
   word-break: normal;
 }
 .username {
