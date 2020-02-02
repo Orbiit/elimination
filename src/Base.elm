@@ -2,7 +2,8 @@ module Base exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
-import Html.Events exposing (onClick)
+import Html.Events exposing (stopPropagationOn)
+import Json.Decode as D
 
 import Api
 import Utils
@@ -24,15 +25,18 @@ init _ =
 
 type Msg
   = Open HeaderWindow
-  | Dance
+  | Close
+  | DontClose
 
 update : Msg -> Model -> (Model, Cmd msg)
 update msg model =
   case msg of
     Open window ->
-      ( { model | open = window }, Cmd.none )
-    _ ->
-      ( model, Cmd.none )
+      ({ model | open = window }, Cmd.none)
+    Close ->
+      ({ model | open = None }, Cmd.none)
+    DontClose ->
+      (model, Cmd.none)
 
 makeHeader : Api.Session -> Model -> List (Html Msg)
 makeHeader session model =
@@ -43,8 +47,15 @@ makeHeader session model =
     ]
     ++ case session of
       Api.SignedIn { username } ->
-        [ div [ A.class "header-window-wrapper" ]
-          [ button [ A.class "icon-btn header-btn notif-btn" ]
+        [ div
+          [ A.class "header-window-wrapper"
+          , A.classList [ ("open", model.open == Notifications) ]
+          , stopPropagationOn "click" (D.succeed (DontClose, True))
+          ]
+          [ button
+            [ A.class "icon-btn header-btn notif-btn"
+            , stopPropagationOn "click" (D.succeed (Open Notifications, True))
+            ]
             [ text "Notifications" ]
           , div [ A.class "header-window notifs" ]
             [ h2 [ A.class "notif-header" ]
@@ -85,8 +96,15 @@ makeHeader session model =
           [ text username ]
         ]
       Api.SignedOut ->
-        [ div [ A.class "header-window-wrapper", A.classList [ ("open", model.open == Login) ] ]
-          [ button [ A.class "header-btn auth-btn", onClick (Open Login) ]
+        [ div
+          [ A.class "header-window-wrapper"
+          , A.classList [ ("open", model.open == Login) ]
+          , stopPropagationOn "click" (D.succeed (DontClose, True))
+          ]
+          [ button
+            [ A.class "header-btn auth-btn"
+            , stopPropagationOn "click" (D.succeed (Open Login, True))
+            ]
             [ text "Log in" ]
           , form [ A.action "./front-page.html", A.class "header-window" ]
             [ label [ A.class "input-wrapper" ]
@@ -109,8 +127,15 @@ makeHeader session model =
               []
             ]
           ]
-        , div [ A.class "header-window-wrapper" ]
-          [ button [ A.class "header-btn auth-btn" ]
+        , div
+          [ A.class "header-window-wrapper"
+          , A.classList [ ("open", model.open == SignUp) ]
+          , stopPropagationOn "click" (D.succeed (DontClose, True))
+          ]
+          [ button
+            [ A.class "header-btn auth-btn"
+            , stopPropagationOn "click" (D.succeed (Open SignUp, True))
+            ]
             [ text "Sign up" ]
           , form [ A.action "./front-page.html", A.class "header-window" ]
             [ label [ A.class "input-wrapper" ]

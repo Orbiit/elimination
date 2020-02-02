@@ -1,6 +1,7 @@
 port module Main exposing (main)
 
 import Browser
+import Browser.Events
 import Browser.Navigation as Nav
 import Html
 import Url
@@ -53,7 +54,7 @@ type alias Model =
   , header : Base.Model
   }
 
-init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init (sessionMaybe, usernameMaybe) url navKey =
   let
     session =
@@ -125,9 +126,8 @@ type Msg
   | ClickedLink Browser.UrlRequest
   | Auth String String
   | BaseMsg Base.Msg
-  | Dance
 
-port saveSession : ( String, String ) -> Cmd msg
+port saveSession : (String, String) -> Cmd msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -135,27 +135,27 @@ update msg model =
     ClickedLink request ->
       case request of
         Browser.Internal url ->
-          ( { model | page = urlToPage url }, Nav.pushUrl model.key (Url.toString url) )
+          ({ model | page = urlToPage url }, Nav.pushUrl model.key (Url.toString url) )
         Browser.External url ->
-          ( model, Nav.load url )
+          (model, Nav.load url)
     ChangedUrl url ->
-      ( { model | page = urlToPage url }, Cmd.none )
+      ({ model | page = urlToPage url }, Cmd.none)
     Auth session username ->
       ( { model | session = Api.SignedIn { session = session, username = username } }
       , saveSession (session, username)
       )
     BaseMsg subMsg ->
       let
-        ( subModel, cmd ) = Base.update subMsg model.header
+        (subModel, cmd) = Base.update subMsg model.header
       in
-        ( { model | header = subModel }, cmd )
-    _ ->
-      -- Disregard messages that arrived for the wrong page.
-      ( model, Cmd.none )
+        ({ model | header = subModel }, cmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+  if model.header.open /= Base.None then
+    Browser.Events.onClick (D.succeed (BaseMsg Base.Close))
+  else
+    Sub.none
 
 main : Program (Maybe String, Maybe String) Model Msg
 main =
