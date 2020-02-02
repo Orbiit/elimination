@@ -1,12 +1,14 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Url exposing (Url)
+import Json.Decode as D
 
 import Base exposing (makeHeader, makeFooter)
+import Api
 import Pages.FrontPage
 import Pages.Terms
 import Pages.Privacy
@@ -48,11 +50,22 @@ urlToPage url =
 type alias Model =
   { page : Page
   , key : Nav.Key
+  , session : Api.Session
   }
 
-init : () -> Url -> Nav.Key -> ( Model, Cmd Msg )
-init () url navKey =
-  ( { page = urlToPage url, key = navKey }, Cmd.none )
+init : (Maybe String, Maybe String) -> Url -> Nav.Key -> ( Model, Cmd Msg )
+init (sessionMaybe, usernameMaybe) url navKey =
+  ( { page = urlToPage url
+    , key = navKey
+    , session =
+      case (sessionMaybe, usernameMaybe) of
+        (Just session, Just username) ->
+          Api.SignedIn { session = session, username = username }
+        (_, _) ->
+          Api.SignedOut
+    }
+  , Cmd.none
+  )
 
 title : Page -> String
 title page =
@@ -97,34 +110,41 @@ view model =
       "Elimination"
     else
       title model.page ++ " | Elimination"
-  , body = makeHeader ++ content model.page ++ makeFooter
+  , body = makeHeader model.session ++ content model.page ++ makeFooter
   }
 
 type Msg
   = ChangedUrl Url
   | ClickedLink Browser.UrlRequest
+  | Auth String String
   | Dance
+
+port saveSession : ( String, String ) -> Cmd msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-  case ( msg, model ) of
-    ( ClickedLink request, _ ) ->
+  case msg of
+    ClickedLink request ->
       case request of
         Internal url ->
           ( { model | page = urlToPage url }, Nav.pushUrl model.key (Url.toString url) )
         External url ->
           ( model, Nav.load url )
-    ( ChangedUrl url, _ ) ->
+    ChangedUrl url ->
       ( { model | page = urlToPage url }, Cmd.none )
-    ( _, _ ) ->
+    Auth session username ->
+      ( { model | session = Api.SignedIn { session = session, username = username } }
+      , saveSession (session, username)
+      )
+    _ ->
       -- Disregard messages that arrived for the wrong page.
       ( model, Cmd.none )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
-
-main : Program () Model Msg
+ 
+main : Program (Maybe String, Maybe String) Model Msg
 main =
   Browser.application
     { init = init
