@@ -3,8 +3,8 @@ module Pages.Terms exposing (termsPage)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 
-termsPage : () -> List (Html msg)
-termsPage _ =
+termsPage : List (Html msg)
+termsPage =
   [ div [ class "main content text" ]
     [ h1 []
       [ text "Terms of use" ]

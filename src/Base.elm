@@ -5,8 +5,8 @@ import Html.Attributes exposing (..)
 
 import Utils exposing (char, Char(..))
 
-makeHeader : () -> List (Html msg)
-makeHeader _ =
+makeHeader : List (Html msg)
+makeHeader =
   [ header [ class "header" ]
     [ a [ href "?", class "site-name link" ]
       [ text "Elimination" ]
@@ -14,8 +14,8 @@ makeHeader _ =
     ]
   ]
 
-makeFooter : () -> List (Html msg)
-makeFooter _ =
+makeFooter : List (Html msg)
+makeFooter =
   [ footer [ class "footer" ]
     [ span []
       [ text "Created by the creators of "

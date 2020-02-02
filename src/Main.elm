@@ -52,11 +52,11 @@ content : Page -> List (Html Msg)
 content page =
   case page of
     FrontPage ->
-      frontPage ()
+      frontPage
     Terms ->
-      termsPage ()
+      termsPage
     Privacy ->
-      privacyPage ()
+      privacyPage
 
 view : Model -> Document Msg
 view model =
@@ -65,7 +65,7 @@ view model =
       "Elimination"
     else
       title model.page ++ " | Elimination"
-  , body = makeHeader () ++ content model.page ++ makeFooter ()
+  , body = makeHeader ++ content model.page ++ makeFooter
   }
 
 type Msg

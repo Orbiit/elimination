@@ -5,8 +5,8 @@ import Html.Attributes exposing (..)
 
 import Utils exposing (extLink)
 
-privacyPage : () -> List (Html msg)
-privacyPage _ =
+privacyPage : List (Html msg)
+privacyPage =
   [ div [ class "main content text" ]
     [ h1 []
       [ text "Privacy policy" ]
