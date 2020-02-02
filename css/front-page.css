@@ -1,3 +1,18 @@
+.create-game-btn {
+  margin-left: 10px;
+}
+.small-screen-create-game-btn {
+  display: none;
+}
+@media (max-width: 600px) {
+  .create-game-btn {
+    display: none;
+  }
+  .small-screen-create-game-btn {
+    display: block;
+    width: 100%;
+  }
+}
 .targets {
   display: flex;
   flex-wrap: wrap;
@@ -21,6 +36,7 @@
   font-size: 64px;
   margin-bottom: 10px;
   line-height: 1;
+  word-break: break-word;
 }
 .kill-code {
   font-size: 16px;
@@ -32,6 +48,7 @@
   border-radius: 2px;
   cursor: pointer;
   font-weight: bold;
+  word-break: break-word;
 }
 .code:hover {
   background-color: rgba(255, 255, 255, 0.8);
@@ -47,6 +64,7 @@
 .game-link {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.3);
+  word-break: break-word;
 }
 .game-link:hover {
   color: rgba(255, 255, 255, 0.7);

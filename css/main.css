@@ -50,6 +50,7 @@ input[type=submit] {
   padding: 10px 20px;
   font-size: 16px;
   background-color: var(--blood);
+  text-align: center;
   transition: all .2s;
 }
 .button:hover {
@@ -148,6 +149,7 @@ a {
 .profile-link {
   font-size: 16px;
   margin-left: 10px;
+  word-break: break-word;
 }
 
 .actually-auth-btn {

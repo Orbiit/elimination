@@ -17,6 +17,11 @@
   font-size: 64px;
   font-weight: normal;
 }
+@media (max-width: 450px) {
+  .website-title {
+    font-size: 48px;
+  }
+}
 p {
   font-size: 16px;
 }
