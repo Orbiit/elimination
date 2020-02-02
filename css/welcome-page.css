@@ -25,3 +25,20 @@
 p {
   font-size: 16px;
 }
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+}
+.stat {
+  flex: 150px;
+  text-align: center;
+  margin: 10px;
+}
+.stat-name {
+  display: block;
+  font-size: 16px;
+}
+.stat-value {
+  font-size: 48px;
+  line-height: 1;
+}
