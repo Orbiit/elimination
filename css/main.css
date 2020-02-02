@@ -71,6 +71,10 @@ input[type=submit] {
   background-repeat: no-repeat;
   background-size: 24px;
   font-size: 0;
+  opacity: 0.75;
+}
+.icon-btn:hover {
+  opacity: 1;
 }
 .checkbox {
   vertical-align: bottom;
@@ -155,6 +159,11 @@ a {
 }
 .open .auth-btn {
   background-color: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+  cursor: auto;
+}
+.open .actually-auth-btn:hover {
+  text-decoration: none;
 }
 .auth-form {
   display: none;
