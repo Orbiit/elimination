@@ -69,6 +69,17 @@
             <span class="member-info">Joined 2020-01-23 &middot; 0 eliminations</span>
           </div>
           <button class="button kick-btn">Kick</button>
+          <div class="modal-back">
+            <form class="modal join-modal">
+              <label class="input-wrapper">
+                <span class="label">Kick reason (optional)</span>
+                <div class="input">
+                  <input type="text" name="reason" placeholder="Undesirable.">
+                </div>
+              </label>
+              <input type="submit" value="Kick" class="button submit-btn">
+            </form>
+          </div>
         </div>
         <div class="member-item">
           <div class="member">
@@ -76,6 +87,17 @@
             <span class="member-info">Joined 2020-01-23 &middot; 1 eliminations</span>
           </div>
           <button class="button kick-btn">Kick</button>
+          <div class="modal-back">
+            <form class="modal join-modal">
+              <label class="input-wrapper">
+                <span class="label">Kick reason (optional)</span>
+                <div class="input">
+                  <input type="text" name="reason" placeholder="Undesirable.">
+                </div>
+              </label>
+              <input type="submit" value="Kick" class="button submit-btn">
+            </form>
+          </div>
         </div>
         <div class="member-item">
           <div class="member">
@@ -83,6 +105,17 @@
             <span class="member-info">Joined 2020-01-22 &middot; 2 eliminations</span>
           </div>
           <button class="button kick-btn">Kick</button>
+          <div class="modal-back">
+            <form class="modal join-modal">
+              <label class="input-wrapper">
+                <span class="label">Kick reason (optional)</span>
+                <div class="input">
+                  <input type="text" name="reason" placeholder="Undesirable.">
+                </div>
+              </label>
+              <input type="submit" value="Kick" class="button submit-btn">
+            </form>
+          </div>
         </div>
         <div class="member-item">
           <div class="member">
@@ -90,6 +123,17 @@
             <span class="member-info">Joined 2020-01-21 &middot; 0 eliminations</span>
           </div>
           <button class="button kick-btn">Kick</button>
+          <div class="modal-back">
+            <form class="modal join-modal">
+              <label class="input-wrapper">
+                <span class="label">Kick reason (optional)</span>
+                <div class="input">
+                  <input type="text" name="reason" placeholder="Undesirable.">
+                </div>
+              </label>
+              <input type="submit" value="Kick" class="button submit-btn">
+            </form>
+          </div>
         </div>
         <div class="member-item">
           <div class="member">
@@ -97,6 +141,17 @@
             <span class="member-info">Joined 2020-01-19 &middot; 0 eliminations</span>
           </div>
           <button class="button kick-btn">Kick</button>
+          <div class="modal-back">
+            <form class="modal join-modal">
+              <label class="input-wrapper">
+                <span class="label">Kick reason (optional)</span>
+                <div class="input">
+                  <input type="text" name="reason" placeholder="Undesirable.">
+                </div>
+              </label>
+              <input type="submit" value="Kick" class="button submit-btn">
+            </form>
+          </div>
         </div>
         <div class="member-item">
           <div class="member">
@@ -104,6 +159,17 @@
             <span class="member-info">Joined 2020-01-15 &middot; 0 eliminations</span>
           </div>
           <button class="button kick-btn">Kick</button>
+          <div class="modal-back">
+            <form class="modal join-modal">
+              <label class="input-wrapper">
+                <span class="label">Kick reason (optional)</span>
+                <div class="input">
+                  <input type="text" name="reason" placeholder="Undesirable.">
+                </div>
+              </label>
+              <input type="submit" value="Kick" class="button submit-btn">
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -126,6 +192,16 @@
           })
         }
       })
+      for (const btn of document.querySelectorAll('.kick-btn')) {
+        btn.addEventListener('click', e => {
+          btn.nextElementSibling.classList.add('show')
+        })
+        btn.nextElementSibling.addEventListener('click', e => {
+          if (!e.target.closest('.modal')) {
+            btn.nextElementSibling.classList.remove('show')
+          }
+        })
+      }
     </script>
   </body>
 </html>
