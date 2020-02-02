@@ -7,14 +7,16 @@ import Html.Attributes exposing (..)
 import Url exposing (Url)
 
 import Base exposing (makeHeader, makeFooter)
-import Pages.FrontPage exposing (frontPage)
-import Pages.Terms exposing (termsPage)
-import Pages.Privacy exposing (privacyPage)
+import Pages.FrontPage
+import Pages.Terms
+import Pages.Privacy
+import Pages.GameSettings
 
 type Page
   = FrontPage
   | Terms
   | Privacy
+  | GameSettings
 
 urlToPage : Url -> Page
 urlToPage url =
@@ -24,6 +26,8 @@ urlToPage url =
         Terms
       else if path == "privacy" then
         Privacy
+      else if path == "game-settings" then
+        GameSettings
       else
         FrontPage
     Nothing ->
@@ -47,16 +51,20 @@ title page =
       "Terms of use"
     Privacy ->
       "Privacy policy"
+    GameSettings ->
+      "Game settings"
 
 content : Page -> List (Html Msg)
 content page =
   case page of
     FrontPage ->
-      frontPage
+      Pages.FrontPage.view
     Terms ->
-      termsPage
+      Pages.Terms.view
     Privacy ->
-      privacyPage
+      Pages.Privacy.view
+    GameSettings ->
+      Pages.GameSettings.view
 
 view : Model -> Document Msg
 view model =

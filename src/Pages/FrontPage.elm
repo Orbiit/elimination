@@ -1,10 +1,10 @@
-module Pages.FrontPage exposing (frontPage)
+module Pages.FrontPage exposing (view)
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html exposing (Html, text, div, h1, p)
+import Html.Attributes exposing (class)
 
-frontPage : List (Html msg)
-frontPage =
+view : List (Html msg)
+view =
   [ div [ class "main content text" ]
     [ h1 []
       [ text "Front page" ]

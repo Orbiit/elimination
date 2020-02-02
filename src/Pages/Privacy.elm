@@ -1,12 +1,12 @@
-module Pages.Privacy exposing (privacyPage)
+module Pages.Privacy exposing (view)
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html exposing (Html, text, div, h1, p, ul, li, a)
+import Html.Attributes exposing (class, href)
 
 import Utils exposing (extLink)
 
-privacyPage : List (Html msg)
-privacyPage =
+view : List (Html msg)
+view =
   [ div [ class "main content text" ]
     [ h1 []
       [ text "Privacy policy" ]

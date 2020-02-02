@@ -1,10 +1,10 @@
-module Pages.Terms exposing (termsPage)
+module Pages.Terms exposing (view)
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html exposing (Html, text, div, h1, p)
+import Html.Attributes exposing (class)
 
-termsPage : List (Html msg)
-termsPage =
+view : List (Html msg)
+view =
   [ div [ class "main content text" ]
     [ h1 []
       [ text "Terms of use" ]
