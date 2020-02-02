@@ -40,7 +40,7 @@ content page =
         [ text "Front page" ]
       ]
     Terms ->
-      [ div [ class "content text-content" ]
+      [ div [ class "content text-content", style "font-size" "24px" ]
         [ text "terms" ]
       ]
 
