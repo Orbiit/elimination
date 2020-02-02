@@ -16,8 +16,7 @@ export default {
     elm({
       exclude: 'elm_stuff/**',
       compiler: {
-        optimize: production,
-        debug: !production
+        optimize: production
       }
     }),
     process.env.ROLLUP_WATCH && serve({

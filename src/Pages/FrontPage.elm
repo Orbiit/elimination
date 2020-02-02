@@ -1,11 +1,11 @@
 module Pages.FrontPage exposing (view)
 
-import Html exposing (Html, text, div, h1, p)
-import Html.Attributes exposing (class)
+import Html exposing (..)
+import Html.Attributes as A
 
 view : List (Html msg)
 view =
-  [ div [ class "main content text" ]
+  [ div [ A.class "main content text" ]
     [ h1 []
       [ text "Front page" ]
     , p []

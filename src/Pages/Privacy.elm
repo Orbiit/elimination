@@ -1,13 +1,13 @@
 module Pages.Privacy exposing (view)
 
-import Html exposing (Html, text, div, h1, p, ul, li, a)
-import Html.Attributes exposing (class, href)
+import Html exposing (..)
+import Html.Attributes as A
 
 import Utils exposing (extLink)
 
 view : List (Html msg)
 view =
-  [ div [ class "main content text" ]
+  [ div [ A.class "main content text" ]
     [ h1 []
       [ text "Privacy policy" ]
     , p []
@@ -48,7 +48,7 @@ view =
       ]
     , p []
       [ text "If you would like to download or delete all your data, please email "
-      , a [ href "mailto:sy24484@pausd.us", class "link" ]
+      , a [ A.href "mailto:sy24484@pausd.us", A.class "link" ]
         [ text "sy24484@pausd.us" ]
       , text ". This is not because we want to discourage users from doing this; rather, we have not gotten to implementing an automatic and more user-friendly method yet."
       ]

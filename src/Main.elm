@@ -10,12 +10,18 @@ import Base exposing (makeHeader, makeFooter)
 import Pages.FrontPage
 import Pages.Terms
 import Pages.Privacy
+import Pages.User
+import Pages.Game
+import Pages.UserSettings
 import Pages.GameSettings
 
 type Page
   = FrontPage
   | Terms
   | Privacy
+  | User
+  | Game
+  | UserSettings
   | GameSettings
 
 urlToPage : Url -> Page
@@ -26,6 +32,12 @@ urlToPage url =
         Terms
       else if path == "privacy" then
         Privacy
+      else if path == "user" then
+        User
+      else if path == "game" then
+        Game
+      else if path == "settings" then
+        UserSettings
       else if path == "game-settings" then
         GameSettings
       else
@@ -51,6 +63,12 @@ title page =
       "Terms of use"
     Privacy ->
       "Privacy policy"
+    User ->
+      "User"
+    Game ->
+      "Game"
+    UserSettings ->
+      "Settings"
     GameSettings ->
       "Game settings"
 
@@ -63,6 +81,12 @@ content page =
       Pages.Terms.view
     Privacy ->
       Pages.Privacy.view
+    User ->
+      Pages.User.view
+    Game ->
+      Pages.Game.view
+    UserSettings ->
+      Pages.UserSettings.view
     GameSettings ->
       Pages.GameSettings.view
 
