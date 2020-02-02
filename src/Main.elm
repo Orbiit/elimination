@@ -1,13 +1,12 @@
 port module Main exposing (main)
 
-import Browser exposing (Document, UrlRequest(..))
+import Browser
 import Browser.Navigation as Nav
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Url exposing (Url)
+import Html
+import Url
 import Json.Decode as D
 
-import Base exposing (makeHeader, makeFooter)
+import Base
 import Api
 import Pages.FrontPage
 import Pages.Terms
@@ -26,7 +25,7 @@ type Page
   | UserSettings
   | GameSettings
 
-urlToPage : Url -> Page
+urlToPage : Url.Url -> Page
 urlToPage url =
   case url.query of
     Just path ->
@@ -51,21 +50,26 @@ type alias Model =
   { page : Page
   , key : Nav.Key
   , session : Api.Session
+  , header : Base.Model
   }
 
-init : (Maybe String, Maybe String) -> Url -> Nav.Key -> ( Model, Cmd Msg )
+init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init (sessionMaybe, usernameMaybe) url navKey =
-  ( { page = urlToPage url
-    , key = navKey
-    , session =
+  let
+    session =
       case (sessionMaybe, usernameMaybe) of
-        (Just session, Just username) ->
-          Api.SignedIn { session = session, username = username }
+        (Just sessionID, Just username) ->
+          Api.SignedIn { session = sessionID, username = username }
         (_, _) ->
           Api.SignedOut
-    }
-  , Cmd.none
-  )
+  in
+    ( { page = urlToPage url
+      , key = navKey
+      , session = session
+      , header = Base.init session
+      }
+    , Cmd.none
+    )
 
 title : Page -> String
 title page =
@@ -85,7 +89,7 @@ title page =
     GameSettings ->
       "Game settings"
 
-content : Page -> List (Html Msg)
+content : Page -> List (Html.Html Msg)
 content page =
   case page of
     FrontPage ->
@@ -103,20 +107,24 @@ content page =
     GameSettings ->
       Pages.GameSettings.view
 
-view : Model -> Document Msg
+view : Model -> Browser.Document Msg
 view model =
   { title =
     if model.page == FrontPage then
       "Elimination"
     else
       title model.page ++ " | Elimination"
-  , body = makeHeader model.session ++ content model.page ++ makeFooter
+  , body
+    = List.map (Html.map BaseMsg) (Base.makeHeader model.session model.header)
+    ++ content model.page
+    ++ Base.makeFooter
   }
 
 type Msg
-  = ChangedUrl Url
+  = ChangedUrl Url.Url
   | ClickedLink Browser.UrlRequest
   | Auth String String
+  | BaseMsg Base.Msg
   | Dance
 
 port saveSession : ( String, String ) -> Cmd msg
@@ -126,9 +134,9 @@ update msg model =
   case msg of
     ClickedLink request ->
       case request of
-        Internal url ->
+        Browser.Internal url ->
           ( { model | page = urlToPage url }, Nav.pushUrl model.key (Url.toString url) )
-        External url ->
+        Browser.External url ->
           ( model, Nav.load url )
     ChangedUrl url ->
       ( { model | page = urlToPage url }, Cmd.none )
@@ -136,6 +144,11 @@ update msg model =
       ( { model | session = Api.SignedIn { session = session, username = username } }
       , saveSession (session, username)
       )
+    BaseMsg subMsg ->
+      let
+        ( subModel, cmd ) = Base.update subMsg model.header
+      in
+        ( { model | header = subModel }, cmd )
     _ ->
       -- Disregard messages that arrived for the wrong page.
       ( model, Cmd.none )
@@ -143,7 +156,7 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
- 
+
 main : Program (Maybe String, Maybe String) Model Msg
 main =
   Browser.application

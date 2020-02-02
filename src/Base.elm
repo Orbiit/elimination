@@ -1,13 +1,41 @@
-module Base exposing (makeHeader, makeFooter)
+module Base exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
+import Html.Events exposing (onClick)
 
 import Api
 import Utils
 
-makeHeader : Api.Session -> List (Html msg)
-makeHeader session =
+type HeaderWindow
+  = SignUp
+  | Login
+  | Notifications
+  | None
+
+type alias Model =
+  { open : HeaderWindow
+  }
+
+init : Api.Session -> Model
+init _ =
+  { open = None
+  }
+
+type Msg
+  = Open HeaderWindow
+  | Dance
+
+update : Msg -> Model -> (Model, Cmd msg)
+update msg model =
+  case msg of
+    Open window ->
+      ( { model | open = window }, Cmd.none )
+    _ ->
+      ( model, Cmd.none )
+
+makeHeader : Api.Session -> Model -> List (Html Msg)
+makeHeader session model =
   [ header [ A.class "header" ]
     ([ a [ A.href "?", A.class "site-name link" ]
       [ text "Elimination" ]
@@ -57,8 +85,8 @@ makeHeader session =
           [ text username ]
         ]
       Api.SignedOut ->
-        [ div [ A.class "header-window-wrapper" ]
-          [ button [ A.class "header-btn auth-btn" ]
+        [ div [ A.class "header-window-wrapper", A.classList [ ("open", model.open == Login) ] ]
+          [ button [ A.class "header-btn auth-btn", onClick (Open Login) ]
             [ text "Log in" ]
           , form [ A.action "./front-page.html", A.class "header-window" ]
             [ label [ A.class "input-wrapper" ]
