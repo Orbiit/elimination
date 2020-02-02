@@ -7,7 +7,7 @@ import Utils exposing (extLink)
 
 privacyPage : () -> List (Html msg)
 privacyPage _ =
-  [ div [ class "content text-content" ]
+  [ div [ class "main content text" ]
     [ h1 []
       [ text "Privacy policy" ]
     , p []

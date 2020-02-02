@@ -8,7 +8,7 @@ import Utils exposing (char, Char(..))
 makeHeader : () -> List (Html msg)
 makeHeader _ =
   [ header [ class "header" ]
-    [ a [ href "?", class "title link" ]
+    [ a [ href "?", class "site-name link" ]
       [ text "Elimination" ]
     , span [ class "flex" ] []
     ]

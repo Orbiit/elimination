@@ -1,7 +1,7 @@
-.actual-content {
+.profile-info {
   margin: 0 20px;
 }
-.name {
+.profile-name {
   display: flex;
   align-items: flex-start;
   font-weight: normal;
@@ -18,19 +18,19 @@
   margin-left: 10px;
   word-break: normal;
 }
-.username {
+.profile-username {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.5);
   word-break: break-word;
 }
-.description {
+.profile-desc {
   font-size: 16px;
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.9);
   white-space: pre-wrap;
   word-break: break-word;
 }
-.stats {
+.profile-stats {
   text-align: center;
 }
 .lists {

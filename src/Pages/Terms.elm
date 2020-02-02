@@ -5,7 +5,7 @@ import Html.Attributes exposing (..)
 
 termsPage : () -> List (Html msg)
 termsPage _ =
-  [ div [ class "content text-content" ]
+  [ div [ class "main content text" ]
     [ h1 []
       [ text "Terms of use" ]
     , p []

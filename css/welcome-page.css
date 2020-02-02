@@ -1,7 +1,7 @@
-.on-welcome-page .header {
+.on-welcome-page.header {
   border-bottom: none;
 }
-.on-welcome-page .title {
+.on-welcome-page .site-name {
   /* Keep the box so that the navbar doesn't change size or whatever */
   visibility: hidden;
 }

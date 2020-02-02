@@ -5,7 +5,7 @@ import Html.Attributes exposing (..)
 
 frontPage : () -> List (Html msg)
 frontPage _ =
-  [ div [ class "content text-content" ]
+  [ div [ class "main content text" ]
     [ h1 []
       [ text "Front page" ]
     , p []
