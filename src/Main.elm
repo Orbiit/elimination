@@ -124,10 +124,10 @@ view model =
 type Msg
   = ChangedUrl Url.Url
   | ClickedLink Browser.UrlRequest
-  | Auth String String
   | BaseMsg Base.Msg
 
 port saveSession : (String, String) -> Cmd msg
+port logout : () -> Cmd msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -140,15 +140,21 @@ update msg model =
           (model, Nav.load url)
     ChangedUrl url ->
       ({ model | page = urlToPage url }, Cmd.none)
-    Auth session username ->
-      ( { model | session = Api.SignedIn { session = session, username = username } }
-      , saveSession (session, username)
-      )
     BaseMsg subMsg ->
       let
-        (subModel, cmd) = Base.update subMsg model.header
+        (subModel, sessionOrCmd) = Base.update subMsg model.session model.header
       in
-        ({ model | header = subModel }, cmd)
+        case sessionOrCmd of
+          Api.Command cmd ->
+            ({ model | header = subModel }, Cmd.map BaseMsg cmd)
+          Api.ChangeSession authSession ->
+            ( { model | session = authSession }
+            , case authSession of
+              Api.SignedIn { session, username } ->
+                saveSession (session, username)
+              Api.SignedOut ->
+                logout ()
+            )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

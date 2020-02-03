@@ -2,15 +2,16 @@ module Base exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
-import Html.Events exposing (stopPropagationOn)
+import Html.Events exposing (stopPropagationOn, onSubmit)
 import Json.Decode as D
+import Http
 
 import Api
 import Utils
 
 type HeaderWindow
-  = SignUp
-  | Login
+  = SignUpWindow
+  | LoginWindow
   | Notifications
   | None
 
@@ -54,20 +55,27 @@ type Msg
   = Open HeaderWindow
   | Close
   | DontClose
-  | Change Input (String -> String) String
+  | Change Input (String -> Maybe String) String
+  | Login
+  | SignUp
+  | NewSession String (Result Http.Error String)
 
-update : Msg -> Model -> (Model, Cmd msg)
-update msg model =
+update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
+update msg session model =
   case msg of
     Open window ->
-      ({ model | open = window }, Cmd.none)
+      ({ model | open = window }, Api.Command Cmd.none)
     Close ->
-      ({ model | open = None }, Cmd.none)
+      ({ model | open = None }, Api.Command Cmd.none)
     DontClose ->
-      (model, Cmd.none)
+      (model, Api.Command Cmd.none)
     Change input validate value ->
       let
-        ok = validate value == ""
+        ok = case validate value of
+          Just _ ->
+            False
+          Nothing ->
+            True
         values = model.values
       in
         ({ model
@@ -87,7 +95,23 @@ update msg model =
               { values | signUpPassword = (value, ok) }
             SignUpPasswordAgain ->
               { values | signUpPasswordAgain = (value, ok) }
-        }, Cmd.none)
+        }, Api.Command Cmd.none)
+    Login ->
+      ( model
+      , Api.Command (Api.login
+        (Tuple.first model.values.loginUsername)
+        (Tuple.first model.values.loginPassword)
+        NewSession
+      ))
+    SignUp ->
+      (model, Api.Command Cmd.none)
+    NewSession username sessionResult ->
+      case sessionResult of
+        Ok newSession ->
+          (model, Api.ChangeSession (Api.SignedIn { username = username, session = newSession }))
+        Err _ ->
+          -- TEMP
+          (model, Api.Command Cmd.none)
 
 -- TODO: abstract header windows etc into helper function
 makeHeader : Api.Session -> Model -> List (Html Msg)
@@ -150,22 +174,22 @@ makeHeader session model =
       Api.SignedOut ->
         [ div
           [ A.class "header-window-wrapper"
-          , A.classList [ ("open", model.open == Login) ]
+          , A.classList [ ("open", model.open == LoginWindow) ]
           , stopPropagationOn "click" (D.succeed (DontClose, True))
           ]
           [ button
             [ A.class "header-btn auth-btn"
-            , stopPropagationOn "click" (D.succeed (Open Login, True))
+            , stopPropagationOn "click" (D.succeed (Open LoginWindow, True))
             ]
             [ text "Log in" ]
-          , form [ A.action "./front-page.html", A.class "header-window" ]
+          , form [ A.class "header-window", onSubmit Login ]
             [ Utils.myInput
               { labelText = "Username"
               , sublabel = ""
               , type_ = "text"
               , placeholder = "billygamer5"
               , value = Tuple.first model.values.loginUsername
-              , validate = \_ -> ""
+              , validate = \_ -> Nothing
               , maxChars = Nothing
               , storeValueMsg = Change LoginUsername
               }
@@ -175,7 +199,7 @@ makeHeader session model =
               , type_ = "password"
               , placeholder = "hunter2"
               , value = Tuple.first model.values.loginPassword
-              , validate = \_ -> ""
+              , validate = \_ -> Nothing
               , maxChars = Nothing
               , storeValueMsg = Change LoginPassword
               }
@@ -185,22 +209,22 @@ makeHeader session model =
           ]
         , div
           [ A.class "header-window-wrapper"
-          , A.classList [ ("open", model.open == SignUp) ]
+          , A.classList [ ("open", model.open == SignUpWindow) ]
           , stopPropagationOn "click" (D.succeed (DontClose, True))
           ]
           [ button
             [ A.class "header-btn auth-btn"
-            , stopPropagationOn "click" (D.succeed (Open SignUp, True))
+            , stopPropagationOn "click" (D.succeed (Open SignUpWindow, True))
             ]
             [ text "Sign up" ]
-          , form [ A.action "./front-page.html", A.class "header-window" ]
+          , form [ A.class "header-window", onSubmit SignUp ]
             [ Utils.myInput
               { labelText = "Username"
               , sublabel = "Only letters, digits, underscores, and hyphens are allowed. This cannot be changed later."
               , type_ = "text"
               , placeholder = "billygamer5"
               , value = Tuple.first model.values.signUpUsername
-              , validate = \_ -> ""
+              , validate = \_ -> Nothing
               , maxChars = Nothing
               , storeValueMsg = Change SignUpUsername
               }
@@ -210,7 +234,7 @@ makeHeader session model =
               , type_ = "text"
               , placeholder = "Billy Chelontuvier"
               , value = Tuple.first model.values.signUpName
-              , validate = \_ -> ""
+              , validate = \_ -> Nothing
               , maxChars = Nothing
               , storeValueMsg = Change SignUpName
               }
@@ -220,7 +244,7 @@ makeHeader session model =
               , type_ = "email"
               , placeholder = "billygamer5@example.com"
               , value = Tuple.first model.values.signUpEmail
-              , validate = \_ -> ""
+              , validate = \_ -> Nothing
               , maxChars = Nothing
               , storeValueMsg = Change SignUpEmail
               }
@@ -230,7 +254,7 @@ makeHeader session model =
               , type_ = "password"
               , placeholder = "hunter2"
               , value = Tuple.first model.values.signUpPassword
-              , validate = \_ -> ""
+              , validate = \_ -> Nothing
               , maxChars = Nothing
               , storeValueMsg = Change SignUpPassword
               }
@@ -242,9 +266,9 @@ makeHeader session model =
               , value = Tuple.first model.values.signUpPasswordAgain
               , validate = \value ->
                 if value /= Tuple.first model.values.signUpPassword then
-                  "Passwords do not match!"
+                  Just "Passwords do not match!"
                 else
-                  ""
+                  Nothing
               , maxChars = Nothing
               , storeValueMsg = Change SignUpPasswordAgain
               }
