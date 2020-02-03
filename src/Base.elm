@@ -70,7 +70,7 @@ type Msg
   | Change Input (String -> Maybe String) String
   | Login
   | SignUp
-  | NewSession AuthMethod String (Result String String)
+  | NewSession AuthMethod String (Result Utils.ErrorMessage Api.SessionID)
 
 update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
 update msg session model =

@@ -73,9 +73,9 @@ myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, st
 host : String
 host = "https://sheep.thingkingland.app/assassin/"
 
-type alias Msg a msg = (Result Http.Error a -> msg)
+type alias ErrorMessage = String
 
-parseWucky : String -> String
+parseWucky : String -> ErrorMessage
 parseWucky body =
   case D.decodeString (D.field "mistake" D.string) body of
     Ok wucky ->
@@ -83,7 +83,7 @@ parseWucky body =
     Err _ ->
       "Supposedly something went wrong, but the server didn't articulate well enough about it."
 
-parseResponse : D.Decoder a -> Http.Response String -> Result String a
+parseResponse : D.Decoder a -> Http.Response String -> Result ErrorMessage a
 parseResponse decoder response =
   case response of
     Http.BadUrl_ _ ->
@@ -109,7 +109,7 @@ parseResponse decoder response =
         Err _ ->
           Err "The server spoke in a different language, and we couldn't understand it."
 
-get : String -> Maybe String -> (Result String a -> msg) -> D.Decoder a -> Cmd msg
+get : String -> Maybe String -> (Result ErrorMessage a -> msg) -> D.Decoder a -> Cmd msg
 get path session msg decoder =
   Http.request
     { method = "GET"
@@ -121,7 +121,7 @@ get path session msg decoder =
     , tracker = Nothing
     }
 
-post : String -> Maybe String -> (Result String a -> msg) -> E.Value -> D.Decoder a -> Cmd msg
+post : String -> Maybe String -> (Result ErrorMessage a -> msg) -> E.Value -> D.Decoder a -> Cmd msg
 post path session msg body decoder =
   Http.request
     { method = "POST"

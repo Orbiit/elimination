@@ -129,7 +129,7 @@ type Msg
   | BaseMsg Base.Msg
   | UserSettingsMsg Pages.UserSettings.Msg
 
-port saveSession : (String, String) -> Cmd msg
+port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
