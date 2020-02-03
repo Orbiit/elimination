@@ -151,7 +151,7 @@ update msg model =
           Api.Command cmd ->
             ({ model | header = subModel }, Cmd.map BaseMsg cmd)
           Api.ChangeSession authSession ->
-            ( { model | session = authSession }
+            ( { model | header = subModel, session = authSession }
             , case authSession of
               Api.SignedIn { session, username } ->
                 saveSession (session, username)
@@ -160,9 +160,19 @@ update msg model =
             )
     UserSettingsMsg subMsg ->
       let
-        (subModel, cmd) = Pages.UserSettings.update subMsg model.session model.userSettings
+        (subModel, sessionOrCmd) = Pages.UserSettings.update subMsg model.session model.userSettings
       in
-        ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg cmd)
+        case sessionOrCmd of
+          Api.Command cmd ->
+            ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg cmd)
+          Api.ChangeSession authSession ->
+            ( { model | userSettings = subModel, session = authSession }
+            , case authSession of
+              Api.SignedIn { session, username } ->
+                saveSession (session, username)
+              Api.SignedOut ->
+                logout ()
+            )
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

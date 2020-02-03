@@ -2,6 +2,7 @@ module Pages.UserSettings exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
+import Html.Events exposing (onClick)
 
 import Api
 import Utils
@@ -36,8 +37,10 @@ init _ =
 
 type Msg
   = Change Input (String -> Maybe String) String
+  | Logout
+  | LoggedOut (Result Utils.ErrorMessage ())
 
-update : Msg -> Api.Session -> Model -> (Model, Cmd Msg)
+update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
 update msg session model =
   case msg of
     Change input validate value ->
@@ -62,7 +65,15 @@ update msg session model =
               { values | password = (value, ok) }
             OldPasswordInput ->
               { values | oldPassword = (value, ok) }
-        }, Cmd.none)
+        }, Api.Command Cmd.none)
+    Logout ->
+      case session of
+        Api.SignedIn authSession ->
+          (model, Api.Command (Api.logout authSession.session LoggedOut))
+        Api.SignedOut ->
+          (model, Api.Command Cmd.none)
+    LoggedOut _ ->
+      (model, Api.ChangeSession Api.SignedOut)
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =
@@ -73,7 +84,7 @@ view session model =
         []
       , a [ A.class "button", A.href "?user" ]
         [ text "View profile" ]
-      , button [ A.class "button" ]
+      , button [ A.class "button", onClick Logout ]
         [ text "Sign out" ]
       ]
     , form []
