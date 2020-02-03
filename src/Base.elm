@@ -15,6 +15,10 @@ type HeaderWindow
   | Notifications
   | None
 
+type AuthMethod
+  = LoginMethod
+  | SignUpMethod
+
 type Input
   = LoginUsername
   | LoginPassword
@@ -35,6 +39,10 @@ type alias Model =
     , signUpPassword : (String, Bool)
     , signUpPasswordAgain : (String, Bool)
     }
+  , problems :
+    { login : Maybe String
+    , signUp : Maybe String
+    }
   }
 
 init : Api.Session -> Model
@@ -49,6 +57,10 @@ init _ =
     , signUpPassword = ("", False)
     , signUpPasswordAgain = ("", False)
     }
+  , problems =
+    { login = Nothing
+    , signUp = Nothing
+    }
   }
 
 type Msg
@@ -58,7 +70,7 @@ type Msg
   | Change Input (String -> Maybe String) String
   | Login
   | SignUp
-  | NewSession String (Result Http.Error String)
+  | NewSession AuthMethod String (Result String String)
 
 update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
 update msg session model =
@@ -101,17 +113,36 @@ update msg session model =
       , Api.Command (Api.login
         (Tuple.first model.values.loginUsername)
         (Tuple.first model.values.loginPassword)
-        NewSession
+        (NewSession LoginMethod)
       ))
     SignUp ->
-      (model, Api.Command Cmd.none)
-    NewSession username sessionResult ->
+      ( model
+      , Api.Command (Api.createUser
+        { username = (Tuple.first model.values.signUpUsername)
+        , name = (Tuple.first model.values.signUpName)
+        , password = (Tuple.first model.values.signUpPassword)
+        , email = (Tuple.first model.values.signUpEmail)
+        , bio = ""
+        }
+        (NewSession SignUpMethod)
+      ))
+    NewSession method username sessionResult ->
       case sessionResult of
         Ok newSession ->
           (model, Api.ChangeSession (Api.SignedIn { username = username, session = newSession }))
-        Err _ ->
-          -- TEMP
-          (model, Api.Command Cmd.none)
+        Err error ->
+          let
+            problems = model.problems
+          in
+            ( { model
+              | problems = case method of
+                LoginMethod ->
+                  { problems | login = Just error }
+                SignUpMethod ->
+                  { problems | signUp = Just error }
+              }
+            , Api.Command Cmd.none
+            )
 
 -- TODO: abstract header windows etc into helper function
 makeHeader : Api.Session -> Model -> List (Html Msg)
@@ -183,7 +214,7 @@ makeHeader session model =
             ]
             [ text "Log in" ]
           , form [ A.class "header-window", onSubmit Login ]
-            [ Utils.myInput
+            ([ Utils.myInput
               { labelText = "Username"
               , sublabel = ""
               , type_ = "text"
@@ -206,6 +237,13 @@ makeHeader session model =
             , input [ A.class "button submit-btn", A.type_ "submit", A.value "Log in" ]
               []
             ]
+            ++ case model.problems.login of
+              Just errorText ->
+                [ span [ A.class "problematic-error" ]
+                  [ text errorText ] ]
+              Nothing ->
+                []
+            )
           ]
         , div
           [ A.class "header-window-wrapper"
@@ -218,7 +256,7 @@ makeHeader session model =
             ]
             [ text "Sign up" ]
           , form [ A.class "header-window", onSubmit SignUp ]
-            [ Utils.myInput
+            ([ Utils.myInput
               { labelText = "Username"
               , sublabel = "Only letters, digits, underscores, and hyphens are allowed. This cannot be changed later."
               , type_ = "text"
@@ -275,6 +313,13 @@ makeHeader session model =
             , input [ A.class "button submit-btn", A.type_ "submit", A.value "Sign up" ]
               []
             ]
+            ++ case model.problems.signUp of
+              Just errorText ->
+                [ span [ A.class "problematic-error" ]
+                  [ text errorText ] ]
+              Nothing ->
+                []
+            )
           ]
         ])
   ]

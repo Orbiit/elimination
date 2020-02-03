@@ -259,7 +259,8 @@ a {
   margin: 0 auto;
   margin-top: 20px;
 }
-.error .problem {
+.error .problem,
+.problematic-error {
   font-size: 16px;
   color: red;
 }

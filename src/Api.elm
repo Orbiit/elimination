@@ -22,7 +22,7 @@ type alias UserInfo =
   , bio : String
   }
 
-createUser : UserInfo -> (String -> Result Http.Error String -> msg) -> Cmd msg
+createUser : UserInfo -> (String -> Result String String -> msg) -> Cmd msg
 createUser info msg =
   Utils.post "create-user" Nothing (msg info.username) (E.object
     [ ("username", E.string info.username)
@@ -32,7 +32,7 @@ createUser info msg =
     ])
     (D.field "session" D.string)
 
-login : String -> String -> (String -> Result Http.Error String -> msg) -> Cmd msg
+login : String -> String -> (String -> Result String String -> msg) -> Cmd msg
 login username password msg =
   Utils.post "login" Nothing (msg username) (E.object
     [ ("username", E.string username)
