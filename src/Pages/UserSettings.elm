@@ -1,10 +1,26 @@
-module Pages.UserSettings exposing (view)
+module Pages.UserSettings exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
 
-view : List (Html msg)
-view =
+import Api
+
+type alias Model =
+  { }
+
+init : Api.Session -> Model
+init _ =
+  {}
+
+type Msg
+  = Dance
+
+update : Msg -> Api.Session -> Model -> (Model, Cmd Msg)
+update msg session model =
+  (model, Cmd.none)
+
+view : Api.Session -> Model -> List (Html msg)
+view session model =
   [ div [ A.class "main content settings" ]
     [ h1 []
       [ text "User settings"

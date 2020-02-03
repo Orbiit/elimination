@@ -52,6 +52,7 @@ type alias Model =
   , key : Nav.Key
   , session : Api.Session
   , header : Base.Model
+  , userSettings : Pages.UserSettings.Model
   }
 
 init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
@@ -68,6 +69,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
       , key = navKey
       , session = session
       , header = Base.init session
+      , userSettings = Pages.UserSettings.init session
       }
     , Cmd.none
     )
@@ -90,9 +92,9 @@ title page =
     GameSettings ->
       "Game settings"
 
-content : Page -> List (Html.Html Msg)
-content page =
-  case page of
+content : Model -> List (Html.Html Msg)
+content model =
+  case model.page of
     FrontPage ->
       Pages.FrontPage.view
     Terms ->
@@ -104,7 +106,7 @@ content page =
     Game ->
       Pages.Game.view
     UserSettings ->
-      Pages.UserSettings.view
+      List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model.session model.userSettings)
     GameSettings ->
       Pages.GameSettings.view
 
@@ -117,7 +119,7 @@ view model =
       title model.page ++ " | Elimination"
   , body
     = List.map (Html.map BaseMsg) (Base.makeHeader model.session model.header)
-    ++ content model.page
+    ++ content model
     ++ Base.makeFooter
   }
 
@@ -125,6 +127,7 @@ type Msg
   = ChangedUrl Url.Url
   | ClickedLink Browser.UrlRequest
   | BaseMsg Base.Msg
+  | UserSettingsMsg Pages.UserSettings.Msg
 
 port saveSession : (String, String) -> Cmd msg
 port logout : () -> Cmd msg
@@ -155,6 +158,11 @@ update msg model =
               Api.SignedOut ->
                 logout ()
             )
+    UserSettingsMsg subMsg ->
+      let
+        (subModel, cmd) = Pages.UserSettings.update subMsg model.session model.userSettings
+      in
+        ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg cmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

@@ -203,7 +203,7 @@ makeHeader session model =
               ]
             ]
           ]
-        , a [ A.class "link username", A.href "./user-settings.html" ]
+        , a [ A.class "link username", A.href "?settings" ]
           [ text username ]
         ]
       Api.SignedOut ->
