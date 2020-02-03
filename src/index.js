@@ -3,7 +3,6 @@ import Elm from './Main.elm'
 const SESSION_KEY = '[elimination] session'
 const USERNAME_KEY = '[elimination] username'
 
-// TODO: Don't shove into <body> because it messes with extensions apparently
 const app = Elm.Main.init({
   flags: [localStorage.getItem(SESSION_KEY), localStorage.getItem(USERNAME_KEY)]
 })

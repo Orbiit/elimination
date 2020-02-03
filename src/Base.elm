@@ -144,27 +144,31 @@ update msg session model =
             , Api.Command Cmd.none
             )
 
--- TODO: abstract header windows etc into helper function
+headerWindow : Model -> String -> String -> HeaderWindow -> List (Html Msg) -> Html Msg
+headerWindow model btnClass btnLabel window windowContent =
+  div
+    [ A.class "header-window-wrapper"
+    , A.classList [ ("open", model.open == window) ]
+    , stopPropagationOn "click" (D.succeed (DontClose, True))
+    ] <|
+    button
+      [ A.class btnClass
+      , stopPropagationOn "click" (D.succeed (Open window, True))
+      ]
+      [ text btnLabel ]
+      :: windowContent
+
 makeHeader : Api.Session -> Model -> List (Html Msg)
 makeHeader session model =
-  [ header [ A.class "header" ]
-    ([ a [ A.href "?", A.class "site-name link" ]
+  [ header [ A.class "header" ] <|
+    [ a [ A.href "?", A.class "site-name link" ]
       [ text "Elimination" ]
     , span [ A.class "flex" ] []
     ]
     ++ case session of
       Api.SignedIn { username } ->
-        [ div
-          [ A.class "header-window-wrapper"
-          , A.classList [ ("open", model.open == Notifications) ]
-          , stopPropagationOn "click" (D.succeed (DontClose, True))
-          ]
-          [ button
-            [ A.class "icon-btn header-btn notif-btn"
-            , stopPropagationOn "click" (D.succeed (Open Notifications, True))
-            ]
-            [ text "Notifications" ]
-          , div [ A.class "header-window notifs" ]
+        [ headerWindow model "icon-btn header-btn notif-btn" "Notifications" Notifications <|
+          [ div [ A.class "header-window notifs" ]
             [ h2 [ A.class "notif-header" ]
               [ text "Notifications"
               , span [ A.class "flex" ]
@@ -203,18 +207,9 @@ makeHeader session model =
           [ text username ]
         ]
       Api.SignedOut ->
-        [ div
-          [ A.class "header-window-wrapper"
-          , A.classList [ ("open", model.open == LoginWindow) ]
-          , stopPropagationOn "click" (D.succeed (DontClose, True))
-          ]
-          [ button
-            [ A.class "header-btn auth-btn"
-            , stopPropagationOn "click" (D.succeed (Open LoginWindow, True))
-            ]
-            [ text "Log in" ]
-          , form [ A.class "header-window", onSubmit Login ]
-            ([ Utils.myInput
+        [ headerWindow model "header-btn auth-btn" "Log in" LoginWindow <|
+          [ form [ A.class "header-window", onSubmit Login ] <|
+            [ Utils.myInput
               { labelText = "Username"
               , sublabel = ""
               , type_ = "text"
@@ -243,20 +238,10 @@ makeHeader session model =
                   [ text errorText ] ]
               Nothing ->
                 []
-            )
           ]
-        , div
-          [ A.class "header-window-wrapper"
-          , A.classList [ ("open", model.open == SignUpWindow) ]
-          , stopPropagationOn "click" (D.succeed (DontClose, True))
-          ]
-          [ button
-            [ A.class "header-btn auth-btn"
-            , stopPropagationOn "click" (D.succeed (Open SignUpWindow, True))
-            ]
-            [ text "Sign up" ]
-          , form [ A.class "header-window", onSubmit SignUp ]
-            ([ Utils.myInput
+        , headerWindow model "header-btn auth-btn" "Sign up" SignUpWindow <|
+          [ form [ A.class "header-window", onSubmit SignUp ] <|
+            [ Utils.myInput
               { labelText = "Username"
               , sublabel = "Only letters, digits, underscores, and hyphens are allowed. This cannot be changed later."
               , type_ = "text"
@@ -319,9 +304,8 @@ makeHeader session model =
                   [ text errorText ] ]
               Nothing ->
                 []
-            )
           ]
-        ])
+        ]
   ]
 
 makeFooter : List (Html msg)
