@@ -4,95 +4,133 @@ import Html exposing (..)
 import Html.Attributes as A
 
 import Api
+import Utils
+
+type Input
+  = NameInput
+  | EmailInput
+  | BioInput
+  | PasswordInput
+  | OldPasswordInput
 
 type alias Model =
-  { }
+  { values :
+    { name : (String, Bool)
+    , email : (String, Bool)
+    , bio : (String, Bool)
+    , password : (String, Bool)
+    , oldPassword : (String, Bool)
+    }
+  }
 
 init : Api.Session -> Model
 init _ =
-  {}
+  { values =
+    { name = ("", False)
+    , email = ("", False)
+    , bio = ("", False)
+    , password = ("", False)
+    , oldPassword = ("", False)
+    }
+  }
 
 type Msg
-  = Dance
+  = Change Input (String -> Maybe String) String
 
 update : Msg -> Api.Session -> Model -> (Model, Cmd Msg)
 update msg session model =
-  (model, Cmd.none)
+  case msg of
+    Change input validate value ->
+      let
+        ok = case validate value of
+          Just _ ->
+            False
+          Nothing ->
+            True
+        values = model.values
+      in
+        ({ model
+        | values =
+          case input of
+            NameInput ->
+              { values | name = (value, ok) }
+            EmailInput ->
+              { values | email = (value, ok) }
+            BioInput ->
+              { values | bio = (value, ok) }
+            PasswordInput ->
+              { values | password = (value, ok) }
+            OldPasswordInput ->
+              { values | oldPassword = (value, ok) }
+        }, Cmd.none)
 
-view : Api.Session -> Model -> List (Html msg)
+view : Api.Session -> Model -> List (Html Msg)
 view session model =
   [ div [ A.class "main content settings" ]
     [ h1 []
       [ text "User settings"
       , span [ A.class "flex" ]
         []
-      , a [ A.class "button", A.href "./user.html" ]
+      , a [ A.class "button", A.href "?user" ]
         [ text "View profile" ]
       , button [ A.class "button" ]
         [ text "Sign out" ]
       ]
     , form []
       [ div [ A.class "input-row" ]
-        [ label [ A.class "input-wrapper" ]
-          [ span [ A.class "label" ]
-            [ text "Display name" ]
-          , div [ A.class "input" ]
-            [ input [ A.name "name", A.placeholder "Billy Chelontuvier", A.attribute "required" "", A.type_ "text", A.value "Leuf Munkler" ]
-              []
-            , span [ A.class "count" ]
-              [ text "13/50" ]
-            ]
-          , span [ A.class "sublabel" ]
-            [ text "This lets others be able to find and eliminate you, which makes the game fair." ]
-          ]
-        , label [ A.class "input-wrapper" ]
-          [ span [ A.class "label" ]
-            [ text "Email" ]
-          , div [ A.class "input" ]
-            [ input [ A.name "email", A.placeholder "billygamer5@example.com", A.attribute "required" "", A.type_ "email", A.value "lmunkler@example.com" ]
-              []
-            ]
-          , span [ A.class "sublabel" ]
-            [ text "We will send password reset forms (and notifications if enabled) to this email." ]
-          ]
+        [ Utils.myInput
+          { labelText = "Display name"
+          , sublabel = "This lets others be able to find and eliminate you, which makes the game fair."
+          , type_ = "text"
+          , placeholder = "Billy Chelontuvier"
+          , value = Tuple.first model.values.name
+          , validate = \value -> Nothing
+          , maxChars = Nothing
+          , storeValueMsg = Change NameInput }
+        , Utils.myInput
+          { labelText = "Email"
+          , sublabel = "We will send password reset forms (and notifications if enabled) to this email."
+          , type_ = "email"
+          , placeholder = "billygamer5@example.com"
+          , value = Tuple.first model.values.email
+          , validate = \value -> Nothing
+          , maxChars = Nothing
+          , storeValueMsg = Change EmailInput }
         ]
       , div [ A.class "input-row" ]
-        [ label [ A.class "input-wrapper" ]
-          [ span [ A.class "label" ]
-            [ text "Bio" ]
-          , div [ A.class "input" ]
-            [ textarea [ A.name "bio", A.placeholder "Introduce yourself here", A.attribute "required" "" ]
-              [ text "Hello. I pride myself in my many achievements in science and technology, and I hope to share them with you today in my A.class. I often teach science and physics, but due to limited funding in our department, I am only able to teach the latter half of physics. This includes kinematic motion and angular velocity, among other exciting concepts. I treat all my students with excessive love and respect, and my students often reciprocate similarly." ]
-            , span [ A.class "count" ]
-              [ text "11/1000" ]
-            ]
-          ]
+        [ Utils.myInput
+          { labelText = "Bio"
+          , sublabel = ""
+          , type_ = "textarea"
+          , placeholder = "Introduce yourself here"
+          , value = Tuple.first model.values.bio
+          , validate = \value -> Nothing
+          , maxChars = Nothing
+          , storeValueMsg = Change BioInput }
         ]
       , h2 []
         [ text "Change your password" ]
       , div [ A.class "input-row" ]
-        [ label [ A.class "input-wrapper error" ]
-          [ span [ A.class "label" ]
-            [ text "New password" ]
-          , div [ A.class "input" ]
-            [ input [ A.name "password", A.placeholder "hunter2", A.type_ "password" ]
-              []
-            ]
-          , span [ A.class "problem" ]
-            [ text "Password too short." ]
-          , span [ A.class "sublabel" ]
-            [ text "Must be at least 3 poop emoji long." ]
-          ]
-        , label [ A.class "input-wrapper" ]
-          [ span [ A.class "label" ]
-            [ text "Old password" ]
-          , div [ A.class "input" ]
-            [ input [ A.name "oldPassword", A.placeholder "hunter2", A.type_ "password" ]
-              []
-            ]
-          ]
+        [ Utils.myInput
+          { labelText = "New password"
+          , sublabel = "Must be at least 3 poop emoji long."
+          , type_ = "password"
+          , placeholder = "hunter2"
+          , value = Tuple.first model.values.password
+          , validate = \value -> Nothing
+          , maxChars = Nothing
+          , storeValueMsg = Change PasswordInput }
+        , Utils.myInput
+          { labelText = "Old password"
+          , sublabel = ""
+          , type_ = "password"
+          , placeholder = "hunter2"
+          , value = Tuple.first model.values.oldPassword
+          , validate = \value -> Nothing
+          , maxChars = Nothing
+          , storeValueMsg = Change OldPasswordInput }
         ]
-      , input [ A.class "button submit-btn", A.attribute "disabled" "", A.type_ "submit", A.value "Save" ]
+      , input [ A.class "button submit-btn", A.disabled True, A.type_ "submit", A.value "Save" ]
         []
       ]
     ]
