@@ -150,7 +150,7 @@ view session model =
           , placeholder = "Introduce yourself here"
           , value = model.values.bio.value
           , validate = \value -> Nothing
-          , maxChars = Nothing
+          , maxChars = Just 2000
           , storeValueMsg = Change BioInput }
         ]
       , h2 []

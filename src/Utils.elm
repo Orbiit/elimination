@@ -55,7 +55,7 @@ myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, st
         ++ case maxChars of
           Just chars ->
             [ span [ A.class "count" ]
-              [ text ("11/" ++ String.fromInt chars) ]
+              [ text (String.fromInt (String.length value) ++ "/" ++ String.fromInt chars) ]
             ]
           Nothing ->
             [])
