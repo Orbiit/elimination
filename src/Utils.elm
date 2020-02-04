@@ -73,7 +73,11 @@ myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, st
 host : String
 host = "https://sheep.thingkingland.app/assassin/"
 
+type ErrorStatus
+  = ErrorStatusText String
+  | StatusCode Int
 type alias ErrorMessage = String
+type alias HttpError = (ErrorStatus, ErrorMessage)
 
 parseWucky : String -> ErrorMessage
 parseWucky body =
@@ -83,33 +87,42 @@ parseWucky body =
     Err _ ->
       "Supposedly something went wrong, but the server didn't articulate well enough about it."
 
-parseResponse : D.Decoder a -> Http.Response String -> Result ErrorMessage a
+parseResponse : D.Decoder a -> Http.Response String -> Result HttpError a
 parseResponse decoder response =
   case response of
     Http.BadUrl_ _ ->
-      Err "The request made to the server was done awkwardly, so the server didn't know what to do."
+      Err
+        ( ErrorStatusText "Bad URL"
+        , "The request made to the server was done awkwardly, so the server didn't know what to do."
+        )
     Http.Timeout_ ->
-      Err "The server took too long."
+      Err (ErrorStatusText "Timeout", "The server took too long.")
     Http.NetworkError_ ->
-      Err "You're probably offline."
+      Err (ErrorStatusText "Offline", "You're probably offline.")
     Http.BadStatus_ metadata body ->
-      case metadata.statusCode of
-        400 ->
-          Err (parseWucky body)
-        500 ->
-          Err "The server hurt itself in the process of fulfilling your request."
-        404 ->
-          Err "The server apparently doesn't know what it's meant to do."
-        _ ->
-          Err "The server...????"
+      Err
+        ( StatusCode metadata.statusCode
+        , case metadata.statusCode of
+            400 ->
+              parseWucky body
+            500 ->
+              "The server hurt itself in the process of fulfilling your request."
+            404 ->
+              "The server apparently doesn't know what it's meant to do."
+            _ ->
+              "The server...????"
+        )
     Http.GoodStatus_ _ body ->
       case D.decodeString decoder body of
         Ok value ->
           Ok value
         Err _ ->
-          Err "The server spoke in a different language, and we couldn't understand it."
+          Err
+            ( ErrorStatusText "Malformed JSON"
+            , "The server spoke in a different language, and we couldn't understand it."
+            )
 
-get : String -> Maybe String -> (Result ErrorMessage a -> msg) -> D.Decoder a -> Cmd msg
+get : String -> Maybe String -> (Result HttpError a -> msg) -> D.Decoder a -> Cmd msg
 get path session msg decoder =
   Http.request
     { method = "GET"
@@ -121,7 +134,7 @@ get path session msg decoder =
     , tracker = Nothing
     }
 
-post : String -> Maybe String -> (Result ErrorMessage a -> msg) -> E.Value -> D.Decoder a -> Cmd msg
+post : String -> Maybe String -> (Result HttpError a -> msg) -> E.Value -> D.Decoder a -> Cmd msg
 post path session msg body decoder =
   Http.request
     { method = "POST"

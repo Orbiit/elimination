@@ -9,6 +9,7 @@ import Json.Decode as D
 
 import Base
 import Api
+import Utils
 import Pages.FrontPage
 import Pages.Terms
 import Pages.Privacy
@@ -16,6 +17,8 @@ import Pages.User
 import Pages.Game
 import Pages.UserSettings
 import Pages.GameSettings
+import Pages.Loading
+import Pages.Error
 
 type Page
   = FrontPage
@@ -25,6 +28,8 @@ type Page
   | Game
   | UserSettings
   | GameSettings
+  | Loading
+  | Error Utils.HttpError
 
 urlToPage : Url.Url -> Page
 urlToPage url =
@@ -43,7 +48,7 @@ urlToPage url =
       else if path == "game-settings" then
         GameSettings
       else
-        FrontPage
+        Error (Utils.StatusCode 404, "We don't have a page for this URL.")
     Nothing ->
       FrontPage
 
@@ -91,6 +96,14 @@ title page =
       "Settings"
     GameSettings ->
       "Game settings"
+    Error (status, _) ->
+      case status of
+        Utils.ErrorStatusText text ->
+          text
+        Utils.StatusCode code ->
+          String.fromInt code
+    Loading ->
+      "Loading"
 
 content : Model -> List (Html.Html Msg)
 content model =
@@ -109,6 +122,10 @@ content model =
       List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model.session model.userSettings)
     GameSettings ->
       Pages.GameSettings.view
+    Error error ->
+      Pages.Error.view error
+    Loading ->
+      Pages.Loading.view
 
 view : Model -> Browser.Document Msg
 view model =

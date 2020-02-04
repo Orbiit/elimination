@@ -26,7 +26,7 @@ type alias UserInfo =
 
 -- Authenticate
 
-createUser : UserInfo -> (String -> Result Utils.ErrorMessage SessionID -> msg) -> Cmd msg
+createUser : UserInfo -> (String -> Result Utils.HttpError SessionID -> msg) -> Cmd msg
 createUser info msg =
   Utils.post "create-user" Nothing (msg info.username) (E.object
     [ ("username", E.string info.username)
@@ -36,7 +36,7 @@ createUser info msg =
     ])
     (D.field "session" D.string)
 
-login : String -> String -> (String -> Result Utils.ErrorMessage SessionID -> msg) -> Cmd msg
+login : String -> String -> (String -> Result Utils.HttpError SessionID -> msg) -> Cmd msg
 login username password msg =
   Utils.post "login" Nothing (msg username) (E.object
     [ ("username", E.string username)
@@ -46,7 +46,7 @@ login username password msg =
 
 -- Requires authentication
 
-logout : SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+logout : SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 logout session msg =
   Utils.post "logout" (Just session) msg (E.object []) (D.succeed ())
 
@@ -56,7 +56,7 @@ type alias UserSettingsInfo =
   , email : String
   }
 
-getSettings : SessionID -> (Result Utils.ErrorMessage UserSettingsInfo -> msg) -> Cmd msg
+getSettings : SessionID -> (Result Utils.HttpError UserSettingsInfo -> msg) -> Cmd msg
 getSettings session msg =
   Utils.get "user-settings" (Just session) msg <|
     D.map3 UserSettingsInfo
@@ -64,7 +64,7 @@ getSettings session msg =
       (D.field "bio" D.string)
       (D.field "email" D.string)
 
-setSettings : E.Value -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+setSettings : E.Value -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 setSettings changes session msg =
   Utils.post "user-settings" (Just session) msg changes (D.succeed ())
 
@@ -76,7 +76,7 @@ type alias GameInfo =
 
 type alias GameID = String
 
-createGame : GameInfo -> SessionID -> (Result Utils.ErrorMessage GameID -> msg) -> Cmd msg
+createGame : GameInfo -> SessionID -> (Result Utils.HttpError GameID -> msg) -> Cmd msg
 createGame gameInfo session msg =
   Utils.post "create-game" (Just session) msg (E.object
     [ ("name", E.string gameInfo.name)
@@ -85,7 +85,7 @@ createGame gameInfo session msg =
     ])
     (D.field "game" D.string)
 
-getGameSettings : GameID -> SessionID -> (Result Utils.ErrorMessage GameInfo -> msg) -> Cmd msg
+getGameSettings : GameID -> SessionID -> (Result Utils.HttpError GameInfo -> msg) -> Cmd msg
 getGameSettings game session msg =
   Utils.get ("game-settings?game=" ++ game) (Just session) msg <|
     D.map3 GameInfo
@@ -93,35 +93,35 @@ getGameSettings game session msg =
       (D.field "description" D.string)
       (D.field "password" D.string)
 
-setGameSettings : E.Value -> GameID -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+setGameSettings : E.Value -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 setGameSettings changes game session msg =
   Utils.post ("game-settings?game=" ++ game) (Just session) msg changes (D.succeed ())
 
-join : String -> GameID -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+join : String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 join password game session msg =
   Utils.post ("join?game=" ++ game) (Just session) msg (E.object [("password", E.string password)]) (D.succeed ())
 
-leave : GameID -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+leave : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 leave game session msg =
   Utils.post ("leave?game=" ++ game) (Just session) msg (E.object []) (D.succeed ())
 
-kick : String -> GameID -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+kick : String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 kick target game session msg =
   Utils.post ("kick?game=" ++ game) (Just session) msg (E.object [("target", E.string target)]) (D.succeed ())
 
-start : GameID -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+start : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 start game session msg =
   Utils.post ("start?game=" ++ game) (Just session) msg (E.object []) (D.succeed ())
 
-shuffle : GameID -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+shuffle : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 shuffle game session msg =
   Utils.post ("shuffle?game=" ++ game) (Just session) msg (E.object []) (D.succeed ())
 
-status : GameID -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+status : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 status game session msg =
   Utils.post ("status?game=" ++ game) (Just session) msg (E.object []) (D.succeed ())
 
-kill : String -> GameID -> SessionID -> (Result Utils.ErrorMessage () -> msg) -> Cmd msg
+kill : String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 kill code game session msg =
   Utils.post ("kill?game=" ++ game) (Just session) msg (E.object [("code", E.string code)]) (D.succeed ())
 
@@ -138,14 +138,14 @@ type alias Game =
   , description : String
   }
 
-getUser : String -> (Result Utils.ErrorMessage User -> msg) -> Cmd msg
+getUser : String -> (Result Utils.HttpError User -> msg) -> Cmd msg
 getUser user msg =
   Utils.get ("user?user=" ++ user) Nothing msg <|
     D.map2 User
       (D.field "name" D.string)
       (D.field "bio" D.string)
 
-getGame : GameID -> (Result Utils.ErrorMessage Game -> msg) -> Cmd msg
+getGame : GameID -> (Result Utils.HttpError Game -> msg) -> Cmd msg
 getGame game msg =
   Utils.get ("game?game=" ++ game) Nothing msg <|
     D.map2 Game

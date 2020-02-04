@@ -70,7 +70,7 @@ type Msg
   | Change Input (String -> Maybe String) String
   | Login
   | SignUp
-  | NewSession AuthMethod String (Result Utils.ErrorMessage Api.SessionID)
+  | NewSession AuthMethod String (Result Utils.HttpError Api.SessionID)
 
 update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
 update msg session model =
@@ -137,9 +137,9 @@ update msg session model =
             ( { model
               | problems = case method of
                 LoginMethod ->
-                  { problems | login = Just error }
+                  { problems | login = Just (Tuple.second error) }
                 SignUpMethod ->
-                  { problems | signUp = Just error }
+                  { problems | signUp = Just (Tuple.second error) }
               }
             , Api.Command Cmd.none
             )

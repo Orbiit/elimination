@@ -38,7 +38,7 @@ init _ =
 type Msg
   = Change Input (String -> Maybe String) String
   | Logout
-  | LoggedOut (Result Utils.ErrorMessage ())
+  | LoggedOut (Result Utils.HttpError ())
 
 update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
 update msg session model =
