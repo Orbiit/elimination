@@ -22,6 +22,7 @@ type alias Model =
     , password : (String, Bool)
     , oldPassword : (String, Bool)
     }
+  , info : Maybe Api.UserSettingsInfo
   }
 
 init : Api.Session -> Model
@@ -33,12 +34,14 @@ init _ =
     , password = ("", False)
     , oldPassword = ("", False)
     }
+  , info = Nothing
   }
 
 type Msg
   = Change Input (String -> Maybe String) String
   | Logout
   | LoggedOut (Result Utils.HttpError ())
+  | InfoLoaded (Result Utils.HttpError Api.UserSettingsInfo)
 
 update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
 update msg session model =
@@ -74,6 +77,13 @@ update msg session model =
           (model, Api.Command Cmd.none)
     LoggedOut _ ->
       (model, Api.ChangeSession Api.SignedOut)
+    InfoLoaded result ->
+      case result of
+        Ok userInfo ->
+          ({ model | info = Just userInfo }, Api.Command Cmd.none)
+        Err error ->
+          -- TODO
+          (model, Api.Command Cmd.none)
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =

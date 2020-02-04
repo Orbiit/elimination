@@ -32,28 +32,38 @@ type Page
   | Loading
   | Error Utils.HttpError
 
-urlToPage : Url.Url -> Page
-urlToPage url =
+type PageCmd
+  = LoadPage Page
+  | Command (Cmd Msg)
+
+urlToPage : Url.Url -> Api.Session -> PageCmd
+urlToPage url session =
   case url.query of
     Just path ->
       if path == "terms" then
-        Terms
+        LoadPage Terms
       else if path == "privacy" then
-        Privacy
+        LoadPage Privacy
       else if path == "user" then
-        User
+        LoadPage User
       else if path == "game" then
-        Game
+        LoadPage Game
       else if path == "settings" then
-        UserSettings
+        case session of
+          Api.SignedIn authSession ->
+            Command <|
+            Cmd.map UserSettingsMsg <|
+            Api.getSettings authSession.session Pages.UserSettings.InfoLoaded
+          Api.SignedOut ->
+            LoadPage <| Error (Utils.StatusCode 401, "You're not signed in.")
       else if path == "game-settings" then
-        GameSettings
+        LoadPage GameSettings
       else if path == "" then
-        FrontPage
+        LoadPage FrontPage
       else
-        Error (Utils.StatusCode 404, "We don't have a page for this URL.")
+        LoadPage <| Error (Utils.StatusCode 404, "We don't have a page for this URL.")
     Nothing ->
-      FrontPage
+      LoadPage FrontPage
 
 type alias Model =
   { page : Page
@@ -85,14 +95,20 @@ init (sessionMaybe, usernameMaybe) url navKey =
           Api.SignedIn { session = sessionID, username = username }
         (_, _) ->
           Api.SignedOut
+    (page, cmd) =
+      case urlToPage url session of
+        LoadPage pageType ->
+          (pageType, Cmd.none)
+        Command command ->
+          (Loading, command)
   in
-    ( { page = urlToPage url
+    ( { page = page
       , key = navKey
       , session = session
       , header = Base.init session
       , userSettings = Pages.UserSettings.init session
       }
-    , removeQueryIfNeeded url navKey
+    , Cmd.batch [ removeQueryIfNeeded url navKey, cmd ]
     )
 
 title : Page -> String
@@ -171,11 +187,19 @@ update msg model =
     ClickedLink request ->
       case request of
         Browser.Internal url ->
-          ({ model | page = urlToPage url }, Nav.pushUrl model.key (Url.toString url) )
+          (model, Nav.pushUrl model.key (Url.toString url) )
         Browser.External url ->
           (model, Nav.load url)
     ChangedUrl url ->
-      ({ model | page = urlToPage url }, removeQueryIfNeeded url model.key)
+      let
+        (page, cmd) =
+          case urlToPage url model.session of
+            LoadPage pageType ->
+              (pageType, Cmd.none)
+            Command command ->
+              (model.page, command)
+      in
+        ({ model | page = page }, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
     BaseMsg subMsg ->
       let
         (subModel, sessionOrCmd) = Base.update subMsg model.session model.header
