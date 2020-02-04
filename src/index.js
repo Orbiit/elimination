@@ -1,4 +1,5 @@
 import Elm from './Main.elm'
+import NProgress from 'nprogress'
 
 const SESSION_KEY = '[elimination] session'
 const USERNAME_KEY = '[elimination] username'

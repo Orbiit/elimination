@@ -19,12 +19,16 @@
   },
   "homepage": "https://github.com/Orbiit/elimination#readme",
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
+    "rollup": "^1.31.0",
     "rollup-plugin-elm": "^2.0.2",
     "rollup-plugin-serve": "^1.0.1",
     "snazzy": "^8.0.0",
     "standard": "^14.3.1"
   },
   "dependencies": {
+    "nprogress": "^0.2.0",
     "rollup-plugin-terser": "^5.2.0"
   }
 }

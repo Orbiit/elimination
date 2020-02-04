@@ -1,6 +1,8 @@
 import elm from 'rollup-plugin-elm'
 import serve from 'rollup-plugin-serve'
 import { terser } from 'rollup-plugin-terser'
+import resolve from '@rollup/plugin-node-resolve'
+import commonjs from '@rollup/plugin-commonjs'
 
 const production = process.env.NODE_ENV === 'production'
 const dir = production ? '.' : './dist'
@@ -13,6 +15,10 @@ export default {
     sourcemap: true
   },
   plugins: [
+    resolve({
+      browser: true
+    }),
+    commonjs(),
     elm({
       exclude: 'elm_stuff/**',
       compiler: {
