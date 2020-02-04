@@ -5,6 +5,7 @@ import Browser.Events
 import Browser.Navigation as Nav
 import Html
 import Url
+import Url.Builder
 import Json.Decode as D
 
 import Base
@@ -47,6 +48,8 @@ urlToPage url =
         UserSettings
       else if path == "game-settings" then
         GameSettings
+      else if path == "" then
+        FrontPage
       else
         Error (Utils.StatusCode 404, "We don't have a page for this URL.")
     Nothing ->
@@ -59,6 +62,19 @@ type alias Model =
   , header : Base.Model
   , userSettings : Pages.UserSettings.Model
   }
+
+removeQueryIfNeeded : Url.Url -> Nav.Key -> Cmd Msg
+removeQueryIfNeeded url key =
+  case url.query of
+    Just path ->
+      if path == "" then
+        -- Remove the ? at the end because it annoys
+        (Nav.replaceUrl key) <|
+          Url.Builder.custom Url.Builder.Relative [ url.path ] [] url.fragment
+      else
+        Cmd.none
+    Nothing ->
+      Cmd.none
 
 init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init (sessionMaybe, usernameMaybe) url navKey =
@@ -76,7 +92,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
       , header = Base.init session
       , userSettings = Pages.UserSettings.init session
       }
-    , Cmd.none
+    , removeQueryIfNeeded url navKey
     )
 
 title : Page -> String
@@ -159,7 +175,7 @@ update msg model =
         Browser.External url ->
           (model, Nav.load url)
     ChangedUrl url ->
-      ({ model | page = urlToPage url }, Cmd.none)
+      ({ model | page = urlToPage url }, removeQueryIfNeeded url model.key)
     BaseMsg subMsg ->
       let
         (subModel, sessionOrCmd) = Base.update subMsg model.session model.header
