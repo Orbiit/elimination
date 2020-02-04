@@ -11,6 +11,7 @@ import Json.Decode as D
 import Base
 import Api
 import Utils
+import Pages
 import Pages.FrontPage
 import Pages.Terms
 import Pages.Privacy
@@ -21,19 +22,8 @@ import Pages.GameSettings
 import Pages.Loading
 import Pages.Error
 
-type Page
-  = FrontPage
-  | Terms
-  | Privacy
-  | User
-  | Game
-  | UserSettings
-  | GameSettings
-  | Loading
-  | Error Utils.HttpError
-
 type PageCmd
-  = LoadPage Page
+  = LoadPage Pages.Page
   | Command (Cmd Msg)
 
 urlToPage : Url.Url -> Api.Session -> PageCmd
@@ -41,13 +31,13 @@ urlToPage url session =
   case url.query of
     Just path ->
       if path == "terms" then
-        LoadPage Terms
+        LoadPage Pages.Terms
       else if path == "privacy" then
-        LoadPage Privacy
+        LoadPage Pages.Privacy
       else if path == "user" then
-        LoadPage User
+        LoadPage Pages.User
       else if path == "game" then
-        LoadPage Game
+        LoadPage Pages.Game
       else if path == "settings" then
         case session of
           Api.SignedIn authSession ->
@@ -55,18 +45,18 @@ urlToPage url session =
             Cmd.map UserSettingsMsg <|
             Api.getSettings authSession.session Pages.UserSettings.InfoLoaded
           Api.SignedOut ->
-            LoadPage <| Error (Utils.StatusCode 401, "You're not signed in.")
+            LoadPage <| Pages.Error (Utils.StatusCode 401, "You're not signed in.")
       else if path == "game-settings" then
-        LoadPage GameSettings
+        LoadPage Pages.GameSettings
       else if path == "" then
-        LoadPage FrontPage
+        LoadPage Pages.FrontPage
       else
-        LoadPage <| Error (Utils.StatusCode 404, "We don't have a page for this URL.")
+        LoadPage <| Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL.")
     Nothing ->
-      LoadPage FrontPage
+      LoadPage Pages.FrontPage
 
 type alias Model =
-  { page : Page
+  { page : Pages.Page
   , key : Nav.Key
   , session : Api.Session
   , header : Base.Model
@@ -100,7 +90,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
         LoadPage pageType ->
           (pageType, Cmd.none)
         Command command ->
-          (Loading, command)
+          (Pages.Loading, command)
   in
     ( { page = page
       , key = navKey
@@ -111,58 +101,58 @@ init (sessionMaybe, usernameMaybe) url navKey =
     , Cmd.batch [ removeQueryIfNeeded url navKey, cmd ]
     )
 
-title : Page -> String
+title : Pages.Page -> String
 title page =
   case page of
-    FrontPage ->
+    Pages.FrontPage ->
       ""
-    Terms ->
+    Pages.Terms ->
       "Terms of use"
-    Privacy ->
+    Pages.Privacy ->
       "Privacy policy"
-    User ->
+    Pages.User ->
       "User"
-    Game ->
+    Pages.Game ->
       "Game"
-    UserSettings ->
+    Pages.UserSettings ->
       "Settings"
-    GameSettings ->
+    Pages.GameSettings ->
       "Game settings"
-    Error (status, _) ->
+    Pages.Error (status, _) ->
       case status of
         Utils.ErrorStatusText text ->
           text
         Utils.StatusCode code ->
           String.fromInt code
-    Loading ->
+    Pages.Loading ->
       "Loading"
 
 content : Model -> List (Html.Html Msg)
 content model =
   case model.page of
-    FrontPage ->
+    Pages.FrontPage ->
       Pages.FrontPage.view
-    Terms ->
+    Pages.Terms ->
       Pages.Terms.view
-    Privacy ->
+    Pages.Privacy ->
       Pages.Privacy.view
-    User ->
+    Pages.User ->
       Pages.User.view
-    Game ->
+    Pages.Game ->
       Pages.Game.view
-    UserSettings ->
+    Pages.UserSettings ->
       List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model.session model.userSettings)
-    GameSettings ->
+    Pages.GameSettings ->
       Pages.GameSettings.view
-    Error error ->
+    Pages.Error error ->
       Pages.Error.view error
-    Loading ->
+    Pages.Loading ->
       Pages.Loading.view
 
 view : Model -> Browser.Document Msg
 view model =
   { title =
-    if model.page == FrontPage then
+    if model.page == Pages.FrontPage then
       "Elimination"
     else
       title model.page ++ " | Elimination"
@@ -202,9 +192,9 @@ update msg model =
         ({ model | page = page }, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
     BaseMsg subMsg ->
       let
-        (subModel, sessionOrCmd) = Base.update subMsg model.session model.header
+        (subModel, pageCmd) = Base.update subMsg model.session model.header
       in
-        case sessionOrCmd of
+        case pageCmd of
           Api.Command cmd ->
             ({ model | header = subModel }, Cmd.map BaseMsg cmd)
           Api.ChangeSession authSession ->
@@ -215,11 +205,13 @@ update msg model =
               Api.SignedOut ->
                 logout ()
             )
+          _ ->
+            (model, Cmd.none)
     UserSettingsMsg subMsg ->
       let
-        (subModel, sessionOrCmd) = Pages.UserSettings.update subMsg model.session model.userSettings
+        (subModel, pageCmd) = Pages.UserSettings.update subMsg model.session model.userSettings
       in
-        case sessionOrCmd of
+        case pageCmd of
           Api.Command cmd ->
             ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg cmd)
           Api.ChangeSession authSession ->
@@ -230,6 +222,8 @@ update msg model =
               Api.SignedOut ->
                 logout ()
             )
+          Api.ChangePage page ->
+            ({ model | page = page }, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

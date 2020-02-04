@@ -72,7 +72,7 @@ type Msg
   | SignUp
   | NewSession AuthMethod String (Result Utils.HttpError Api.SessionID)
 
-update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
+update : Msg -> Api.Session -> Model -> (Model, Api.PageCmd Msg)
 update msg session model =
   case msg of
     Open window ->

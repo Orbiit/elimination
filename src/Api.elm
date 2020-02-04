@@ -5,6 +5,7 @@ import Json.Encode as E
 import Http
 
 import Utils
+import Pages
 
 type alias SessionID = String
 
@@ -12,9 +13,10 @@ type Session
   = SignedIn { session : SessionID, username : String }
   | SignedOut
 
-type SessionOrCmd msg
+type PageCmd msg
   = Command (Cmd msg)
   | ChangeSession Session
+  | ChangePage Pages.Page
 
 type alias UserInfo =
   { username : String

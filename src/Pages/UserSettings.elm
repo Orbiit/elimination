@@ -6,6 +6,7 @@ import Html.Events exposing (onClick)
 
 import Api
 import Utils
+import Pages
 
 type Input
   = NameInput
@@ -43,7 +44,7 @@ type Msg
   | LoggedOut (Result Utils.HttpError ())
   | InfoLoaded (Result Utils.HttpError Api.UserSettingsInfo)
 
-update : Msg -> Api.Session -> Model -> (Model, Api.SessionOrCmd Msg)
+update : Msg -> Api.Session -> Model -> (Model, Api.PageCmd Msg)
 update msg session model =
   case msg of
     Change input validate value ->
@@ -80,10 +81,9 @@ update msg session model =
     InfoLoaded result ->
       case result of
         Ok userInfo ->
-          ({ model | info = Just userInfo }, Api.Command Cmd.none)
+          ({ model | info = Just userInfo }, Api.ChangePage Pages.UserSettings)
         Err error ->
-          -- TODO
-          (model, Api.Command Cmd.none)
+          (model, Api.ChangePage <| Pages.Error error)
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =
