@@ -15,24 +15,38 @@ type Input
   | PasswordInput
   | OldPasswordInput
 
+type alias InputState = { value : String, original : String, valid : Bool }
+
+initInputState : InputState
+initInputState =
+  { value = "", original = "", valid = True }
+
+inputState : String -> InputState
+inputState value =
+  { value = value, original = value, valid = True }
+
+updateValue : InputState -> String -> Bool -> InputState
+updateValue state value ok =
+  { state | value = value, valid = ok }
+
 type alias Model =
   { values :
-    { name : (String, Bool)
-    , email : (String, Bool)
-    , bio : (String, Bool)
-    , password : (String, Bool)
-    , oldPassword : (String, Bool)
+    { name : InputState
+    , email : InputState
+    , bio : InputState
+    , password : InputState
+    , oldPassword : InputState
     }
   }
 
 init : Api.Session -> Model
 init _ =
   { values =
-    { name = ("", False)
-    , email = ("", False)
-    , bio = ("", False)
-    , password = ("", False)
-    , oldPassword = ("", False)
+    { name = initInputState
+    , email = initInputState
+    , bio = initInputState
+    , password = initInputState
+    , oldPassword = initInputState
     }
   }
 
@@ -58,15 +72,15 @@ update msg session model =
         | values =
           case input of
             NameInput ->
-              { values | name = (value, ok) }
+              { values | name = updateValue values.name value ok }
             EmailInput ->
-              { values | email = (value, ok) }
+              { values | email = updateValue values.email value ok }
             BioInput ->
-              { values | bio = (value, ok) }
+              { values | bio = updateValue values.bio value ok }
             PasswordInput ->
-              { values | password = (value, ok) }
+              { values | password = updateValue values.password value ok }
             OldPasswordInput ->
-              { values | oldPassword = (value, ok) }
+              { values | oldPassword = updateValue values.oldPassword value ok }
         }, Api.Command Cmd.none)
     Logout ->
       case session of
@@ -85,9 +99,9 @@ update msg session model =
             ( { model
               | values =
                 { values
-                | name = (name, True)
-                , email = (email, True)
-                , bio = (bio, True)
+                | name = inputState name
+                , email = inputState email
+                , bio = inputState bio
                 }
               }
             , Api.ChangePage Pages.UserSettings
@@ -114,7 +128,7 @@ view session model =
           , sublabel = "This lets others be able to find and eliminate you, which makes the game fair."
           , type_ = "text"
           , placeholder = "Billy Chelontuvier"
-          , value = Tuple.first model.values.name
+          , value = model.values.name.value
           , validate = \value -> Nothing
           , maxChars = Nothing
           , storeValueMsg = Change NameInput }
@@ -123,7 +137,7 @@ view session model =
           , sublabel = "We will send password reset forms (and notifications if enabled) to this email."
           , type_ = "email"
           , placeholder = "billygamer5@example.com"
-          , value = Tuple.first model.values.email
+          , value = model.values.email.value
           , validate = \value -> Nothing
           , maxChars = Nothing
           , storeValueMsg = Change EmailInput }
@@ -134,7 +148,7 @@ view session model =
           , sublabel = ""
           , type_ = "textarea"
           , placeholder = "Introduce yourself here"
-          , value = Tuple.first model.values.bio
+          , value = model.values.bio.value
           , validate = \value -> Nothing
           , maxChars = Nothing
           , storeValueMsg = Change BioInput }
@@ -147,7 +161,7 @@ view session model =
           , sublabel = "Must be at least 3 poop emoji long."
           , type_ = "password"
           , placeholder = "hunter2"
-          , value = Tuple.first model.values.password
+          , value = model.values.password.value
           , validate = \value -> Nothing
           , maxChars = Nothing
           , storeValueMsg = Change PasswordInput }
@@ -156,12 +170,26 @@ view session model =
           , sublabel = ""
           , type_ = "password"
           , placeholder = "hunter2"
-          , value = Tuple.first model.values.oldPassword
+          , value = model.values.oldPassword.value
           , validate = \value -> Nothing
           , maxChars = Nothing
           , storeValueMsg = Change OldPasswordInput }
         ]
-      , input [ A.class "button submit-btn", A.disabled True, A.type_ "submit", A.value "Save" ]
+      , input
+        [ A.class "button submit-btn"
+        , A.type_ "submit"
+        , A.value "Save"
+        , A.disabled <| not <|
+          model.values.name.valid &&
+          model.values.email.valid &&
+          model.values.bio.valid &&
+          model.values.password.valid &&
+          model.values.oldPassword.valid &&
+          ( model.values.name.value /= model.values.name.original
+          || model.values.email.value /= model.values.email.original
+          || model.values.bio.value /= model.values.bio.original
+          )
+        ]
         []
       ]
     ]
