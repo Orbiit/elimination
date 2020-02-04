@@ -126,7 +126,13 @@ get : String -> Maybe String -> (Result HttpError a -> msg) -> D.Decoder a -> Cm
 get path session msg decoder =
   Http.request
     { method = "GET"
-    , headers = []
+    , headers =
+      [ Http.header "X-Requested-With" "XMLHttpRequest" ] ++
+        case session of
+          Just sessionID ->
+            [ Http.header "X-Session-Id" sessionID ]
+          Nothing ->
+            []
     , url = host ++ path
     , body = Http.emptyBody
     , expect = Http.expectStringResponse msg (parseResponse decoder)
@@ -138,7 +144,13 @@ post : String -> Maybe String -> (Result HttpError a -> msg) -> E.Value -> D.Dec
 post path session msg body decoder =
   Http.request
     { method = "POST"
-    , headers = []
+    , headers =
+      [ Http.header "X-Requested-With" "XMLHttpRequest" ] ++
+        case session of
+          Just sessionID ->
+            [ Http.header "X-Session-Id" sessionID ]
+          Nothing ->
+            []
     , url = host ++ path
     , body = Http.jsonBody body
     , expect = Http.expectStringResponse msg (parseResponse decoder)
