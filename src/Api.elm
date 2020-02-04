@@ -54,8 +54,8 @@ logout session msg =
 
 type alias UserSettingsInfo =
   { name : String
-  , bio : String
   , email : String
+  , bio : String
   }
 
 getSettings : SessionID -> (Result Utils.HttpError UserSettingsInfo -> msg) -> Cmd msg
@@ -63,8 +63,8 @@ getSettings session msg =
   Utils.get "user-settings" (Just session) msg <|
     D.map3 UserSettingsInfo
       (D.field "name" D.string)
-      (D.field "bio" D.string)
       (D.field "email" D.string)
+      (D.field "bio" D.string)
 
 setSettings : E.Value -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 setSettings changes session msg =

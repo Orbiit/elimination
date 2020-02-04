@@ -23,7 +23,6 @@ type alias Model =
     , password : (String, Bool)
     , oldPassword : (String, Bool)
     }
-  , info : Maybe Api.UserSettingsInfo
   }
 
 init : Api.Session -> Model
@@ -35,7 +34,6 @@ init _ =
     , password = ("", False)
     , oldPassword = ("", False)
     }
-  , info = Nothing
   }
 
 type Msg
@@ -80,8 +78,20 @@ update msg session model =
       (model, Api.ChangeSession Api.SignedOut)
     InfoLoaded result ->
       case result of
-        Ok userInfo ->
-          ({ model | info = Just userInfo }, Api.ChangePage Pages.UserSettings)
+        Ok { name, email, bio } ->
+          let
+            values = model.values
+          in
+            ( { model
+              | values =
+                { values
+                | name = (name, True)
+                , email = (email, True)
+                , bio = (bio, True)
+                }
+              }
+            , Api.ChangePage Pages.UserSettings
+            )
         Err error ->
           (model, Api.ChangePage <| Pages.Error error)
 

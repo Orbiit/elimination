@@ -223,7 +223,7 @@ update msg model =
                 logout ()
             )
           Api.ChangePage page ->
-            ({ model | page = page }, Cmd.none)
+            ({ model | userSettings = subModel, page = page }, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
