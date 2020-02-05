@@ -40,10 +40,10 @@ type alias Model =
     , signUpPassword : (String, Bool)
     , signUpPasswordAgain : (String, Bool)
     }
-  , problems :
-    { login : Maybe String
-    , signUp : Maybe String
-    }
+  , loginLoading : Bool
+  , loginProblem : Maybe String
+  , signUpLoading : Bool
+  , signUpProblem : Maybe String
   }
 
 init : Api.Session -> Model
@@ -58,10 +58,10 @@ init _ =
     , signUpPassword = ("", False)
     , signUpPasswordAgain = ("", False)
     }
-  , problems =
-    { login = Nothing
-    , signUp = Nothing
-    }
+  , loginLoading = False
+  , loginProblem = Nothing
+  , signUpLoading = False
+  , signUpProblem = Nothing
   }
 
 type Msg
@@ -110,14 +110,14 @@ update msg session model =
               { values | signUpPasswordAgain = (value, ok) }
         }, Api.Command Cmd.none)
     Login ->
-      ( model
+      ( { model | loginLoading = True, loginProblem = Nothing }
       , Api.Command (Api.login
         (Tuple.first model.values.loginUsername)
         (Tuple.first model.values.loginPassword)
         (NewSession LoginMethod)
       ))
     SignUp ->
-      ( model
+      ( { model | signUpLoading = True, signUpProblem = Nothing }
       , Api.Command (Api.createUser
         { username = (Tuple.first model.values.signUpUsername)
         , name = (Tuple.first model.values.signUpName)
@@ -130,20 +130,24 @@ update msg session model =
     NewSession method username sessionResult ->
       case sessionResult of
         Ok newSession ->
-          (model, Api.ChangeSession (Api.SignedIn { username = username, session = newSession }))
-        Err error ->
           let
-            problems = model.problems
+            values = model.values
           in
-            ( { model
-              | problems = case method of
-                LoginMethod ->
-                  { problems | login = Just (Tuple.second error) }
-                SignUpMethod ->
-                  { problems | signUp = Just (Tuple.second error) }
-              }
-            , Api.Command Cmd.none
+            ( case method of
+              LoginMethod ->
+                { model | loginLoading = False, values = { values | loginPassword = ("", False) } }
+              SignUpMethod ->
+                { model | signUpLoading = False, values = { values | signUpPassword = ("", False) } }
+            , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
             )
+        Err error ->
+          ( case method of
+            LoginMethod ->
+              { model | loginLoading = False, loginProblem = Just (Tuple.second error) }
+            SignUpMethod ->
+              { model | signUpLoading = False, signUpProblem = Just (Tuple.second error) }
+          , Api.Command Cmd.none
+          )
 
 headerWindow : Model -> String -> String -> HeaderWindow -> List (Html Msg) -> Html Msg
 headerWindow model btnClass btnLabel window windowContent =
@@ -230,10 +234,16 @@ makeHeader session model =
               , maxChars = Nothing
               , storeValueMsg = Change LoginPassword
               }
-            , input [ A.class "button submit-btn", A.type_ "submit", A.value "Log in" ]
+            , input
+              [ A.class "button submit-btn"
+              , A.classList [ ("loading", model.loginLoading) ]
+              , A.type_ "submit"
+              , A.value "Log in"
+              , A.disabled model.loginLoading
+              ]
               []
             ]
-            ++ case model.problems.login of
+            ++ case model.loginProblem of
               Just errorText ->
                 [ span [ A.class "problematic-error" ]
                   [ text errorText ] ]
@@ -296,10 +306,16 @@ makeHeader session model =
               , maxChars = Nothing
               , storeValueMsg = Change SignUpPasswordAgain
               }
-            , input [ A.class "button submit-btn", A.type_ "submit", A.value "Sign up" ]
+            , input
+              [ A.class "button submit-btn"
+              , A.classList [ ("loading", model.signUpLoading) ]
+              , A.type_ "submit"
+              , A.value "Sign up"
+              , A.disabled model.signUpLoading
+              ]
               []
             ]
-            ++ case model.problems.signUp of
+            ++ case model.signUpProblem of
               Just errorText ->
                 [ span [ A.class "problematic-error" ]
                   [ text errorText ] ]

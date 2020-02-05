@@ -201,13 +201,24 @@ update msg model =
         case pageCmd of
           Api.Command cmd ->
             ({ model | header = subModel }, Cmd.map BaseMsg cmd)
+          -- Log in
           Api.ChangeSession authSession ->
-            ( { model | header = subModel, session = authSession }
+            ( { model
+              | header = subModel
+              , session = authSession
+              }
             , case authSession of
               Api.SignedIn { session, username } ->
-                saveSession (session, username)
-              Api.SignedOut ->
-                logout ()
+                Cmd.batch
+                  [ saveSession (session, username)
+                  , case model.page of
+                      Pages.Error _ ->
+                        Nav.pushUrl model.key "?"
+                      _ ->
+                        Cmd.none
+                  ]
+              _ ->
+                Cmd.none
             )
           _ ->
             (model, Cmd.none)
@@ -218,13 +229,20 @@ update msg model =
         case pageCmd of
           Api.Command cmd ->
             ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg cmd)
+          -- Log out
           Api.ChangeSession authSession ->
-            ( { model | userSettings = subModel, session = authSession }
+            ( { model
+              | userSettings = subModel
+              , session = authSession
+              }
             , case authSession of
-              Api.SignedIn { session, username } ->
-                saveSession (session, username)
               Api.SignedOut ->
-                logout ()
+                Cmd.batch
+                  [ logout ()
+                  , Nav.pushUrl model.key "?"
+                  ]
+              _ ->
+                Cmd.none
             )
           Api.ChangePage page cmd ->
             ({ model | userSettings = subModel, page = page }, Cmd.map UserSettingsMsg cmd)

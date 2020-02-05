@@ -40,7 +40,8 @@ type alias Model =
     , password : InputState
     , oldPassword : InputState
     }
-  , saving : Bool
+  , loadingLogout : Bool
+  , loading : Bool
   , problem : Maybe String
   }
 
@@ -53,7 +54,8 @@ init _ =
     , password = initInputState
     , oldPassword = initInputState
     }
-  , saving = False
+  , loadingLogout = False
+  , loading = False
   , problem = Nothing
   }
 
@@ -94,11 +96,13 @@ update msg session model =
     Logout ->
       case session of
         Api.SignedIn authSession ->
-          (model, Api.Command (Api.logout authSession.session LoggedOut))
+          ( { model | loadingLogout = True }
+          , Api.Command (Api.logout authSession.session LoggedOut)
+          )
         Api.SignedOut ->
           (model, Api.Command Cmd.none)
     LoggedOut _ ->
-      (model, Api.ChangeSession Api.SignedOut)
+      ({ model | loadingLogout = False }, Api.ChangeSession Api.SignedOut)
     InfoLoaded result ->
       case result of
         Ok { name, email, bio } ->
@@ -120,7 +124,7 @@ update msg session model =
     Save ->
       case session of
         Api.SignedIn authSession ->
-          ( { model | saving = True, problem = Nothing }
+          ( { model | loading = True, problem = Nothing }
           , Api.Command <|
             Api.setSettings (E.object
               (List.filterMap (\a -> a)
@@ -158,7 +162,7 @@ update msg session model =
             values = model.values
           in
             ( { model
-              | saving = False
+              | loading = False
               , values =
                 { values
                 | name = inputState model.values.name.value
@@ -171,7 +175,7 @@ update msg session model =
             , Api.Command Cmd.none
             )
         Err error ->
-          ({ model | saving = False, problem = Just (Tuple.second error) }, Api.Command Cmd.none)
+          ({ model | loading = False, problem = Just (Tuple.second error) }, Api.Command Cmd.none)
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =
@@ -182,7 +186,12 @@ view session model =
         []
       , a [ A.class "button", A.href "?user" ]
         [ text "View profile" ]
-      , button [ A.class "button", onClick Logout ]
+      , button
+        [ A.class "button"
+        , A.classList [ ("loading", model.loadingLogout) ]
+        , onClick Logout
+        , A.disabled model.loadingLogout
+        ]
         [ text "Sign out" ]
       ]
     , form [ onSubmit Save ]
@@ -260,10 +269,10 @@ view session model =
         in
           input
             [ A.class "button submit-btn"
-            , A.classList [ ("saving", model.saving) ]
+            , A.classList [ ("loading", model.loading) ]
             , A.type_ "submit"
             , A.value (if changed then "Save" else "Saved")
-            , A.disabled <| model.saving || not changed || not valid
+            , A.disabled <| model.loading || not changed || not valid
             ]
             []
       ]
