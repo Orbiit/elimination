@@ -7,6 +7,7 @@ import Json.Decode as D
 import Http
 
 import Api
+import Api.Validate
 import Utils
 
 type HeaderWindow
@@ -243,41 +244,41 @@ makeHeader session model =
           [ form [ A.class "header-window", onSubmit SignUp ] <|
             [ Utils.myInput
               { labelText = "Username"
-              , sublabel = "Only letters, digits, underscores, and hyphens are allowed. This cannot be changed later."
+              , sublabel = Api.Validate.usernameLabel
               , type_ = "text"
               , placeholder = "billygamer5"
               , value = Tuple.first model.values.signUpUsername
-              , validate = \_ -> Nothing
+              , validate = Api.Validate.usernameOk
               , maxChars = Nothing
               , storeValueMsg = Change SignUpUsername
               }
             , Utils.myInput
               { labelText = "Full name"
-              , sublabel = "Allows others to be able to find you for elimination, which makes the game fair."
+              , sublabel = Api.Validate.nameLabel
               , type_ = "text"
               , placeholder = "Billy Chelontuvier"
               , value = Tuple.first model.values.signUpName
-              , validate = \_ -> Nothing
+              , validate = Api.Validate.nameOk
               , maxChars = Nothing
               , storeValueMsg = Change SignUpName
               }
             , Utils.myInput
               { labelText = "Email"
-              , sublabel = "For password reset forms. You can also turn on email notifications if you want."
+              , sublabel = Api.Validate.emailLabel
               , type_ = "email"
               , placeholder = "billygamer5@example.com"
               , value = Tuple.first model.values.signUpEmail
-              , validate = \_ -> Nothing
+              , validate = Api.Validate.emailOk
               , maxChars = Nothing
               , storeValueMsg = Change SignUpEmail
               }
             , Utils.myInput
               { labelText = "Password"
-              , sublabel = "Must be at least 3 poop emoji long."
+              , sublabel = Api.Validate.passwordLabel
               , type_ = "password"
               , placeholder = "hunter2"
               , value = Tuple.first model.values.signUpPassword
-              , validate = \_ -> Nothing
+              , validate = Api.Validate.passwordOk
               , maxChars = Nothing
               , storeValueMsg = Change SignUpPassword
               }

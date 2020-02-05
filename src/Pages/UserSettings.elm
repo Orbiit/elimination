@@ -5,6 +5,7 @@ import Html.Attributes as A
 import Html.Events exposing (onClick)
 
 import Api
+import Api.Validate
 import Utils
 import Pages
 import NProgress
@@ -126,20 +127,20 @@ view session model =
       [ div [ A.class "input-row" ]
         [ Utils.myInput
           { labelText = "Display name"
-          , sublabel = "This lets others be able to find and eliminate you, which makes the game fair."
+          , sublabel = Api.Validate.nameLabel
           , type_ = "text"
           , placeholder = "Billy Chelontuvier"
           , value = model.values.name.value
-          , validate = \value -> Nothing
+          , validate = Api.Validate.nameOk
           , maxChars = Nothing
           , storeValueMsg = Change NameInput }
         , Utils.myInput
           { labelText = "Email"
-          , sublabel = "We will send password reset forms (and notifications if enabled) to this email."
+          , sublabel = Api.Validate.emailLabel
           , type_ = "email"
           , placeholder = "billygamer5@example.com"
           , value = model.values.email.value
-          , validate = \value -> Nothing
+          , validate = Api.Validate.emailOk
           , maxChars = Nothing
           , storeValueMsg = Change EmailInput }
         ]
@@ -150,7 +151,11 @@ view session model =
           , type_ = "textarea"
           , placeholder = "Introduce yourself here"
           , value = model.values.bio.value
-          , validate = \value -> Nothing
+          , validate = \value ->
+            if String.length value > 2000 then
+              Just "Bio can only be at most 2000 characters long."
+            else
+              Nothing
           , maxChars = Just 2000
           , storeValueMsg = Change BioInput }
         ]
@@ -159,11 +164,15 @@ view session model =
       , div [ A.class "input-row" ]
         [ Utils.myInput
           { labelText = "New password"
-          , sublabel = "Must be at least 3 poop emoji long."
+          , sublabel = Api.Validate.passwordLabel
           , type_ = "password"
           , placeholder = "hunter2"
           , value = model.values.password.value
-          , validate = \value -> Nothing
+          , validate = \value ->
+            if String.isEmpty value then
+              Nothing
+            else
+              Api.Validate.passwordOk value
           , maxChars = Nothing
           , storeValueMsg = Change PasswordInput }
         , Utils.myInput
