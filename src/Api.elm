@@ -16,7 +16,7 @@ type Session
 type PageCmd msg
   = Command (Cmd msg)
   | ChangeSession Session
-  | ChangePage Pages.Page
+  | ChangePage Pages.Page (Cmd msg)
 
 type alias UserInfo =
   { username : String

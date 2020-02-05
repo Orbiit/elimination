@@ -7,6 +7,7 @@ import Html.Events exposing (onClick)
 import Api
 import Utils
 import Pages
+import NProgress
 
 type Input
   = NameInput
@@ -104,10 +105,10 @@ update msg session model =
                 , bio = inputState bio
                 }
               }
-            , Api.ChangePage Pages.UserSettings
+            , Api.ChangePage Pages.UserSettings (NProgress.done ())
             )
         Err error ->
-          (model, Api.ChangePage <| Pages.Error error)
+          (model, Api.ChangePage (Pages.Error error) (NProgress.done ()))
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =

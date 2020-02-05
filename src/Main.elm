@@ -21,9 +21,10 @@ import Pages.UserSettings
 import Pages.GameSettings
 import Pages.Loading
 import Pages.Error
+import NProgress
 
 type PageCmd
-  = LoadPage Pages.Page
+  = SwitchPage Pages.Page
   | Command (Cmd Msg)
 
 urlToPage : Url.Url -> Api.Session -> PageCmd
@@ -31,29 +32,32 @@ urlToPage url session =
   case url.query of
     Just path ->
       if path == "terms" then
-        LoadPage Pages.Terms
+        SwitchPage Pages.Terms
       else if path == "privacy" then
-        LoadPage Pages.Privacy
+        SwitchPage Pages.Privacy
       else if path == "user" then
-        LoadPage Pages.User
+        SwitchPage Pages.User
       else if path == "game" then
-        LoadPage Pages.Game
+        SwitchPage Pages.Game
       else if path == "settings" then
         case session of
           Api.SignedIn authSession ->
             Command <|
-            Cmd.map UserSettingsMsg <|
-            Api.getSettings authSession.session Pages.UserSettings.InfoLoaded
+              Cmd.batch
+                [ Cmd.map UserSettingsMsg <|
+                  Api.getSettings authSession.session Pages.UserSettings.InfoLoaded
+                , NProgress.start ()
+                ]
           Api.SignedOut ->
-            LoadPage <| Pages.Error (Utils.StatusCode 401, "You're not signed in.")
+            SwitchPage <| Pages.Error (Utils.StatusCode 401, "You're not signed in.")
       else if path == "game-settings" then
-        LoadPage Pages.GameSettings
+        SwitchPage Pages.GameSettings
       else if path == "" then
-        LoadPage Pages.FrontPage
+        SwitchPage Pages.FrontPage
       else
-        LoadPage <| Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL.")
+        SwitchPage <| Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL.")
     Nothing ->
-      LoadPage Pages.FrontPage
+      SwitchPage Pages.FrontPage
 
 type alias Model =
   { page : Pages.Page
@@ -87,7 +91,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
           Api.SignedOut
     (page, cmd) =
       case urlToPage url session of
-        LoadPage pageType ->
+        SwitchPage pageType ->
           (pageType, Cmd.none)
         Command command ->
           (Pages.Loading, command)
@@ -184,7 +188,7 @@ update msg model =
       let
         (page, cmd) =
           case urlToPage url model.session of
-            LoadPage pageType ->
+            SwitchPage pageType ->
               (pageType, Cmd.none)
             Command command ->
               (model.page, command)
@@ -222,8 +226,8 @@ update msg model =
               Api.SignedOut ->
                 logout ()
             )
-          Api.ChangePage page ->
-            ({ model | userSettings = subModel, page = page }, Cmd.none)
+          Api.ChangePage page cmd ->
+            ({ model | userSettings = subModel, page = page }, Cmd.map UserSettingsMsg cmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

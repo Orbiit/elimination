@@ -15,3 +15,9 @@ app.ports.logout.subscribe(() => {
   localStorage.removeItem(SESSION_KEY)
   localStorage.removeItem(USERNAME_KEY)
 })
+app.ports.start.subscribe(() => {
+  NProgress.start()
+})
+app.ports.done.subscribe(() => {
+  NProgress.done()
+})
