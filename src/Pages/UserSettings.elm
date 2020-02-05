@@ -2,7 +2,8 @@ module Pages.UserSettings exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onSubmit)
+import Json.Encode as E
 
 import Api
 import Api.Validate
@@ -39,6 +40,8 @@ type alias Model =
     , password : InputState
     , oldPassword : InputState
     }
+  , saving : Bool
+  , problem : Maybe String
   }
 
 init : Api.Session -> Model
@@ -50,6 +53,8 @@ init _ =
     , password = initInputState
     , oldPassword = initInputState
     }
+  , saving = False
+  , problem = Nothing
   }
 
 type Msg
@@ -57,6 +62,8 @@ type Msg
   | Logout
   | LoggedOut (Result Utils.HttpError ())
   | InfoLoaded (Result Utils.HttpError Api.UserSettingsInfo)
+  | Save
+  | Saved (Result Utils.HttpError ())
 
 update : Msg -> Api.Session -> Model -> (Model, Api.PageCmd Msg)
 update msg session model =
@@ -110,6 +117,59 @@ update msg session model =
             )
         Err error ->
           (model, Api.ChangePage (Pages.Error error) (NProgress.done ()))
+    Save ->
+      case session of
+        Api.SignedIn authSession ->
+          ( { model | saving = True, problem = Nothing }
+          , Api.Command <|
+            Api.setSettings (E.object
+              (List.filterMap (\a -> a)
+                [ if model.values.name.value /= model.values.name.original then
+                  Just ("name", E.string model.values.name.value)
+                else
+                  Nothing
+                , if model.values.email.value /= model.values.email.original then
+                  Just ("email", E.string model.values.email.value)
+                else
+                  Nothing
+                , if model.values.bio.value /= model.values.bio.original then
+                  Just ("bio", E.string model.values.bio.value)
+                else
+                  Nothing
+                , if String.isEmpty model.values.password.value then
+                  Nothing
+                else
+                  Just ("password", E.string model.values.password.value)
+                -- Using password value here so that oldPassword can be empty
+                , if String.isEmpty model.values.password.value then
+                  Nothing
+                else
+                  Just ("oldPassword", E.string model.values.oldPassword.value)
+                ]
+              )
+            ) authSession.session Saved
+          )
+        Api.SignedOut ->
+          (model, Api.Command Cmd.none)
+    Saved result ->
+      case result of
+        Ok _ ->
+          let
+            values = model.values
+          in
+            ( { model
+              | saving = False
+              , values =
+                { values
+                | name = inputState model.values.name.value
+                , email = inputState model.values.email.value
+                , bio = inputState model.values.bio.value
+                }
+              }
+            , Api.Command Cmd.none
+            )
+        Err error ->
+          ({ model | saving = False, problem = Just (Tuple.second error) }, Api.Command Cmd.none)
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =
@@ -123,8 +183,8 @@ view session model =
       , button [ A.class "button", onClick Logout ]
         [ text "Sign out" ]
       ]
-    , form []
-      [ div [ A.class "input-row" ]
+    , form [ onSubmit Save ]
+      ([ div [ A.class "input-row" ]
         [ Utils.myInput
           { labelText = "Display name"
           , sublabel = Api.Validate.nameLabel
@@ -185,22 +245,30 @@ view session model =
           , maxChars = Nothing
           , storeValueMsg = Change OldPasswordInput }
         ]
-      , input
-        [ A.class "button submit-btn"
-        , A.type_ "submit"
-        , A.value "Save"
-        , A.disabled <| not <|
-          model.values.name.valid &&
-          model.values.email.valid &&
-          model.values.bio.valid &&
-          model.values.password.valid &&
-          model.values.oldPassword.valid &&
-          ( model.values.name.value /= model.values.name.original
-          || model.values.email.value /= model.values.email.original
-          || model.values.bio.value /= model.values.bio.original
-          )
-        ]
-        []
+      , let
+          valid = model.values.name.valid &&
+            model.values.email.valid &&
+            model.values.bio.valid &&
+            model.values.password.valid &&
+            model.values.oldPassword.valid
+          changed = model.values.name.value /= model.values.name.original ||
+            model.values.email.value /= model.values.email.original ||
+            model.values.bio.value /= model.values.bio.original
+        in
+          input
+            [ A.class "button submit-btn"
+            , A.classList [ ("saving", model.saving) ]
+            , A.type_ "submit"
+            , A.value (if changed then "Save" else "Saved")
+            , A.disabled <| model.saving || not changed || not valid
+            ]
+            []
       ]
+      ++ case model.problem of
+        Just errorText ->
+          [ span [ A.class "problematic-error" ]
+            [ text errorText ] ]
+        Nothing ->
+          [])
     ]
   ]
