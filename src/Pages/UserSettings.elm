@@ -164,6 +164,8 @@ update msg session model =
                 | name = inputState model.values.name.value
                 , email = inputState model.values.email.value
                 , bio = inputState model.values.bio.value
+                , password = initInputState
+                , oldPassword = initInputState
                 }
               }
             , Api.Command Cmd.none
@@ -253,7 +255,8 @@ view session model =
             model.values.oldPassword.valid
           changed = model.values.name.value /= model.values.name.original ||
             model.values.email.value /= model.values.email.original ||
-            model.values.bio.value /= model.values.bio.original
+            model.values.bio.value /= model.values.bio.original ||
+            not (String.isEmpty model.values.password.value)
         in
           input
             [ A.class "button submit-btn"
