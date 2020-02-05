@@ -31,12 +31,20 @@ urlToPage : Url.Url -> Api.Session -> PageCmd
 urlToPage url session =
   case url.query of
     Just path ->
-      if path == "terms" then
+      if String.startsWith "@" path then
+        let
+          username = String.dropLeft 1 path
+        in
+          Command <|
+            Cmd.batch
+              [ Cmd.map UserMsg <|
+                Api.getUser username (Pages.User.InfoLoaded username)
+              , NProgress.start ()
+              ]
+      else if path == "terms" then
         SwitchPage Pages.Terms
       else if path == "privacy" then
         SwitchPage Pages.Privacy
-      else if path == "user" then
-        SwitchPage Pages.User
       else if path == "game" then
         SwitchPage Pages.Game
       else if path == "settings" then
@@ -65,6 +73,7 @@ type alias Model =
   , session : Api.Session
   , header : Base.Model
   , userSettings : Pages.UserSettings.Model
+  , user : Pages.User.Model
   }
 
 removeQueryIfNeeded : Url.Url -> Nav.Key -> Cmd Msg
@@ -101,13 +110,14 @@ init (sessionMaybe, usernameMaybe) url navKey =
       , session = session
       , header = Base.init session
       , userSettings = Pages.UserSettings.init session
+      , user = Pages.User.init session
       }
     , Cmd.batch [ removeQueryIfNeeded url navKey, cmd ]
     )
 
-title : Pages.Page -> String
-title page =
-  case page of
+title : Model -> String
+title model =
+  case model.page of
     Pages.FrontPage ->
       ""
     Pages.Terms ->
@@ -115,7 +125,7 @@ title page =
     Pages.Privacy ->
       "Privacy policy"
     Pages.User ->
-      "User"
+      model.user.username
     Pages.Game ->
       "Game"
     Pages.UserSettings ->
@@ -141,7 +151,7 @@ content model =
     Pages.Privacy ->
       Pages.Privacy.view
     Pages.User ->
-      Pages.User.view
+      List.map (Html.map UserMsg) (Pages.User.view model.session model.user)
     Pages.Game ->
       Pages.Game.view
     Pages.UserSettings ->
@@ -159,7 +169,7 @@ view model =
     if model.page == Pages.FrontPage then
       "Elimination"
     else
-      title model.page ++ " | Elimination"
+      title model ++ " | Elimination"
   , body
     = List.map (Html.map BaseMsg) (Base.makeHeader model.session model.header)
     ++ content model
@@ -171,6 +181,7 @@ type Msg
   | ClickedLink Browser.UrlRequest
   | BaseMsg Base.Msg
   | UserSettingsMsg Pages.UserSettings.Msg
+  | UserMsg Pages.User.Msg
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
@@ -246,6 +257,17 @@ update msg model =
             )
           Api.ChangePage page cmd ->
             ({ model | userSettings = subModel, page = page }, Cmd.map UserSettingsMsg cmd)
+    UserMsg subMsg ->
+      let
+        (subModel, pageCmd) = Pages.User.update subMsg model.session model.user
+      in
+        case pageCmd of
+          Api.Command cmd ->
+            ({ model | user = subModel }, Cmd.map UserMsg cmd)
+          Api.ChangePage page cmd ->
+            ({ model | user = subModel, page = page }, Cmd.map UserMsg cmd)
+          _ ->
+            (model, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

@@ -1,57 +1,96 @@
-module Pages.User exposing (view)
+module Pages.User exposing (..)
 
 import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html.Attributes as A
 
-view : List (Html msg)
-view =
-  [ article [ class "main content profile" ]
-    [ div [ class "profile-info" ]
-      [ h1 [ class "profile-name" ]
-        [ a [ class "link", href "./user.html" ]
-          [ text "Leuf Munkler" ]
-        , span [ class "flex" ]
+import Api
+import NProgress
+import Utils
+import Pages
+
+type alias Model =
+  { username : String
+  , info : Api.User
+  }
+
+init : Api.Session -> Model
+init session =
+  { username = ""
+  , info =
+    { name = ""
+    , bio = ""
+    }
+  }
+
+type Msg
+  = InfoLoaded String (Result Utils.HttpError Api.User)
+
+update : Msg -> Api.Session -> Model -> (Model, Api.PageCmd Msg)
+update msg session model =
+  case msg of
+    InfoLoaded username result ->
+      case result of
+        Ok user ->
+          ({ model | username = username, info = user }, Api.ChangePage Pages.User (NProgress.done ()))
+        Err error ->
+          (model, Api.ChangePage (Pages.Error error) (NProgress.done ()))
+
+view : Api.Session -> Model -> List (Html msg)
+view session model =
+  [ article [ A.class "main content profile" ]
+    [ div [ A.class "profile-info" ]
+      [ h1 [ A.class "profile-name" ]
+        ([ a [ A.class "link", A.href ("@" ++ model.username) ]
+          [ text model.info.name ]
+        , span [ A.class "flex" ]
           []
-        , a [ class "icon-btn settings-btn", href "./user-settings.html" ]
-          [ text "Settings" ]
         ]
-      , span [ class "profile-username" ]
-        [ text "leuf_munkler68" ]
-      , p [ class "profile-desc" ]
-        [ text "Hello. I pride myself in my many achievements in science and technology, and I hope to share them with you today in my class. I often teach science and physics, but due to limited funding in our department, I am only able to teach the latter half of physics. This includes kinematic motion and angular velocity, among other exciting concepts. I treat all my students with excessive love and respect, and my students often reciprocate similarly." ]
-      , p [ class "profile-desc profile-stats" ]
+        ++ case session of
+          Api.SignedIn authSession ->
+            if authSession.username == model.username then
+              [ a [ A.class "icon-btn settings-btn", A.href "?settings" ]
+                [ text "Settings" ] ]
+            else
+              []
+          Api.SignedOut ->
+            [])
+      , span [ A.class "profile-username" ]
+        [ text model.username ]
+      , p [ A.class "profile-desc" ]
+        [ text model.info.bio ]
+      , p [ A.class "profile-desc profile-stats" ]
         [ text "Total eliminations: 22" ]
       ]
-    , div [ class "lists" ]
-      [ section [ class "list" ]
+    , div [ A.class "lists" ]
+      [ section [ A.class "list" ]
         [ h2 []
           [ text "Games I created" ]
-        , a [ class "item", href "./game.html" ]
-          [ span [ class "item-name" ]
+        , a [ A.class "item", A.href "./game.html" ]
+          [ span [ A.class "item-name" ]
             [ text "Mr. Munkler's E period knife practice" ]
-          , span [ class "item-info" ]
+          , span [ A.class "item-info" ]
             [ text "24 participants · Ended" ]
           ]
         ]
-      , section [ class "list" ]
+      , section [ A.class "list" ]
         [ h2 []
           [ text "Games in which I participate" ]
-        , a [ class "item", href "./game.html" ]
-          [ span [ class "item-name" ]
+        , a [ A.class "item", A.href "./game.html" ]
+          [ span [ A.class "item-name" ]
             [ text "Pistole High School Elimination 2020" ]
-          , span [ class "item-info" ]
+          , span [ A.class "item-info" ]
             [ text "302 participants · 16 eliminations · Alive · Ongoing" ]
           ]
-        , a [ class "item", href "./game.html" ]
-          [ span [ class "item-name" ]
+        , a [ A.class "item", A.href "./game.html" ]
+          [ span [ A.class "item-name" ]
             [ text "Pistole High School eliminations 2017" ]
-          , span [ class "item-info" ]
+          , span [ A.class "item-info" ]
             [ text "278 participants · 0 eliminations · Eliminated · Ended" ]
           ]
-        , a [ class "item", href "./game.html" ]
-          [ span [ class "item-name" ]
+        , a [ A.class "item", A.href "./game.html" ]
+          [ span [ A.class "item-name" ]
             [ text "Pistole HS Elimination 2016" ]
-          , span [ class "item-info" ]
+          , span [ A.class "item-info" ]
             [ text "230 participants · 6 eliminations · Eliminated · Ended" ]
           ]
         ]

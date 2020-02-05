@@ -184,7 +184,15 @@ view session model =
       [ text "User settings"
       , span [ A.class "flex" ]
         []
-      , a [ A.class "button", A.href "?user" ]
+      , a
+        [ A.class "button"
+        , A.href <|
+          case session of
+            Api.SignedIn authSession ->
+              "?@" ++ authSession.username
+            Api.SignedOut ->
+              "?"
+        ]
         [ text "View profile" ]
       , button
         [ A.class "button"
