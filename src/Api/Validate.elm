@@ -11,7 +11,7 @@ makeRegex string =
     Nothing ->
       Regex.never
 
-username = makeRegex "^[a-z0-9_-]{3,}$"
+username = makeRegex "^[a-z0-9_-]{3,20}$"
 
 usernameLabel = "Only letters, digits, underscores, and hyphens are allowed. This cannot be changed later."
 
