@@ -19,6 +19,8 @@ init session =
   , info =
     { name = ""
     , bio = ""
+    , myGames = []
+    , games = []
     }
   }
 
