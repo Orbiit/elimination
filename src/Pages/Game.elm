@@ -45,7 +45,7 @@ type Msg
   | Join
   | Leave
   | Done BtnAction (Result Utils.HttpError ())
-  | DoNothing
+  | DontClose
 
 type BtnAction
   = Joining String
@@ -95,7 +95,7 @@ update msg session model =
                   { model | info = { info | players =
                     { username = username
                     , name = "You"
-                    , alive = False
+                    , alive = True
                     , kills = 0
                     }
                     :: info.players
@@ -108,8 +108,29 @@ update msg session model =
             ({ newModel | modal = False, loading = False }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
           ({ model | loading = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
-    DoNothing ->
+    DontClose ->
       (model, Cmd.none, Api.None)
+
+renderPlayer : Api.GamePlayer -> Html Msg
+renderPlayer player =
+  a
+    [ A.class "item"
+    , A.classList [ ("dead", not player.alive) ]
+    , A.href ("?@" ++ player.username)
+    ]
+    [ span [ A.class "item-name" ]
+      [ text player.name ]
+    , span [ A.class "item-info" ]
+      [ text
+        ((if player.alive then "Alive" else "Eliminated")
+        ++ " " ++ char Middot ++ " "
+        ++ String.fromInt player.kills
+        ++ (if player.kills == 1 then
+          " elimination"
+        else
+          " eliminations"))
+      ]
+    ]
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =
@@ -147,7 +168,7 @@ view session model =
       , div [ A.class "modal-back", A.classList [ ("show", model.modal) ], onClick HideModal ]
         [ form
           [ A.class "modal join-modal"
-          , stopPropagationOn "click" (D.succeed (DoNothing, True))
+          , stopPropagationOn "click" (D.succeed (DontClose, True))
           , onSubmit Join
           ]
           ([ Utils.myInput
@@ -187,45 +208,22 @@ view session model =
       ]
     , div [ A.class "lists" ]
       [ section [ A.class "list" ]
-        [ h2 []
-          [ text "Participants (6)" ]
-        , a [ A.class "item", A.href "./user.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Jame Sooth" ]
-          , span [ A.class "item-info" ]
-            [ text "Alive · 2 eliminations" ]
-          ]
-        , a [ A.class "item dead", A.href "./user.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Sergo Neristo" ]
-          , span [ A.class "item-info" ]
-            [ text "Eliminated · 1 eliminations" ]
-          ]
-        , a [ A.class "item", A.href "./user.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Ern Seth" ]
-          , span [ A.class "item-info" ]
-            [ text "Alive · 0 eliminations" ]
-          ]
-        , a [ A.class "item", A.href "./user.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Memphie Ratch" ]
-          , span [ A.class "item-info" ]
-            [ text "Alive · 0 eliminations" ]
-          ]
-        , a [ A.class "item dead", A.href "./user.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Eghten Siuvoulet" ]
-          , span [ A.class "item-info" ]
-            [ text "Eliminated · 0 eliminations" ]
-          ]
-        , a [ A.class "item dead", A.href "./user.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Zuck Ergostan" ]
-          , span [ A.class "item-info" ]
-            [ text "Eliminated · 0 eliminations" ]
-          ]
-        ]
+        ((h2 []
+          [ text ("Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")") ])
+        :: (List.map renderPlayer
+          (List.sortWith (\a -> \b ->
+            case compare a.kills b.kills of
+              EQ ->
+                if a.alive && not b.alive then
+                  GT
+                else if b.alive && not a.alive then
+                  LT
+                else
+                  EQ
+              _ as order ->
+                order
+          ) model.info.players))
+        )
       ]
     ]
   ]

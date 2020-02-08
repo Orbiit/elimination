@@ -147,9 +147,12 @@ leave : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 leave game session msg =
   Utils.post ("leave?game=" ++ game) (Just session) msg (E.object []) (D.succeed ())
 
-kick : String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-kick target game session msg =
-  Utils.post ("kick?game=" ++ game) (Just session) msg (E.object [("target", E.string target)]) (D.succeed ())
+kick : String -> String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
+kick user reason game session msg =
+  Utils.post ("leave?game=" ++ game) (Just session) msg (E.object
+    [ ("user", E.string user)
+    , ("reason", E.string reason)
+    ]) (D.succeed ())
 
 start : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 start game session msg =

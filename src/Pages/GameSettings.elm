@@ -2,7 +2,8 @@ module Pages.GameSettings exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
-import Html.Events exposing (onSubmit)
+import Html.Events exposing (onSubmit, stopPropagationOn, onClick)
+import Json.Decode as D
 import Json.Encode as E
 
 import Utils
@@ -14,6 +15,7 @@ type Input
   = NameInput
   | DescInput
   | PasswordInput
+  | ReasonInput
 
 type alias Model =
   { game : Maybe Api.GameID
@@ -25,6 +27,10 @@ type alias Model =
   , ended : Bool
   , loading : Bool
   , problem : Maybe String
+  , modal : Maybe String
+  , kickReason : String
+  , kickProblem : Maybe String
+  , kicking : Bool
   }
 
 reset : Model
@@ -38,6 +44,10 @@ reset =
   , ended = False
   , loading = False
   , problem = Nothing
+  , modal = Nothing
+  , kickReason = ""
+  , kickProblem = Nothing
+  , kicking = False
   }
 
 init : Api.Session -> Model
@@ -48,6 +58,11 @@ type Msg
   | InfoLoaded Api.GameID (Result Utils.HttpError Api.GameSettingsInfo)
   | Save
   | Saved (Result Utils.HttpError Api.GameID)
+  | ShowModal String
+  | HideModal
+  | DontClose
+  | Kick
+  | Kicked String (Result Utils.HttpError ())
 
 update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg session model =
@@ -67,6 +82,8 @@ update msg session model =
             { model | desc = Utils.updateValue model.desc value ok }
           PasswordInput ->
             { model | password = Utils.updateValue model.password value ok }
+          ReasonInput ->
+            { model | kickReason = value }
         , Cmd.none
         , Api.None
         )
@@ -139,6 +156,85 @@ update msg session model =
           )
         Err error ->
           ({ model | loading = False, problem = Just (Tuple.second error) }, Cmd.none, Api.sessionCouldExpire error)
+    ShowModal username ->
+      ({ model | modal = Just username, kickReason = "", kickProblem = Nothing }, Cmd.none, Api.None)
+    HideModal ->
+      ({ model | modal = Nothing }, Cmd.none, Api.None)
+    DontClose ->
+      (model, Cmd.none, Api.None)
+    Kick ->
+      case (model.game, model.modal, session) of
+        (Just gameID, Just username, Api.SignedIn authSession) ->
+          ( { model | kicking = True, kickProblem = Nothing }
+          , Api.kick username model.kickReason gameID authSession.session (Kicked username)
+          , Api.None
+          )
+        _ ->
+          (model, Cmd.none, Api.None)
+    Kicked username result ->
+      case result of
+        Ok _ ->
+          ( { model
+            | kicking = False
+            , modal = Nothing
+            , players = List.filter (\player -> player.username /= username) model.players
+            }
+          , Cmd.none
+          , Api.None
+          )
+        Err ((_, errorMsg) as error) ->
+          ({ model | kicking = False, kickProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+
+renderPlayer : Model -> Api.GameSettingsPlayer -> Html Msg
+renderPlayer model player =
+  div [ A.class "member-item" ]
+    ([ div [ A.class "member" ]
+      [ a [ A.class "link member-link", A.href ("?@" ++ player.username) ]
+        [ text player.name ]
+      , span [ A.class "member-info" ]
+        [ text "Joined 2020-01-22 · 2 eliminations" ]
+      ]
+    , button [ A.class "button kick-btn", onClick (ShowModal player.username) ]
+      [ text "Kick" ]
+    ]
+    ++ case model.modal of
+      Just username ->
+        if username == player.username then
+          [ div [ A.class "modal-back show", onClick HideModal ]
+            [ form
+              [ A.class "modal join-modal"
+              , stopPropagationOn "click" (D.succeed (DontClose, True))
+              , onSubmit Kick
+              ]
+              ([ Utils.myInput
+                { labelText = "Kick reason (optional)"
+                , sublabel = ""
+                , type_ = "text"
+                , placeholder = "Undesirable."
+                , value = model.kickReason
+                , validate = \value -> Nothing
+                , maxChars = Nothing
+                , storeValueMsg = Change ReasonInput }
+              , input
+                [ A.class "button submit-btn"
+                , A.classList [ ("loading", model.kicking) ]
+                , A.type_ "submit"
+                , A.value "Kick"
+                , A.disabled model.kicking
+                ]
+                []
+              ]
+              ++ case model.kickProblem of
+                Just errorText ->
+                  [ span [ A.class "problematic-error" ]
+                    [ text errorText ] ]
+                Nothing ->
+                  [])
+            ] ]
+        else
+          []
+      Nothing ->
+        [])
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =
@@ -232,8 +328,8 @@ view session model =
         Nothing ->
           [])
     , div [ A.class "members" ]
-      [ h2 [ A.class "members-header" ]
-        ([ text "Participants (6)"
+      ((h2 [ A.class "members-header" ]
+        ([ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
         , span [ A.class "flex" ]
           []
         ]
@@ -241,151 +337,8 @@ view session model =
           [ button [ A.class "button" ]
             [ text "Shuffle targets" ] ]
         else
-          []))
-      , div [ A.class "member-item" ]
-        [ div [ A.class "member" ]
-          [ a [ A.class "link member-link", A.href "./user.html" ]
-            [ text "Ern Seth" ]
-          , span [ A.class "member-info" ]
-            [ text "Joined 2020-01-23 · 0 eliminations" ]
-          ]
-        , button [ A.class "button kick-btn" ]
-          [ text "Kick" ]
-        , div [ A.class "modal-back" ]
-          [ form [ A.class "modal join-modal" ]
-            [ label [ A.class "input-wrapper" ]
-              [ span [ A.class "label" ]
-                [ text "Kick reason (optional)" ]
-              , div [ A.class "input" ]
-                [ input [ A.name "reason", A.placeholder "Undesirable.", A.type_ "text" ]
-                  []
-                ]
-              ]
-            , input [ A.class "button submit-btn", A.type_ "submit", A.value "Kick" ]
-              []
-            ]
-          ]
-        ]
-      , div [ A.class "member-item" ]
-        [ div [ A.class "member" ]
-          [ a [ A.class "link member-link", A.href "./user.html" ]
-            [ text "Sergo Neristo" ]
-          , span [ A.class "member-info" ]
-            [ text "Joined 2020-01-23 · 1 eliminations" ]
-          ]
-        , button [ A.class "button kick-btn" ]
-          [ text "Kick" ]
-        , div [ A.class "modal-back" ]
-          [ form [ A.class "modal join-modal" ]
-            [ label [ A.class "input-wrapper" ]
-              [ span [ A.class "label" ]
-                [ text "Kick reason (optional)" ]
-              , div [ A.class "input" ]
-                [ input [ A.name "reason", A.placeholder "Undesirable.", A.type_ "text" ]
-                  []
-                ]
-              ]
-            , input [ A.class "button submit-btn", A.type_ "submit", A.value "Kick" ]
-              []
-            ]
-          ]
-        ]
-      , div [ A.class "member-item" ]
-        [ div [ A.class "member" ]
-          [ a [ A.class "link member-link", A.href "./user.html" ]
-            [ text "Jame Sooth" ]
-          , span [ A.class "member-info" ]
-            [ text "Joined 2020-01-22 · 2 eliminations" ]
-          ]
-        , button [ A.class "button kick-btn" ]
-          [ text "Kick" ]
-        , div [ A.class "modal-back" ]
-          [ form [ A.class "modal join-modal" ]
-            [ label [ A.class "input-wrapper" ]
-              [ span [ A.class "label" ]
-                [ text "Kick reason (optional)" ]
-              , div [ A.class "input" ]
-                [ input [ A.name "reason", A.placeholder "Undesirable.", A.type_ "text" ]
-                  []
-                ]
-              ]
-            , input [ A.class "button submit-btn", A.type_ "submit", A.value "Kick" ]
-              []
-            ]
-          ]
-        ]
-      , div [ A.class "member-item" ]
-        [ div [ A.class "member" ]
-          [ a [ A.class "link member-link", A.href "./user.html" ]
-            [ text "Eghten Siuvoulet" ]
-          , span [ A.class "member-info" ]
-            [ text "Joined 2020-01-21 · 0 eliminations" ]
-          ]
-        , button [ A.class "button kick-btn" ]
-          [ text "Kick" ]
-        , div [ A.class "modal-back" ]
-          [ form [ A.class "modal join-modal" ]
-            [ label [ A.class "input-wrapper" ]
-              [ span [ A.class "label" ]
-                [ text "Kick reason (optional)" ]
-              , div [ A.class "input" ]
-                [ input [ A.name "reason", A.placeholder "Undesirable.", A.type_ "text" ]
-                  []
-                ]
-              ]
-            , input [ A.class "button submit-btn", A.type_ "submit", A.value "Kick" ]
-              []
-            ]
-          ]
-        ]
-      , div [ A.class "member-item" ]
-        [ div [ A.class "member" ]
-          [ a [ A.class "link member-link", A.href "./user.html" ]
-            [ text "Zuck Ergostan" ]
-          , span [ A.class "member-info" ]
-            [ text "Joined 2020-01-19 · 0 eliminations" ]
-          ]
-        , button [ A.class "button kick-btn" ]
-          [ text "Kick" ]
-        , div [ A.class "modal-back" ]
-          [ form [ A.class "modal join-modal" ]
-            [ label [ A.class "input-wrapper" ]
-              [ span [ A.class "label" ]
-                [ text "Kick reason (optional)" ]
-              , div [ A.class "input" ]
-                [ input [ A.name "reason", A.placeholder "Undesirable.", A.type_ "text" ]
-                  []
-                ]
-              ]
-            , input [ A.class "button submit-btn", A.type_ "submit", A.value "Kick" ]
-              []
-            ]
-          ]
-        ]
-      , div [ A.class "member-item" ]
-        [ div [ A.class "member" ]
-          [ a [ A.class "link member-link", A.href "./user.html" ]
-            [ text "Memphie Ratch" ]
-          , span [ A.class "member-info" ]
-            [ text "Joined 2020-01-15 · 0 eliminations" ]
-          ]
-        , button [ A.class "button kick-btn" ]
-          [ text "Kick" ]
-        , div [ A.class "modal-back" ]
-          [ form [ A.class "modal join-modal" ]
-            [ label [ A.class "input-wrapper" ]
-              [ span [ A.class "label" ]
-                [ text "Kick reason (optional)" ]
-              , div [ A.class "input" ]
-                [ input [ A.name "reason", A.placeholder "Undesirable.", A.type_ "text" ]
-                  []
-                ]
-              ]
-            , input [ A.class "button submit-btn", A.type_ "submit", A.value "Kick" ]
-              []
-            ]
-          ]
-        ]
-      ]
+          [])))
+      :: List.map (renderPlayer model) model.players
+      )
     ]
   ]

@@ -9,7 +9,7 @@ import Json.Decode as D
 
 filter : List (Maybe a) -> List a
 filter list =
-  List.filterMap (\a -> a) list
+  List.filterMap identity list
 
 type Char
   = Middot
