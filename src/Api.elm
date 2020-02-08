@@ -27,6 +27,24 @@ sessionCouldExpire (_, error) =
   else
     None
 
+type alias GameWithStatus a =
+  { a
+  | started : Bool
+  , ended : Bool
+  }
+
+gameStatusName : GameWithStatus a -> String
+gameStatusName { started, ended } =
+  if started then
+    if ended then
+      "Ended"
+    else
+      "Ongoing"
+  else
+    "Awaiting players"
+
+-- Authenticate
+
 type alias UserInfo =
   { username : String
   , name : String
@@ -34,8 +52,6 @@ type alias UserInfo =
   , email : String
   , bio : String
   }
-
--- Authenticate
 
 createUser : UserInfo -> (String -> Result Utils.HttpError SessionID -> msg) -> Cmd msg
 createUser info msg =
@@ -246,11 +262,6 @@ type alias User =
   , games : List UserGame
   }
 
-type alias Game =
-  { name : String
-  , description : String
-  }
-
 getUser : String -> (Result Utils.HttpError User -> msg) -> Cmd msg
 getUser user msg =
   Utils.get ("user?user=" ++ user) Nothing msg <|
@@ -274,12 +285,40 @@ getUser user msg =
         (D.field "alive" D.bool)
       )))
 
+
+type alias GamePlayer =
+  { username : String
+  , name : String
+  , alive : Bool
+  , kills : Int
+  }
+
+type alias Game =
+  { owner : String
+  , ownerName : String
+  , name : String
+  , description : String
+  , players : List GamePlayer
+  , started : Bool
+  , ended : Bool
+  }
+
 getGame : GameID -> (Result Utils.HttpError Game -> msg) -> Cmd msg
 getGame game msg =
   Utils.get ("game?game=" ++ game) Nothing msg <|
-    D.map2 Game
+    D.map7 Game
+      (D.field "creator" D.string)
+      (D.field "creatorName" D.string)
       (D.field "name" D.string)
       (D.field "description" D.string)
+      (D.field "players" (D.list (D.map4 GamePlayer
+        (D.field "username" D.string)
+        (D.field "name" D.string)
+        (D.field "alive" D.bool)
+        (D.field "kills" D.int)
+      )))
+      (D.field "started" D.bool)
+      (D.field "ended" D.bool)
 
 type alias Stats =
   { kills : Int

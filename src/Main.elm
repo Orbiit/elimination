@@ -59,6 +59,16 @@ urlToPage url session =
                 Api.getUser username (Pages.User.InfoLoaded username)
               , NProgress.start ()
               ]
+      else if String.startsWith "!" path then
+        let
+          gameID = String.dropLeft 1 path
+        in
+          Command <|
+            Cmd.batch
+              [ Cmd.map GameMsg <|
+                Api.getGame gameID (Pages.Game.InfoLoaded gameID)
+              , NProgress.start ()
+              ]
       else if path == "terms" then
         SwitchPage Pages.Terms
       else if path == "privacy" then
@@ -121,6 +131,7 @@ type alias Model =
   , user : Pages.User.Model
   , frontPage : Pages.FrontPage.Model
   , gameSettings : Pages.GameSettings.Model
+  , game : Pages.Game.Model
   }
 
 init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
@@ -147,6 +158,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
       , user = Pages.User.init session
       , frontPage = Pages.FrontPage.init session
       , gameSettings = Pages.GameSettings.init session
+      , game = Pages.Game.init session
       }
     , Cmd.batch [ removeQueryIfNeeded url navKey, cmd ]
     )
@@ -163,7 +175,7 @@ title model =
     Pages.User ->
       model.user.username
     Pages.Game ->
-      "Game"
+      model.game.info.name
     Pages.UserSettings ->
       "Settings"
     Pages.GameSettings ->
@@ -189,7 +201,7 @@ content model =
     Pages.User ->
       List.map (Html.map UserMsg) (Pages.User.view model.session model.user)
     Pages.Game ->
-      Pages.Game.view
+      List.map (Html.map GameMsg) (Pages.Game.view model.session model.game)
     Pages.UserSettings ->
       List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model.session model.userSettings)
     Pages.GameSettings ->
@@ -220,6 +232,7 @@ type Msg
   | UserMsg Pages.User.Msg
   | FrontPageMsg Pages.FrontPage.Msg
   | GameSettingsMsg Pages.GameSettings.Msg
+  | GameMsg Pages.Game.Msg
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
@@ -311,6 +324,11 @@ update msg model =
         (subModel, subCmd, pageCmd) = Pages.GameSettings.update subMsg model.session model.gameSettings
       in
         doPageCmd pageCmd ({ model | gameSettings = subModel }, Cmd.map GameSettingsMsg subCmd)
+    GameMsg subMsg ->
+      let
+        (subModel, subCmd, pageCmd) = Pages.Game.update subMsg model.session model.game
+      in
+        doPageCmd pageCmd ({ model | game = subModel }, Cmd.map GameMsg subCmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

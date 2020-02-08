@@ -1,22 +1,73 @@
-module Pages.Game exposing (view)
+module Pages.Game exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
 
-view : List (Html msg)
-view =
+import Api
+import Utils exposing (char, Char(..))
+import Pages
+import NProgress
+
+type alias Model =
+  { game : Api.GameID
+  , info : Api.Game
+  }
+
+init : Api.Session -> Model
+init _ =
+  { game = ""
+  , info =
+    { owner = ""
+    , ownerName = ""
+    , name = ""
+    , description = ""
+    , players = []
+    , started = False
+    , ended = False
+    }
+  }
+
+type Msg
+  = InfoLoaded Api.GameID (Result Utils.HttpError Api.Game)
+
+update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
+update msg session model =
+  case msg of
+    InfoLoaded gameID result ->
+      case result of
+        Ok game ->
+          ({ model | game = gameID, info = game }, NProgress.done (), Api.ChangePage Pages.Game)
+        Err error ->
+          (model, NProgress.done (), Api.ChangePage (Pages.Error error))
+
+view : Api.Session -> Model -> List (Html msg)
+view session model =
   [ article [ A.class "main content profile" ]
     [ div [ A.class "profile-info" ]
       [ h1 [ A.class "profile-name" ]
-        [ a [ A.class "link", A.href "./game.html" ]
-          [ text "Pistolita High School Elimination 2020" ]
+        ([ a [ A.class "link", A.href ("?!" ++ model.game) ]
+          [ text model.info.name ]
         , span [ A.class "flex" ]
           []
-        , a [ A.class "icon-btn settings-btn", A.href "./game-settings.html" ]
-          [ text "Settings" ]
-        , button [ A.class "button join-btn" ]
-          [ text "Join" ]
         ]
+        ++ case session of
+          Api.SignedIn { username } ->
+            Utils.filter
+              [ if username == model.info.owner then
+                Just (a [ A.class "icon-btn settings-btn", A.href ("?settings!" ++ model.game) ]
+                  [ text "Settings" ])
+              else
+                Nothing
+              , if List.any (\player -> player.username == username) model.info.players then
+                Just (button [ A.class "button join-btn" ]
+                  [ text "Leave" ])
+              else
+                Just (button [ A.class "button join-btn" ]
+                  [ text "Join" ])
+              ]
+          Api.SignedOut ->
+            []
+        )
       , div [ A.class "modal-back" ]
         [ form [ A.class "modal join-modal" ]
           [ label [ A.class "input-wrapper" ]
@@ -32,9 +83,14 @@ view =
           ]
         ]
       , p [ A.class "profile-desc" ]
-        [ text "Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur inside classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck, Pizzas!" ]
+        [ text model.info.description ]
       , p [ A.class "profile-desc profile-stats" ]
-        [ text "Ongoing · 3 of 6 participants alive" ]
+        [ text (Api.gameStatusName model.info ++ " " ++ char Middot ++ " "
+          ++ String.fromInt (List.length (List.filter (\player -> player.alive) model.info.players))
+          ++ " of " ++ String.fromInt (List.length model.info.players)
+          ++ if List.length model.info.players == 1 then " participant" else " participants"
+          ++ " alive"
+        ) ]
       ]
     , div [ A.class "lists" ]
       [ section [ A.class "list" ]
