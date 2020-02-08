@@ -103,7 +103,7 @@ update msg session model =
         Api.SignedIn authSession ->
           ( { model | loading = True, problem = Nothing }
           , Api.setSettings (E.object
-              (List.filterMap (\a -> a)
+              (Utils.filter
                 [ if model.name.value /= model.name.original then
                   Just ("name", E.string model.name.value)
                 else

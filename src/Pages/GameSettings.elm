@@ -16,7 +16,8 @@ type Input
   | PasswordInput
 
 type alias Model =
-  { name : Utils.InputState
+  { game : Maybe Api.GameID
+  , name : Utils.InputState
   , desc : Utils.InputState
   , password : Utils.InputState
   , players : List Api.GameSettingsPlayer
@@ -28,7 +29,8 @@ type alias Model =
 
 reset : Model
 reset =
-  { name = Utils.initInputState
+  { game = Nothing
+  , name = Utils.updateValue Utils.initInputState "" False
   , desc = Utils.initInputState
   , password = Utils.initInputState
   , players = []
@@ -43,9 +45,9 @@ init _ = reset
 
 type Msg
   = Change Input (String -> Maybe String) String
-  | InfoLoaded (Result Utils.HttpError Api.GameSettingsInfo)
+  | InfoLoaded Api.GameID (Result Utils.HttpError Api.GameSettingsInfo)
   | Save
-  | Saved (Result Utils.HttpError ())
+  | Saved (Result Utils.HttpError Api.GameID)
 
 update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg session model =
@@ -68,11 +70,12 @@ update msg session model =
         , Cmd.none
         , Api.None
         )
-    InfoLoaded result ->
+    InfoLoaded game result ->
       case result of
         Ok { name, description, password, players, started, ended } ->
           ( { model
-            | name = Utils.inputState name
+            | game = Just game
+            , name = Utils.inputState name
             , desc = Utils.inputState description
             , password = Utils.inputState password
             , players = players
@@ -80,40 +83,50 @@ update msg session model =
             , ended = ended
             }
           , NProgress.done ()
-          , Api.ChangePage (Pages.GameSettings False)
+          , Api.ChangePage Pages.GameSettings
           )
         Err error ->
           (model, NProgress.done (), Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ])
     Save ->
       case session of
         Api.SignedIn authSession ->
-          ( { model | loading = True, problem = Nothing }
-          , Api.setGameSettings (E.object
-              (List.filterMap (\a -> a)
-                [ if model.name.value /= model.name.original then
-                  Just ("name", E.string model.name.value)
-                else
-                  Nothing
-                , if model.desc.value /= model.desc.original then
-                  Just ("description", E.string model.desc.value)
-                else
-                  Nothing
-                , if model.password.value /= model.password.original then
-                  Just ("password", E.string model.password.value)
-                else
-                  Nothing
-                ]
+          let
+            creating = model.game == Nothing
+            gameInfo =
+              (E.object
+                (Utils.filter
+                  [ if creating || model.name.value /= model.name.original then
+                    Just ("name", E.string model.name.value)
+                  else
+                    Nothing
+                  , if creating || model.desc.value /= model.desc.original then
+                    Just ("description", E.string model.desc.value)
+                  else
+                    Nothing
+                  , if creating || model.password.value /= model.password.original then
+                    Just ("password", E.string model.password.value)
+                  else
+                    Nothing
+                  ]
+                )
               )
-            ) "TODO" authSession.session Saved
-          , Api.None
-          )
+          in
+            ( { model | loading = True, problem = Nothing }
+            , case model.game of
+              Just gameID ->
+                Api.setGameSettings gameInfo gameID authSession.session Saved
+              Nothing ->
+                Api.createGame gameInfo authSession.session Saved
+            , Api.None
+            )
         Api.SignedOut ->
           (model, Cmd.none, Api.None)
     Saved result ->
       case result of
-        Ok _ ->
+        Ok gameID ->
           ( { model
             | loading = False
+            , game = Just gameID
             , name = Utils.inputState model.name.value
             , desc = Utils.inputState model.desc.value
             , password = Utils.inputState model.password.value
@@ -124,8 +137,8 @@ update msg session model =
         Err error ->
           ({ model | loading = False, problem = Just (Tuple.second error) }, Cmd.none, Api.sessionCouldExpire error)
 
-view : Api.Session -> Model -> Bool -> List (Html Msg)
-view session model creating =
+view : Api.Session -> Model -> List (Html Msg)
+view session model =
   [ div [ A.class "main content settings" ]
     [ h1 []
       [ text "Game settings"
@@ -146,7 +159,7 @@ view session model creating =
           , value = model.name.value
           , validate = \value ->
             if String.isEmpty value then
-              Just (if creating then "" else "The name cannot be empty.")
+              Just (if model.game == Nothing then "" else "The name cannot be empty.")
             else if String.length value > 100 then
               Just "The name cannot be over 100 characters long."
             else
@@ -194,7 +207,7 @@ view session model creating =
             [ A.class "button submit-btn"
             , A.classList [ ("loading", model.loading) ]
             , A.type_ "submit"
-            , A.value (if creating then "Create" else if changed then "Save" else "Saved")
+            , A.value (if model.game == Nothing then "Create" else if changed then "Save" else "Saved")
             , A.disabled <| model.loading || not changed || not valid
             ]
             []

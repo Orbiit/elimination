@@ -7,6 +7,10 @@ import Http
 import Json.Encode as E
 import Json.Decode as D
 
+filter : List (Maybe a) -> List a
+filter list =
+  List.filterMap (\a -> a) list
+
 type Char
   = Middot
 

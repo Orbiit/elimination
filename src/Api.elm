@@ -78,22 +78,15 @@ setSettings : E.Value -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd 
 setSettings changes session msg =
   Utils.post "user-settings" (Just session) msg changes (D.succeed ())
 
-type alias GameInfo =
-  { name : String
-  , description : String
-  , password : String
-  }
-
 type alias GameID = String
 
-createGame : GameInfo -> SessionID -> (Result Utils.HttpError GameID -> msg) -> Cmd msg
+createGame : E.Value -> SessionID -> (Result Utils.HttpError GameID -> msg) -> Cmd msg
 createGame gameInfo session msg =
-  Utils.post "create-game" (Just session) msg (E.object
-    [ ("name", E.string gameInfo.name)
-    , ("description", E.string gameInfo.description)
-    , ("password", E.string gameInfo.password)
-    ])
-    (D.field "game" D.string)
+  Utils.post "create-game" (Just session) msg gameInfo (D.field "game" D.string)
+
+setGameSettings : E.Value -> GameID -> SessionID -> (Result Utils.HttpError GameID -> msg) -> Cmd msg
+setGameSettings changes game session msg =
+  Utils.post ("game-settings?game=" ++ game) (Just session) msg changes (D.succeed game)
 
 type alias GameSettingsPlayer =
   { username : String
@@ -128,10 +121,6 @@ getGameSettings game session msg =
       )))
       (D.field "started" D.bool)
       (D.field "ended" D.bool)
-
-setGameSettings : E.Value -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-setGameSettings changes game session msg =
-  Utils.post ("game-settings?game=" ++ game) (Just session) msg changes (D.succeed ())
 
 join : String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 join password game session msg =
@@ -232,7 +221,7 @@ read session msg =
 -- Public
 
 type alias UserMyGame =
-  { game : String
+  { game : GameID
   , name : String
   , started : Bool
   , ended : Bool
@@ -240,7 +229,7 @@ type alias UserMyGame =
   }
 
 type alias UserGame =
-  { game : String
+  { game : GameID
   , name : String
   , started : Bool
   , ended : Bool
@@ -274,7 +263,7 @@ getUser user msg =
         (D.field "ended" D.bool)
         (D.field "players" D.int)
       )))
-      (D.field "myGames" (D.list (D.map7 UserGame
+      (D.field "games" (D.list (D.map7 UserGame
         (D.field "game" D.string)
         (D.field "name" D.string)
         (D.field "started" D.bool)

@@ -77,7 +77,7 @@ urlToPage url session =
           Api.SignedOut ->
             SwitchPage (Pages.Error (Utils.StatusCode 401, "You're not signed in."))
       else if path == "create-game" then
-        SwitchPage (Pages.GameSettings True)
+        SwitchPage Pages.GameSettings
       else if String.startsWith "settings!" path then
         let
           game = String.dropLeft (String.length "settings!") path
@@ -87,7 +87,7 @@ urlToPage url session =
               Command <|
                 Cmd.batch
                   [ Cmd.map GameSettingsMsg <|
-                    Api.getGameSettings game authSession.session Pages.GameSettings.InfoLoaded
+                    Api.getGameSettings game authSession.session (Pages.GameSettings.InfoLoaded game)
                   , NProgress.start ()
                   ]
             Api.SignedOut ->
@@ -166,8 +166,8 @@ title model =
       "Game"
     Pages.UserSettings ->
       "Settings"
-    Pages.GameSettings creating ->
-      if creating then "Create a game" else "Game settings"
+    Pages.GameSettings ->
+      if model.gameSettings.game == Nothing then "Create a game" else "Game settings"
     Pages.Error (status, _) ->
       case status of
         Utils.ErrorStatusText text ->
@@ -192,8 +192,8 @@ content model =
       Pages.Game.view
     Pages.UserSettings ->
       List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model.session model.userSettings)
-    Pages.GameSettings creating ->
-      List.map (Html.map GameSettingsMsg) (Pages.GameSettings.view model.session model.gameSettings creating)
+    Pages.GameSettings ->
+      List.map (Html.map GameSettingsMsg) (Pages.GameSettings.view model.session model.gameSettings)
     Pages.Error error ->
       Pages.Error.view error
     Pages.Loading ->
@@ -271,24 +271,19 @@ update msg model =
           (model, Nav.load url)
     ChangedUrl url ->
       let
-        (page, cmd) =
+        (newModel, cmd) =
           case urlToPage url model.session of
             SwitchPage pageType ->
-              (pageType, Cmd.none)
+              case pageType of
+                -- Hacky special case for creating a game
+                Pages.GameSettings ->
+                  ({ model | page = pageType, gameSettings = Pages.GameSettings.reset }, Cmd.none)
+                _ ->
+                  ({ model | page = pageType }, Cmd.none)
             Command command ->
-              (model.page, command)
-        modelChanged =
-          case page of
-            Pages.GameSettings creating ->
-              if creating then
-                -- Reset game settings model if creating
-                { model | gameSettings = Pages.GameSettings.reset }
-              else
-                model
-            _ ->
-              model
+              (model, command)
       in
-        ({ modelChanged | page = page }, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
+        (newModel, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
     BaseMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Base.update subMsg model.session model.header

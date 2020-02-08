@@ -5,7 +5,7 @@ import Html.Attributes as A
 
 import Api
 import NProgress
-import Utils
+import Utils exposing (char, Char(..))
 import Pages
 
 type alias Model =
@@ -37,6 +37,62 @@ update msg session model =
         Err error ->
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
 
+renderMyGame : Api.UserMyGame -> Html msg
+renderMyGame game =
+  a [ A.class "item", A.href ("?!" ++ game.game) ]
+    [ span [ A.class "item-name" ]
+      [ text game.name ]
+    , span [ A.class "item-info" ]
+      [ text
+        (String.fromInt game.players
+        ++ if game.players == 1 then
+          " participant"
+        else
+          " participants"
+        ++ " " ++ char Middot ++ " "
+        ++ if game.started then
+          if game.ended then
+            "Ended"
+          else
+            "Ongoing"
+        else
+          "Awaiting players"
+        )
+      ]
+    ]
+
+renderGame : Api.UserGame -> Html msg
+renderGame game =
+  a [ A.class "item", A.href ("?!" ++ game.game) ]
+    [ span [ A.class "item-name" ]
+      [ text game.name ]
+    , span [ A.class "item-info" ]
+      [ text
+        (String.fromInt game.players
+        ++ if game.players == 1 then
+          " participant"
+        else
+          " participants"
+        ++ " " ++ char Middot ++ " "
+        ++ if game.started then
+          if game.ended then
+            "Ended"
+          else
+            "Ongoing"
+        else
+          "Awaiting players"
+        ++ " " ++ char Middot ++ " "
+        ++ if game.alive then "Alive" else "Eliminated"
+        ++ " " ++ char Middot ++ " "
+        ++ String.fromInt game.kills
+        ++ if game.kills == 1 then
+          " elimination"
+        else
+          " eliminations"
+        )
+      ]
+    ]
+
 view : Api.Session -> Model -> List (Html msg)
 view session model =
   [ article [ A.class "main content profile" ]
@@ -64,38 +120,17 @@ view session model =
         [ text "Total eliminations: 22" ]
       ]
     , div [ A.class "lists" ]
-      [ section [ A.class "list" ]
-        [ h2 []
-          [ text "Games I created" ]
-        , a [ A.class "item", A.href "./game.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Mr. Munkler's E period knife practice" ]
-          , span [ A.class "item-info" ]
-            [ text "24 participants · Ended" ]
-          ]
-        ]
-      , section [ A.class "list" ]
-        [ h2 []
-          [ text "Games in which I participate" ]
-        , a [ A.class "item", A.href "./game.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Pistole High School Elimination 2020" ]
-          , span [ A.class "item-info" ]
-            [ text "302 participants · 16 eliminations · Alive · Ongoing" ]
-          ]
-        , a [ A.class "item", A.href "./game.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Pistole High School eliminations 2017" ]
-          , span [ A.class "item-info" ]
-            [ text "278 participants · 0 eliminations · Eliminated · Ended" ]
-          ]
-        , a [ A.class "item", A.href "./game.html" ]
-          [ span [ A.class "item-name" ]
-            [ text "Pistole HS Elimination 2016" ]
-          , span [ A.class "item-info" ]
-            [ text "230 participants · 6 eliminations · Eliminated · Ended" ]
-          ]
-        ]
-      ]
+      (Utils.filter
+        [ if List.isEmpty model.info.myGames then
+          Nothing
+        else
+          Just (section [ A.class "list" ]
+            ((h2 [] [ text "Games I created" ]) :: List.map renderMyGame model.info.myGames))
+        , if List.isEmpty model.info.games then
+          Nothing
+        else
+          Just (section [ A.class "list" ]
+            ((h2 [] [ text "Games in which I participate" ]) :: List.map renderGame model.info.games))
+        ])
     ]
   ]
