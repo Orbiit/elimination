@@ -163,16 +163,32 @@ headerWindow model btnClass btnLabel window windowContent =
       [ text btnLabel ]
       :: windowContent
 
-makeHeader : Api.Session -> Model -> List (Html Msg)
-makeHeader session model =
-  [ header [ A.class "header" ] <|
+makeHeader : Api.Session -> Model -> Bool -> List (Html Msg)
+makeHeader session model frontPage =
+  [ header
+    [ A.class "header"
+    , A.classList
+      [ ("on-welcome-page"
+        , case session of
+          Api.SignedIn _ ->
+            False
+          Api.SignedOut ->
+            frontPage
+        )
+      ]
+    ] <|
     [ a [ A.href "?", A.class "site-name link" ]
       [ text "Elimination" ]
     , span [ A.class "flex" ] []
     ]
     ++ case session of
       Api.SignedIn { username } ->
-        [ headerWindow model "icon-btn header-btn notif-btn" "Notifications" Notifications <|
+        (if frontPage then
+          [ a [ A.class "button create-game-btn", A.href "?create-game" ]
+            [ text "Create game" ] ]
+        else
+          [])
+        ++ [ headerWindow model "icon-btn header-btn notif-btn" "Notifications" Notifications <|
           [ div [ A.class "header-window notifs" ]
             [ h2 [ A.class "notif-header" ]
               [ text "Notifications"

@@ -75,13 +75,15 @@ urlToPage url session =
                 , NProgress.start ()
                 ]
           Api.SignedOut ->
-            SwitchPage <| Pages.Error (Utils.StatusCode 401, "You're not signed in.")
+            SwitchPage (Pages.Error (Utils.StatusCode 401, "You're not signed in."))
+      else if path == "create-game" then
+        SwitchPage (Pages.GameSettings True)
       else if path == "game-settings" then
-        SwitchPage Pages.GameSettings
+        SwitchPage (Pages.GameSettings False)
       else if path == "" then
         loadFrontPage session
       else
-        SwitchPage <| Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL.")
+        SwitchPage (Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL."))
     Nothing ->
       loadFrontPage session
 
@@ -150,8 +152,8 @@ title model =
       "Game"
     Pages.UserSettings ->
       "Settings"
-    Pages.GameSettings ->
-      "Game settings"
+    Pages.GameSettings creating ->
+      if creating then "Create a game" else "Game settings"
     Pages.Error (status, _) ->
       case status of
         Utils.ErrorStatusText text ->
@@ -176,7 +178,7 @@ content model =
       Pages.Game.view
     Pages.UserSettings ->
       List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model.session model.userSettings)
-    Pages.GameSettings ->
+    Pages.GameSettings creating ->
       Pages.GameSettings.view
     Pages.Error error ->
       Pages.Error.view error
@@ -191,7 +193,7 @@ view model =
     else
       title model ++ " | Elimination"
   , body
-    = List.map (Html.map BaseMsg) (Base.makeHeader model.session model.header)
+    = List.map (Html.map BaseMsg) (Base.makeHeader model.session model.header (model.page == Pages.FrontPage))
     ++ content model
     ++ Base.makeFooter
   }

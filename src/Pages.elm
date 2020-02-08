@@ -9,6 +9,6 @@ type Page
   | User
   | Game
   | UserSettings
-  | GameSettings
+  | GameSettings Bool
   | Loading
   | Error Utils.HttpError
