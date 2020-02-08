@@ -1,10 +1,131 @@
-module Pages.GameSettings exposing (view)
+module Pages.GameSettings exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
+import Html.Events exposing (onSubmit)
+import Json.Encode as E
 
-view : List (Html msg)
-view =
+import Utils
+import Api
+import Pages
+import NProgress
+
+type Input
+  = NameInput
+  | DescInput
+  | PasswordInput
+
+type alias Model =
+  { name : Utils.InputState
+  , desc : Utils.InputState
+  , password : Utils.InputState
+  , players : List Api.GameSettingsPlayer
+  , started : Bool
+  , ended : Bool
+  , loading : Bool
+  , problem : Maybe String
+  }
+
+reset : Model
+reset =
+  { name = Utils.initInputState
+  , desc = Utils.initInputState
+  , password = Utils.initInputState
+  , players = []
+  , started = False
+  , ended = False
+  , loading = False
+  , problem = Nothing
+  }
+
+init : Api.Session -> Model
+init _ = reset
+
+type Msg
+  = Change Input (String -> Maybe String) String
+  | InfoLoaded (Result Utils.HttpError Api.GameSettingsInfo)
+  | Save
+  | Saved (Result Utils.HttpError ())
+
+update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
+update msg session model =
+  case msg of
+    Change input validate value ->
+      let
+        ok = case validate value of
+          Just _ ->
+            False
+          Nothing ->
+            True
+      in
+        ( case input of
+          NameInput ->
+            { model | name = Utils.updateValue model.name value ok }
+          DescInput ->
+            { model | desc = Utils.updateValue model.desc value ok }
+          PasswordInput ->
+            { model | password = Utils.updateValue model.password value ok }
+        , Cmd.none
+        , Api.None
+        )
+    InfoLoaded result ->
+      case result of
+        Ok { name, description, password, players, started, ended } ->
+          ( { model
+            | name = Utils.inputState name
+            , desc = Utils.inputState description
+            , password = Utils.inputState password
+            , players = players
+            , started = started
+            , ended = ended
+            }
+          , NProgress.done ()
+          , Api.ChangePage (Pages.GameSettings False)
+          )
+        Err error ->
+          (model, NProgress.done (), Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ])
+    Save ->
+      case session of
+        Api.SignedIn authSession ->
+          ( { model | loading = True, problem = Nothing }
+          , Api.setGameSettings (E.object
+              (List.filterMap (\a -> a)
+                [ if model.name.value /= model.name.original then
+                  Just ("name", E.string model.name.value)
+                else
+                  Nothing
+                , if model.desc.value /= model.desc.original then
+                  Just ("description", E.string model.desc.value)
+                else
+                  Nothing
+                , if model.password.value /= model.password.original then
+                  Just ("password", E.string model.password.value)
+                else
+                  Nothing
+                ]
+              )
+            ) "TODO" authSession.session Saved
+          , Api.None
+          )
+        Api.SignedOut ->
+          (model, Cmd.none, Api.None)
+    Saved result ->
+      case result of
+        Ok _ ->
+          ( { model
+            | loading = False
+            , name = Utils.inputState model.name.value
+            , desc = Utils.inputState model.desc.value
+            , password = Utils.inputState model.password.value
+            }
+          , Cmd.none
+          , Api.None
+          )
+        Err error ->
+          ({ model | loading = False, problem = Just (Tuple.second error) }, Cmd.none, Api.sessionCouldExpire error)
+
+view : Api.Session -> Model -> Bool -> List (Html Msg)
+view session model creating =
   [ div [ A.class "main content settings" ]
     [ h1 []
       [ text "Game settings"
@@ -15,46 +136,75 @@ view =
       , a [ A.class "button", A.href "./game.html" ]
         [ text "View game page" ]
       ]
-    , form []
-      [ div [ A.class "input-row" ]
-        [ label [ A.class "input-wrapper" ]
-          [ span [ A.class "label" ]
-            [ text "Name" ]
-          , div [ A.class "input" ]
-            [ input [ A.name "name", A.placeholder "The People's Elimination Game", A.attribute "required" "", A.type_ "text", A.value "Pistolita High School Elimination 2020" ]
-              []
-            , span [ A.class "count" ]
-              [ text "13/50" ]
-            ]
-          ]
-        , label [ A.class "input-wrapper" ]
-          [ span [ A.class "label" ]
-            [ text "Passphrase to join" ]
-          , div [ A.class "input" ]
-            [ input [ A.name "password", A.placeholder "hunter2", A.attribute "required" "", A.type_ "text", A.value "pistolitaelimination2020" ]
-              []
-            ]
-          , span [ A.class "sublabel" ]
-            [ text "Share this passphrase to people who you want to join." ]
-          ]
+    , form [ onSubmit Save ]
+      ([ div [ A.class "input-row" ]
+        [ Utils.myInput
+          { labelText = "Name"
+          , sublabel = "Required."
+          , type_ = "text"
+          , placeholder = "The People's Elimination Game"
+          , value = model.name.value
+          , validate = \value ->
+            if String.isEmpty value then
+              Just (if creating then "" else "The name cannot be empty.")
+            else if String.length value > 100 then
+              Just "The name cannot be over 100 characters long."
+            else
+              Nothing
+          , maxChars = Just 100
+          , storeValueMsg = Change NameInput }
+        , Utils.myInput
+          { labelText = "Passphrase to join"
+          , sublabel = "Share this passphrase to people who you want to join."
+          , type_ = "text"
+          , placeholder = "hunter2"
+          , value = model.password.value
+          , validate = \value ->
+            if String.length value > 200 then
+              Just "The passphrase cannot be over 200 characters long."
+            else
+              Nothing
+          , maxChars = Just 200
+          , storeValueMsg = Change PasswordInput }
         ]
       , div [ A.class "input-row" ]
-        [ label [ A.class "input-wrapper" ]
-          [ span [ A.class "label" ]
-            [ text "Description and rules" ]
-          , div [ A.class "input" ]
-            [ textarea [ A.name "description", A.placeholder "", A.attribute "required" "" ]
-              [ text "Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur inside classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck, Pizzas!" ]
-            , span [ A.class "count" ]
-              [ text "11/1000" ]
-            ]
-          , span [ A.class "sublabel" ]
-            [ text "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made." ]
-          ]
+        [ Utils.myInput
+          { labelText = "Description and rules"
+          , sublabel = "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made."
+          , type_ = "textarea"
+          , placeholder = "Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur inside classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck, Pizzas!"
+          , value = model.desc.value
+          , validate = \value ->
+            if String.length value > 2000 then
+              Just "Description can only be at most 2000 characters long."
+            else
+              Nothing
+          , maxChars = Just 2000
+          , storeValueMsg = Change DescInput }
         ]
-      , input [ A.class "button submit-btn", A.attribute "disabled" "", A.type_ "submit", A.value "Save" ]
-        []
+      , let
+          valid = model.name.valid &&
+            model.desc.valid &&
+            model.password.valid
+          changed = model.name.value /= model.name.original ||
+            model.desc.value /= model.desc.original ||
+            model.password.value /= model.password.original
+        in
+          input
+            [ A.class "button submit-btn"
+            , A.classList [ ("loading", model.loading) ]
+            , A.type_ "submit"
+            , A.value (if creating then "Create" else if changed then "Save" else "Saved")
+            , A.disabled <| model.loading || not changed || not valid
+            ]
+            []
       ]
+      ++ case model.problem of
+        Just errorText ->
+          [ span [ A.class "problematic-error" ]
+            [ text errorText ] ]
+        Nothing ->
+          [])
     , div [ A.class "members" ]
       [ h2 [ A.class "members-header" ]
         [ text "Participants (6)"

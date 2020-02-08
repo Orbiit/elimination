@@ -29,21 +29,15 @@ type Input
   | SignUpPassword
   | SignUpPasswordAgain
 
-type alias InputState = { value : String, valid : Bool }
-
-initInputState : InputState
-initInputState =
-  { value = "", valid = False }
-
 type alias Model =
   { open : HeaderWindow
-  , loginUsername : InputState
-  , loginPassword : InputState
-  , signUpUsername : InputState
-  , signUpName : InputState
-  , signUpEmail : InputState
-  , signUpPassword : InputState
-  , signUpPasswordAgain : InputState
+  , loginUsername : Utils.InputState
+  , loginPassword : Utils.InputState
+  , signUpUsername : Utils.InputState
+  , signUpName : Utils.InputState
+  , signUpEmail : Utils.InputState
+  , signUpPassword : Utils.InputState
+  , signUpPasswordAgain : Utils.InputState
   , loginLoading : Bool
   , loginProblem : Maybe String
   , signUpLoading : Bool
@@ -53,13 +47,13 @@ type alias Model =
 init : Api.Session -> Model
 init _ =
   { open = None
-  , loginUsername = initInputState
-  , loginPassword = initInputState
-  , signUpUsername = initInputState
-  , signUpName = initInputState
-  , signUpEmail = initInputState
-  , signUpPassword = initInputState
-  , signUpPasswordAgain = initInputState
+  , loginUsername = Utils.initInputState
+  , loginPassword = Utils.initInputState
+  , signUpUsername = Utils.initInputState
+  , signUpName = Utils.initInputState
+  , signUpEmail = Utils.initInputState
+  , signUpPassword = Utils.initInputState
+  , signUpPasswordAgain = Utils.initInputState
   , loginLoading = False
   , loginProblem = Nothing
   , signUpLoading = False
@@ -94,19 +88,19 @@ update msg session model =
       in
         ( case input of
           LoginUsername ->
-            { model | loginUsername = { value = value, valid = valid } }
+            { model | loginUsername = Utils.updateValue model.loginUsername value valid }
           LoginPassword ->
-            { model | loginPassword = { value = value, valid = valid } }
+            { model | loginPassword = Utils.updateValue model.loginPassword value valid }
           SignUpUsername ->
-            { model | signUpUsername = { value = value, valid = valid } }
+            { model | signUpUsername = Utils.updateValue model.signUpUsername value valid }
           SignUpName ->
-            { model | signUpName = { value = value, valid = valid } }
+            { model | signUpName = Utils.updateValue model.signUpName value valid }
           SignUpEmail ->
-            { model | signUpEmail = { value = value, valid = valid } }
+            { model | signUpEmail = Utils.updateValue model.signUpEmail value valid }
           SignUpPassword ->
-            { model | signUpPassword = { value = value, valid = valid } }
+            { model | signUpPassword = Utils.updateValue model.signUpPassword value valid }
           SignUpPasswordAgain ->
-            { model | signUpPasswordAgain = { value = value, valid = valid } }
+            { model | signUpPasswordAgain = Utils.updateValue model.signUpPasswordAgain value valid }
         , Cmd.none
         , Api.None
         )
@@ -133,9 +127,9 @@ update msg session model =
         Ok newSession ->
           ( case method of
             LoginMethod ->
-              { model | loginLoading = False, loginPassword = initInputState }
+              { model | loginLoading = False, loginPassword = Utils.initInputState }
             SignUpMethod ->
-              { model | signUpLoading = False, signUpPassword = initInputState }
+              { model | signUpLoading = False, signUpPassword = Utils.initInputState }
           , Cmd.none
           , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
           )

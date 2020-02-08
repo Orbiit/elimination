@@ -78,8 +78,20 @@ urlToPage url session =
             SwitchPage (Pages.Error (Utils.StatusCode 401, "You're not signed in."))
       else if path == "create-game" then
         SwitchPage (Pages.GameSettings True)
-      else if path == "game-settings" then
-        SwitchPage (Pages.GameSettings False)
+      else if String.startsWith "settings!" path then
+        let
+          game = String.dropLeft (String.length "settings!") path
+        in
+          case session of
+            Api.SignedIn authSession ->
+              Command <|
+                Cmd.batch
+                  [ Cmd.map GameSettingsMsg <|
+                    Api.getGameSettings game authSession.session Pages.GameSettings.InfoLoaded
+                  , NProgress.start ()
+                  ]
+            Api.SignedOut ->
+              SwitchPage (Pages.Error (Utils.StatusCode 401, "You're not signed in."))
       else if path == "" then
         loadFrontPage session
       else
@@ -108,6 +120,7 @@ type alias Model =
   , userSettings : Pages.UserSettings.Model
   , user : Pages.User.Model
   , frontPage : Pages.FrontPage.Model
+  , gameSettings : Pages.GameSettings.Model
   }
 
 init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
@@ -133,6 +146,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
       , userSettings = Pages.UserSettings.init session
       , user = Pages.User.init session
       , frontPage = Pages.FrontPage.init session
+      , gameSettings = Pages.GameSettings.init session
       }
     , Cmd.batch [ removeQueryIfNeeded url navKey, cmd ]
     )
@@ -179,7 +193,7 @@ content model =
     Pages.UserSettings ->
       List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model.session model.userSettings)
     Pages.GameSettings creating ->
-      Pages.GameSettings.view
+      List.map (Html.map GameSettingsMsg) (Pages.GameSettings.view model.session model.gameSettings creating)
     Pages.Error error ->
       Pages.Error.view error
     Pages.Loading ->
@@ -205,6 +219,7 @@ type Msg
   | UserSettingsMsg Pages.UserSettings.Msg
   | UserMsg Pages.User.Msg
   | FrontPageMsg Pages.FrontPage.Msg
+  | GameSettingsMsg Pages.GameSettings.Msg
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
@@ -262,8 +277,18 @@ update msg model =
               (pageType, Cmd.none)
             Command command ->
               (model.page, command)
+        modelChanged =
+          case page of
+            Pages.GameSettings creating ->
+              if creating then
+                -- Reset game settings model if creating
+                { model | gameSettings = Pages.GameSettings.reset }
+              else
+                model
+            _ ->
+              model
       in
-        ({ model | page = page }, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
+        ({ modelChanged | page = page }, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
     BaseMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Base.update subMsg model.session model.header
@@ -284,6 +309,11 @@ update msg model =
         (subModel, subCmd, pageCmd) = Pages.FrontPage.update subMsg model.session model.frontPage
       in
         doPageCmd pageCmd ({ model | frontPage = subModel }, Cmd.map FrontPageMsg subCmd)
+    GameSettingsMsg subMsg ->
+      let
+        (subModel, subCmd, pageCmd) = Pages.GameSettings.update subMsg model.session model.gameSettings
+      in
+        doPageCmd pageCmd ({ model | gameSettings = subModel }, Cmd.map GameSettingsMsg subCmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

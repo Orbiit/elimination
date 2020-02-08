@@ -76,6 +76,20 @@ myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, st
       [ text sublabel ]
     ]
 
+type alias InputState = { value : String, original : String, valid : Bool }
+
+initInputState : InputState
+initInputState =
+  { value = "", original = "", valid = True }
+
+inputState : String -> InputState
+inputState value =
+  { value = value, original = value, valid = True }
+
+updateValue : InputState -> String -> Bool -> InputState
+updateValue state value ok =
+  { state | value = value, valid = ok }
+
 host : String
 host = "http://localhost:3000/assassin/"
 -- host = "https://sheep.thingkingland.app/assassin/"

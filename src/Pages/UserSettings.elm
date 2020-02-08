@@ -18,26 +18,12 @@ type Input
   | PasswordInput
   | OldPasswordInput
 
-type alias InputState = { value : String, original : String, valid : Bool }
-
-initInputState : InputState
-initInputState =
-  { value = "", original = "", valid = True }
-
-inputState : String -> InputState
-inputState value =
-  { value = value, original = value, valid = True }
-
-updateValue : InputState -> String -> Bool -> InputState
-updateValue state value ok =
-  { state | value = value, valid = ok }
-
 type alias Model =
-  { name : InputState
-  , email : InputState
-  , bio : InputState
-  , password : InputState
-  , oldPassword : InputState
+  { name : Utils.InputState
+  , email : Utils.InputState
+  , bio : Utils.InputState
+  , password : Utils.InputState
+  , oldPassword : Utils.InputState
   , loadingLogout : Bool
   , loading : Bool
   , problem : Maybe String
@@ -45,11 +31,11 @@ type alias Model =
 
 init : Api.Session -> Model
 init _ =
-  { name = initInputState
-  , email = initInputState
-  , bio = initInputState
-  , password = initInputState
-  , oldPassword = initInputState
+  { name = Utils.initInputState
+  , email = Utils.initInputState
+  , bio = Utils.initInputState
+  , password = Utils.initInputState
+  , oldPassword = Utils.initInputState
   , loadingLogout = False
   , loading = False
   , problem = Nothing
@@ -76,15 +62,15 @@ update msg session model =
       in
         ( case input of
           NameInput ->
-            { model | name = updateValue model.name value ok }
+            { model | name = Utils.updateValue model.name value ok }
           EmailInput ->
-            { model | email = updateValue model.email value ok }
+            { model | email = Utils.updateValue model.email value ok }
           BioInput ->
-            { model | bio = updateValue model.bio value ok }
+            { model | bio = Utils.updateValue model.bio value ok }
           PasswordInput ->
-            { model | password = updateValue model.password value ok }
+            { model | password = Utils.updateValue model.password value ok }
           OldPasswordInput ->
-            { model | oldPassword = updateValue model.oldPassword value ok }
+            { model | oldPassword = Utils.updateValue model.oldPassword value ok }
         , Cmd.none
         , Api.None
         )
@@ -103,9 +89,9 @@ update msg session model =
       case result of
         Ok { name, email, bio } ->
           ( { model
-            | name = inputState name
-            , email = inputState email
-            , bio = inputState bio
+            | name = Utils.inputState name
+            , email = Utils.inputState email
+            , bio = Utils.inputState bio
             }
           , NProgress.done ()
           , Api.ChangePage Pages.UserSettings
@@ -151,11 +137,11 @@ update msg session model =
         Ok _ ->
           ( { model
             | loading = False
-            , name = inputState model.name.value
-            , email = inputState model.email.value
-            , bio = inputState model.bio.value
-            , password = initInputState
-            , oldPassword = initInputState
+            , name = Utils.inputState model.name.value
+            , email = Utils.inputState model.email.value
+            , bio = Utils.inputState model.bio.value
+            , password = Utils.initInputState
+            , oldPassword = Utils.initInputState
             }
           , Cmd.none
           , Api.None
