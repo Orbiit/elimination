@@ -16,6 +16,7 @@ type Session
 type PageCmd
   = ChangeSession Session
   | ChangePage Pages.Page
+  | Redirect String
   | Batch (List PageCmd)
   | None
 

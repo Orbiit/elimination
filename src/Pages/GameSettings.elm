@@ -132,7 +132,10 @@ update msg session model =
             , password = Utils.inputState model.password.value
             }
           , Cmd.none
-          , Api.None
+          , if model.game == Nothing then
+            Api.Redirect ("?settings!" ++ gameID)
+          else
+            Api.None
           )
         Err error ->
           ({ model | loading = False, problem = Just (Tuple.second error) }, Cmd.none, Api.sessionCouldExpire error)
@@ -141,14 +144,21 @@ view : Api.Session -> Model -> List (Html Msg)
 view session model =
   [ div [ A.class "main content settings" ]
     [ h1 []
-      [ text "Game settings"
-      , span [ A.class "flex" ]
-        []
-      , button [ A.class "button", A.attribute "disabled" "" ]
-        [ text "Start game" ]
-      , a [ A.class "button", A.href "./game.html" ]
-        [ text "View game page" ]
-      ]
+      (Utils.filter
+        [ Just (text "Game settings")
+        , Just (span [ A.class "flex" ] [])
+        , if model.game /= Nothing && not model.started then
+          Just (button [ A.class "button" ]
+            [ text "Start game" ])
+        else
+          Nothing
+        , case model.game of
+          Just gameID ->
+            Just (a [ A.class "button", A.href ("?!" ++ gameID) ]
+              [ text "View game page" ])
+          Nothing ->
+            Nothing
+        ])
     , form [ onSubmit Save ]
       ([ div [ A.class "input-row" ]
         [ Utils.myInput
@@ -220,12 +230,15 @@ view session model =
           [])
     , div [ A.class "members" ]
       [ h2 [ A.class "members-header" ]
-        [ text "Participants (6)"
+        ([ text "Participants (6)"
         , span [ A.class "flex" ]
           []
-        , button [ A.class "button" ]
-          [ text "Shuffle targets" ]
         ]
+        ++ (if model.started then
+          [ button [ A.class "button" ]
+            [ text "Shuffle targets" ] ]
+        else
+          []))
       , div [ A.class "member-item" ]
         [ div [ A.class "member" ]
           [ a [ A.class "link member-link", A.href "./user.html" ]

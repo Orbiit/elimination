@@ -251,6 +251,8 @@ doPageCmd pageCmd (model, cmd) =
       )
     Api.ChangePage page ->
       ({ model | page = page }, cmd)
+    Api.Redirect url ->
+      (model, Cmd.batch [ Nav.pushUrl model.key url, cmd ])
     Api.Batch pageCmds ->
       case pageCmds of
         firstPageCmd :: others ->
