@@ -27,6 +27,24 @@ type PageCmd
   = SwitchPage Pages.Page
   | Command (Cmd Msg)
 
+loadFrontPage : Api.Session -> PageCmd
+loadFrontPage session =
+  case session of
+    Api.SignedIn authSession ->
+      Command <|
+        Cmd.batch
+          [ Cmd.map FrontPageMsg <|
+            Api.statuses authSession.session Pages.FrontPage.StatusesLoaded
+          , NProgress.start ()
+          ]
+    Api.SignedOut ->
+      Command <|
+        Cmd.batch
+          [ Cmd.map FrontPageMsg <|
+            Api.getStats Pages.FrontPage.StatsLoaded
+          , NProgress.start ()
+          ]
+
 urlToPage : Url.Url -> Api.Session -> PageCmd
 urlToPage url session =
   case url.query of
@@ -61,20 +79,11 @@ urlToPage url session =
       else if path == "game-settings" then
         SwitchPage Pages.GameSettings
       else if path == "" then
-        SwitchPage Pages.FrontPage
+        loadFrontPage session
       else
         SwitchPage <| Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL.")
     Nothing ->
-      SwitchPage Pages.FrontPage
-
-type alias Model =
-  { page : Pages.Page
-  , key : Nav.Key
-  , session : Api.Session
-  , header : Base.Model
-  , userSettings : Pages.UserSettings.Model
-  , user : Pages.User.Model
-  }
+      loadFrontPage session
 
 removeQueryIfNeeded : Url.Url -> Nav.Key -> Cmd Msg
 removeQueryIfNeeded url key =
@@ -88,6 +97,16 @@ removeQueryIfNeeded url key =
         Cmd.none
     Nothing ->
       Cmd.none
+
+type alias Model =
+  { page : Pages.Page
+  , key : Nav.Key
+  , session : Api.Session
+  , header : Base.Model
+  , userSettings : Pages.UserSettings.Model
+  , user : Pages.User.Model
+  , frontPage : Pages.FrontPage.Model
+  }
 
 init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init (sessionMaybe, usernameMaybe) url navKey =
@@ -111,6 +130,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
       , header = Base.init session
       , userSettings = Pages.UserSettings.init session
       , user = Pages.User.init session
+      , frontPage = Pages.FrontPage.init session
       }
     , Cmd.batch [ removeQueryIfNeeded url navKey, cmd ]
     )
@@ -145,7 +165,7 @@ content : Model -> List (Html.Html Msg)
 content model =
   case model.page of
     Pages.FrontPage ->
-      Pages.FrontPage.view
+      List.map (Html.map FrontPageMsg) (Pages.FrontPage.view model.session model.frontPage)
     Pages.Terms ->
       Pages.Terms.view
     Pages.Privacy ->
@@ -182,6 +202,7 @@ type Msg
   | BaseMsg Base.Msg
   | UserSettingsMsg Pages.UserSettings.Msg
   | UserMsg Pages.User.Msg
+  | FrontPageMsg Pages.FrontPage.Msg
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
@@ -256,6 +277,11 @@ update msg model =
         (subModel, subCmd, pageCmd) = Pages.User.update subMsg model.session model.user
       in
         doPageCmd pageCmd ({ model | user = subModel }, Cmd.map UserMsg subCmd)
+    FrontPageMsg subMsg ->
+      let
+        (subModel, subCmd, pageCmd) = Pages.FrontPage.update subMsg model.session model.frontPage
+      in
+        doPageCmd pageCmd ({ model | frontPage = subModel }, Cmd.map FrontPageMsg subCmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

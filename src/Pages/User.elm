@@ -14,7 +14,7 @@ type alias Model =
   }
 
 init : Api.Session -> Model
-init session =
+init _ =
   { username = ""
   , info =
     { name = ""
