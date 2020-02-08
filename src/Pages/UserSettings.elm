@@ -33,13 +33,11 @@ updateValue state value ok =
   { state | value = value, valid = ok }
 
 type alias Model =
-  { values :
-    { name : InputState
-    , email : InputState
-    , bio : InputState
-    , password : InputState
-    , oldPassword : InputState
-    }
+  { name : InputState
+  , email : InputState
+  , bio : InputState
+  , password : InputState
+  , oldPassword : InputState
   , loadingLogout : Bool
   , loading : Bool
   , problem : Maybe String
@@ -47,13 +45,11 @@ type alias Model =
 
 init : Api.Session -> Model
 init _ =
-  { values =
-    { name = initInputState
-    , email = initInputState
-    , bio = initInputState
-    , password = initInputState
-    , oldPassword = initInputState
-    }
+  { name = initInputState
+  , email = initInputState
+  , bio = initInputState
+  , password = initInputState
+  , oldPassword = initInputState
   , loadingLogout = False
   , loading = False
   , problem = Nothing
@@ -67,7 +63,7 @@ type Msg
   | Save
   | Saved (Result Utils.HttpError ())
 
-update : Msg -> Api.Session -> Model -> (Model, Api.PageCmd Msg)
+update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg session model =
   case msg of
     Change input validate value ->
@@ -77,105 +73,95 @@ update msg session model =
             False
           Nothing ->
             True
-        values = model.values
       in
-        ({ model
-        | values =
-          case input of
-            NameInput ->
-              { values | name = updateValue values.name value ok }
-            EmailInput ->
-              { values | email = updateValue values.email value ok }
-            BioInput ->
-              { values | bio = updateValue values.bio value ok }
-            PasswordInput ->
-              { values | password = updateValue values.password value ok }
-            OldPasswordInput ->
-              { values | oldPassword = updateValue values.oldPassword value ok }
-        }, Api.Command Cmd.none)
+        ( case input of
+          NameInput ->
+            { model | name = updateValue model.name value ok }
+          EmailInput ->
+            { model | email = updateValue model.email value ok }
+          BioInput ->
+            { model | bio = updateValue model.bio value ok }
+          PasswordInput ->
+            { model | password = updateValue model.password value ok }
+          OldPasswordInput ->
+            { model | oldPassword = updateValue model.oldPassword value ok }
+        , Cmd.none
+        , Api.None
+        )
     Logout ->
       case session of
         Api.SignedIn authSession ->
           ( { model | loadingLogout = True }
-          , Api.Command (Api.logout authSession.session LoggedOut)
+          , Api.logout authSession.session LoggedOut
+          , Api.None
           )
         Api.SignedOut ->
-          (model, Api.Command Cmd.none)
+          (model, Cmd.none, Api.None)
     LoggedOut _ ->
-      ({ model | loadingLogout = False }, Api.ChangeSession Api.SignedOut)
+      ({ model | loadingLogout = False }, Cmd.none, Api.ChangeSession Api.SignedOut)
     InfoLoaded result ->
       case result of
         Ok { name, email, bio } ->
-          let
-            values = model.values
-          in
-            ( { model
-              | values =
-                { values
-                | name = inputState name
-                , email = inputState email
-                , bio = inputState bio
-                }
-              }
-            , Api.ChangePage Pages.UserSettings (NProgress.done ())
-            )
+          ( { model
+            | name = inputState name
+            , email = inputState email
+            , bio = inputState bio
+            }
+          , NProgress.done ()
+          , Api.ChangePage Pages.UserSettings
+          )
         Err error ->
-          (model, Api.ChangePage (Pages.Error error) (NProgress.done ()))
+          (model, NProgress.done (), Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ])
     Save ->
       case session of
         Api.SignedIn authSession ->
           ( { model | loading = True, problem = Nothing }
-          , Api.Command <|
-            Api.setSettings (E.object
+          , Api.setSettings (E.object
               (List.filterMap (\a -> a)
-                [ if model.values.name.value /= model.values.name.original then
-                  Just ("name", E.string model.values.name.value)
+                [ if model.name.value /= model.name.original then
+                  Just ("name", E.string model.name.value)
                 else
                   Nothing
-                , if model.values.email.value /= model.values.email.original then
-                  Just ("email", E.string model.values.email.value)
+                , if model.email.value /= model.email.original then
+                  Just ("email", E.string model.email.value)
                 else
                   Nothing
-                , if model.values.bio.value /= model.values.bio.original then
-                  Just ("bio", E.string model.values.bio.value)
+                , if model.bio.value /= model.bio.original then
+                  Just ("bio", E.string model.bio.value)
                 else
                   Nothing
-                , if String.isEmpty model.values.password.value then
+                , if String.isEmpty model.password.value then
                   Nothing
                 else
-                  Just ("password", E.string model.values.password.value)
+                  Just ("password", E.string model.password.value)
                 -- Using password value here so that oldPassword can be empty
-                , if String.isEmpty model.values.password.value then
+                , if String.isEmpty model.password.value then
                   Nothing
                 else
-                  Just ("oldPassword", E.string model.values.oldPassword.value)
+                  Just ("oldPassword", E.string model.oldPassword.value)
                 ]
               )
             ) authSession.session Saved
+          , Api.None
           )
         Api.SignedOut ->
-          (model, Api.Command Cmd.none)
+          (model, Cmd.none, Api.None)
     Saved result ->
       case result of
         Ok _ ->
-          let
-            values = model.values
-          in
-            ( { model
-              | loading = False
-              , values =
-                { values
-                | name = inputState model.values.name.value
-                , email = inputState model.values.email.value
-                , bio = inputState model.values.bio.value
-                , password = initInputState
-                , oldPassword = initInputState
-                }
-              }
-            , Api.Command Cmd.none
-            )
+          ( { model
+            | loading = False
+            , name = inputState model.name.value
+            , email = inputState model.email.value
+            , bio = inputState model.bio.value
+            , password = initInputState
+            , oldPassword = initInputState
+            }
+          , Cmd.none
+          , Api.None
+          )
         Err error ->
-          ({ model | loading = False, problem = Just (Tuple.second error) }, Api.Command Cmd.none)
+          ({ model | loading = False, problem = Just (Tuple.second error) }, Cmd.none, Api.sessionCouldExpire error)
 
 view : Api.Session -> Model -> List (Html Msg)
 view session model =
@@ -209,7 +195,7 @@ view session model =
           , sublabel = Api.Validate.nameLabel
           , type_ = "text"
           , placeholder = "Billy Chelontuvier"
-          , value = model.values.name.value
+          , value = model.name.value
           , validate = Api.Validate.nameOk
           , maxChars = Nothing
           , storeValueMsg = Change NameInput }
@@ -218,7 +204,7 @@ view session model =
           , sublabel = Api.Validate.emailLabel
           , type_ = "email"
           , placeholder = "billygamer5@example.com"
-          , value = model.values.email.value
+          , value = model.email.value
           , validate = Api.Validate.emailOk
           , maxChars = Nothing
           , storeValueMsg = Change EmailInput }
@@ -229,7 +215,7 @@ view session model =
           , sublabel = ""
           , type_ = "textarea"
           , placeholder = "Introduce yourself here"
-          , value = model.values.bio.value
+          , value = model.bio.value
           , validate = \value ->
             if String.length value > 2000 then
               Just "Bio can only be at most 2000 characters long."
@@ -246,7 +232,7 @@ view session model =
           , sublabel = Api.Validate.passwordLabel
           , type_ = "password"
           , placeholder = "hunter2"
-          , value = model.values.password.value
+          , value = model.password.value
           , validate = \value ->
             if String.isEmpty value then
               Nothing
@@ -259,21 +245,21 @@ view session model =
           , sublabel = ""
           , type_ = "password"
           , placeholder = "hunter2"
-          , value = model.values.oldPassword.value
+          , value = model.oldPassword.value
           , validate = \value -> Nothing
           , maxChars = Nothing
           , storeValueMsg = Change OldPasswordInput }
         ]
       , let
-          valid = model.values.name.valid &&
-            model.values.email.valid &&
-            model.values.bio.valid &&
-            model.values.password.valid &&
-            model.values.oldPassword.valid
-          changed = model.values.name.value /= model.values.name.original ||
-            model.values.email.value /= model.values.email.original ||
-            model.values.bio.value /= model.values.bio.original ||
-            not (String.isEmpty model.values.password.value)
+          valid = model.name.valid &&
+            model.email.valid &&
+            model.bio.valid &&
+            model.password.valid &&
+            model.oldPassword.valid
+          changed = model.name.value /= model.name.original ||
+            model.email.value /= model.email.original ||
+            model.bio.value /= model.bio.original ||
+            not (String.isEmpty model.password.value)
         in
           input
             [ A.class "button submit-btn"

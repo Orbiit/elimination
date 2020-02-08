@@ -186,6 +186,42 @@ type Msg
 port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
 
+doPageCmd : Api.PageCmd -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+doPageCmd pageCmd (model, cmd) =
+  case pageCmd of
+    Api.ChangeSession authSession ->
+      ( { model
+        | session = authSession
+        }
+      , case authSession of
+        Api.SignedIn { session, username } ->
+          Cmd.batch
+            [ saveSession (session, username)
+            , case model.page of
+                Pages.Error _ ->
+                  Nav.pushUrl model.key "?"
+                _ ->
+                  Cmd.none
+            , cmd
+            ]
+        Api.SignedOut ->
+          Cmd.batch
+            [ logout ()
+            , Nav.pushUrl model.key "?"
+            , cmd
+            ]
+      )
+    Api.ChangePage page ->
+      ({ model | page = page }, cmd)
+    Api.Batch pageCmds ->
+      case pageCmds of
+        firstPageCmd :: others ->
+          doPageCmd (Api.Batch others) (doPageCmd firstPageCmd (model, cmd))
+        [] ->
+          (model, cmd)
+    Api.None ->
+      (model, cmd)
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
@@ -207,67 +243,19 @@ update msg model =
         ({ model | page = page }, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
     BaseMsg subMsg ->
       let
-        (subModel, pageCmd) = Base.update subMsg model.session model.header
+        (subModel, subCmd, pageCmd) = Base.update subMsg model.session model.header
       in
-        case pageCmd of
-          Api.Command cmd ->
-            ({ model | header = subModel }, Cmd.map BaseMsg cmd)
-          -- Log in
-          Api.ChangeSession authSession ->
-            ( { model
-              | header = subModel
-              , session = authSession
-              }
-            , case authSession of
-              Api.SignedIn { session, username } ->
-                Cmd.batch
-                  [ saveSession (session, username)
-                  , case model.page of
-                      Pages.Error _ ->
-                        Nav.pushUrl model.key "?"
-                      _ ->
-                        Cmd.none
-                  ]
-              _ ->
-                Cmd.none
-            )
-          _ ->
-            (model, Cmd.none)
+        doPageCmd pageCmd ({ model | header = subModel }, Cmd.map BaseMsg subCmd)
     UserSettingsMsg subMsg ->
       let
-        (subModel, pageCmd) = Pages.UserSettings.update subMsg model.session model.userSettings
+        (subModel, subCmd, pageCmd) = Pages.UserSettings.update subMsg model.session model.userSettings
       in
-        case pageCmd of
-          Api.Command cmd ->
-            ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg cmd)
-          -- Log out
-          Api.ChangeSession authSession ->
-            ( { model
-              | userSettings = subModel
-              , session = authSession
-              }
-            , case authSession of
-              Api.SignedOut ->
-                Cmd.batch
-                  [ logout ()
-                  , Nav.pushUrl model.key "?"
-                  ]
-              _ ->
-                Cmd.none
-            )
-          Api.ChangePage page cmd ->
-            ({ model | userSettings = subModel, page = page }, Cmd.map UserSettingsMsg cmd)
+        doPageCmd pageCmd ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg subCmd)
     UserMsg subMsg ->
       let
-        (subModel, pageCmd) = Pages.User.update subMsg model.session model.user
+        (subModel, subCmd, pageCmd) = Pages.User.update subMsg model.session model.user
       in
-        case pageCmd of
-          Api.Command cmd ->
-            ({ model | user = subModel }, Cmd.map UserMsg cmd)
-          Api.ChangePage page cmd ->
-            ({ model | user = subModel, page = page }, Cmd.map UserMsg cmd)
-          _ ->
-            (model, Cmd.none)
+        doPageCmd pageCmd ({ model | user = subModel }, Cmd.map UserMsg subCmd)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

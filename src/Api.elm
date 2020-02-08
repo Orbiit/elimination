@@ -13,10 +13,18 @@ type Session
   = SignedIn { session : SessionID, username : String }
   | SignedOut
 
-type PageCmd msg
-  = Command (Cmd msg)
-  | ChangeSession Session
-  | ChangePage Pages.Page (Cmd msg)
+type PageCmd
+  = ChangeSession Session
+  | ChangePage Pages.Page
+  | Batch (List PageCmd)
+  | None
+
+sessionCouldExpire : Utils.HttpError -> PageCmd
+sessionCouldExpire (_, error) =
+  if String.startsWith "(Invalid session)" error then
+    ChangeSession SignedOut
+  else
+    None
 
 type alias UserInfo =
   { username : String

@@ -71,7 +71,8 @@ myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, st
     ]
 
 host : String
-host = "https://sheep.thingkingland.app/assassin/"
+host = "http://localhost:3000/assassin/"
+-- host = "https://sheep.thingkingland.app/assassin/"
 
 type ErrorStatus
   = ErrorStatusText String

@@ -31,15 +31,13 @@ type Input
 
 type alias Model =
   { open : HeaderWindow
-  , values :
-    { loginUsername : (String, Bool)
-    , loginPassword : (String, Bool)
-    , signUpUsername : (String, Bool)
-    , signUpName : (String, Bool)
-    , signUpEmail : (String, Bool)
-    , signUpPassword : (String, Bool)
-    , signUpPasswordAgain : (String, Bool)
-    }
+  , loginUsername : (String, Bool)
+  , loginPassword : (String, Bool)
+  , signUpUsername : (String, Bool)
+  , signUpName : (String, Bool)
+  , signUpEmail : (String, Bool)
+  , signUpPassword : (String, Bool)
+  , signUpPasswordAgain : (String, Bool)
   , loginLoading : Bool
   , loginProblem : Maybe String
   , signUpLoading : Bool
@@ -49,15 +47,13 @@ type alias Model =
 init : Api.Session -> Model
 init _ =
   { open = None
-  , values =
-    { loginUsername = ("", False)
-    , loginPassword = ("", False)
-    , signUpUsername = ("", False)
-    , signUpName = ("", False)
-    , signUpEmail = ("", False)
-    , signUpPassword = ("", False)
-    , signUpPasswordAgain = ("", False)
-    }
+  , loginUsername = ("", False)
+  , loginPassword = ("", False)
+  , signUpUsername = ("", False)
+  , signUpName = ("", False)
+  , signUpEmail = ("", False)
+  , signUpPassword = ("", False)
+  , signUpPasswordAgain = ("", False)
   , loginLoading = False
   , loginProblem = Nothing
   , signUpLoading = False
@@ -73,15 +69,15 @@ type Msg
   | SignUp
   | NewSession AuthMethod String (Result Utils.HttpError Api.SessionID)
 
-update : Msg -> Api.Session -> Model -> (Model, Api.PageCmd Msg)
+update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg session model =
   case msg of
     Open window ->
-      ({ model | open = window }, Api.Command Cmd.none)
+      ({ model | open = window }, Cmd.none, Api.None)
     Close ->
-      ({ model | open = None }, Api.Command Cmd.none)
+      ({ model | open = None }, Cmd.none, Api.None)
     DontClose ->
-      (model, Api.Command Cmd.none)
+      (model, Cmd.none, Api.None)
     Change input validate value ->
       let
         ok = case validate value of
@@ -89,64 +85,64 @@ update msg session model =
             False
           Nothing ->
             True
-        values = model.values
       in
-        ({ model
-        | values =
-          case input of
-            LoginUsername ->
-              { values | loginUsername = (value, ok) }
-            LoginPassword ->
-              { values | loginPassword = (value, ok) }
-            SignUpUsername ->
-              { values | signUpUsername = (value, ok) }
-            SignUpName ->
-              { values | signUpName = (value, ok) }
-            SignUpEmail ->
-              { values | signUpEmail = (value, ok) }
-            SignUpPassword ->
-              { values | signUpPassword = (value, ok) }
-            SignUpPasswordAgain ->
-              { values | signUpPasswordAgain = (value, ok) }
-        }, Api.Command Cmd.none)
+        ( case input of
+          LoginUsername ->
+            { model | loginUsername = (value, ok) }
+          LoginPassword ->
+            { model | loginPassword = (value, ok) }
+          SignUpUsername ->
+            { model | signUpUsername = (value, ok) }
+          SignUpName ->
+            { model | signUpName = (value, ok) }
+          SignUpEmail ->
+            { model | signUpEmail = (value, ok) }
+          SignUpPassword ->
+            { model | signUpPassword = (value, ok) }
+          SignUpPasswordAgain ->
+            { model | signUpPasswordAgain = (value, ok) }
+        , Cmd.none
+        , Api.None
+        )
     Login ->
       ( { model | loginLoading = True, loginProblem = Nothing }
-      , Api.Command (Api.login
-        (Tuple.first model.values.loginUsername)
-        (Tuple.first model.values.loginPassword)
+      , Api.login
+        (Tuple.first model.loginUsername)
+        (Tuple.first model.loginPassword)
         (NewSession LoginMethod)
-      ))
+      , Api.None
+      )
     SignUp ->
       ( { model | signUpLoading = True, signUpProblem = Nothing }
-      , Api.Command (Api.createUser
-        { username = (Tuple.first model.values.signUpUsername)
-        , name = (Tuple.first model.values.signUpName)
-        , password = (Tuple.first model.values.signUpPassword)
-        , email = (Tuple.first model.values.signUpEmail)
+      , Api.createUser
+        { username = (Tuple.first model.signUpUsername)
+        , name = (Tuple.first model.signUpName)
+        , password = (Tuple.first model.signUpPassword)
+        , email = (Tuple.first model.signUpEmail)
         , bio = ""
         }
         (NewSession SignUpMethod)
-      ))
+      , Api.None
+      )
     NewSession method username sessionResult ->
       case sessionResult of
         Ok newSession ->
-          let
-            values = model.values
-          in
-            ( case method of
-              LoginMethod ->
-                { model | loginLoading = False, values = { values | loginPassword = ("", False) } }
-              SignUpMethod ->
-                { model | signUpLoading = False, values = { values | signUpPassword = ("", False) } }
-            , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
-            )
+          ( case method of
+            LoginMethod ->
+              { model | loginLoading = False, loginPassword = ("", False) }
+            SignUpMethod ->
+              { model | signUpLoading = False, signUpPassword = ("", False) }
+          , Cmd.none
+          , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
+          )
         Err error ->
           ( case method of
             LoginMethod ->
               { model | loginLoading = False, loginProblem = Just (Tuple.second error) }
             SignUpMethod ->
               { model | signUpLoading = False, signUpProblem = Just (Tuple.second error) }
-          , Api.Command Cmd.none
+          , Cmd.none
+          , Api.None
           )
 
 headerWindow : Model -> String -> String -> HeaderWindow -> List (Html Msg) -> Html Msg
@@ -219,7 +215,7 @@ makeHeader session model =
               , sublabel = ""
               , type_ = "text"
               , placeholder = "billygamer5"
-              , value = Tuple.first model.values.loginUsername
+              , value = Tuple.first model.loginUsername
               , validate = \_ -> Nothing
               , maxChars = Nothing
               , storeValueMsg = Change LoginUsername
@@ -229,7 +225,7 @@ makeHeader session model =
               , sublabel = ""
               , type_ = "password"
               , placeholder = "hunter2"
-              , value = Tuple.first model.values.loginPassword
+              , value = Tuple.first model.loginPassword
               , validate = \_ -> Nothing
               , maxChars = Nothing
               , storeValueMsg = Change LoginPassword
@@ -257,7 +253,7 @@ makeHeader session model =
               , sublabel = Api.Validate.usernameLabel
               , type_ = "text"
               , placeholder = "billygamer5"
-              , value = Tuple.first model.values.signUpUsername
+              , value = Tuple.first model.signUpUsername
               , validate = Api.Validate.usernameOk
               , maxChars = Nothing
               , storeValueMsg = Change SignUpUsername
@@ -267,7 +263,7 @@ makeHeader session model =
               , sublabel = Api.Validate.nameLabel
               , type_ = "text"
               , placeholder = "Billy Chelontuvier"
-              , value = Tuple.first model.values.signUpName
+              , value = Tuple.first model.signUpName
               , validate = Api.Validate.nameOk
               , maxChars = Nothing
               , storeValueMsg = Change SignUpName
@@ -277,7 +273,7 @@ makeHeader session model =
               , sublabel = Api.Validate.emailLabel
               , type_ = "email"
               , placeholder = "billygamer5@example.com"
-              , value = Tuple.first model.values.signUpEmail
+              , value = Tuple.first model.signUpEmail
               , validate = Api.Validate.emailOk
               , maxChars = Nothing
               , storeValueMsg = Change SignUpEmail
@@ -287,7 +283,7 @@ makeHeader session model =
               , sublabel = Api.Validate.passwordLabel
               , type_ = "password"
               , placeholder = "hunter2"
-              , value = Tuple.first model.values.signUpPassword
+              , value = Tuple.first model.signUpPassword
               , validate = Api.Validate.passwordOk
               , maxChars = Nothing
               , storeValueMsg = Change SignUpPassword
@@ -297,9 +293,9 @@ makeHeader session model =
               , sublabel = ""
               , type_ = "password"
               , placeholder = "hunter2"
-              , value = Tuple.first model.values.signUpPasswordAgain
+              , value = Tuple.first model.signUpPasswordAgain
               , validate = \value ->
-                if value /= Tuple.first model.values.signUpPassword then
+                if value /= Tuple.first model.signUpPassword then
                   Just "Passwords do not match!"
                 else
                   Nothing

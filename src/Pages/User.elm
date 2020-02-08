@@ -25,15 +25,15 @@ init session =
 type Msg
   = InfoLoaded String (Result Utils.HttpError Api.User)
 
-update : Msg -> Api.Session -> Model -> (Model, Api.PageCmd Msg)
+update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg session model =
   case msg of
     InfoLoaded username result ->
       case result of
         Ok user ->
-          ({ model | username = username, info = user }, Api.ChangePage Pages.User (NProgress.done ()))
+          ({ model | username = username, info = user }, NProgress.done (), Api.ChangePage Pages.User)
         Err error ->
-          (model, Api.ChangePage (Pages.Error error) (NProgress.done ()))
+          (model, NProgress.done (), Api.ChangePage (Pages.Error error))
 
 view : Api.Session -> Model -> List (Html msg)
 view session model =
