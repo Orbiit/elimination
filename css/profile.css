@@ -18,10 +18,13 @@
   margin-left: 10px;
   word-break: normal;
 }
-.profile-username {
-  font-size: 14px;
+.profile-subtitle {
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.5);
   word-break: break-word;
+}
+.profile-subtitle .link {
+  color: rgba(255, 255, 255, 0.8);
 }
 .profile-desc {
   font-size: 16px;
@@ -29,6 +32,9 @@
   color: rgba(255, 255, 255, 0.9);
   white-space: pre-wrap;
   word-break: break-word;
+}
+.profile-desc .link {
+  color: #faa;
 }
 .profile-stats {
   text-align: center;

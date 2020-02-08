@@ -23,8 +23,8 @@ init : Api.Session -> Model
 init _ =
   { game = ""
   , info =
-    { owner = ""
-    , ownerName = ""
+    { creator = ""
+    , creatorName = ""
     , name = ""
     , description = ""
     , players = []
@@ -145,7 +145,7 @@ view session model =
         ++ case session of
           Api.SignedIn { username } ->
             Utils.filter
-              [ if username == model.info.owner then
+              [ if username == model.info.creator then
                 Just (a [ A.class "icon-btn settings-btn", A.href ("?settings!" ++ model.game) ]
                   [ text "Settings" ])
               else
@@ -195,6 +195,11 @@ view session model =
                 [ text errorText ] ]
             Nothing ->
               [])
+        ]
+      , span [ A.class "profile-subtitle" ]
+        [ text "Created by "
+        , a [ A.class "link", A.href ("?@" ++ model.info.creator) ]
+          [ text model.info.creatorName ]
         ]
       , p [ A.class "profile-desc" ]
         [ text model.info.description ]

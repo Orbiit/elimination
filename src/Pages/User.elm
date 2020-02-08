@@ -86,7 +86,7 @@ view session model =
   [ article [ A.class "main content profile" ]
     [ div [ A.class "profile-info" ]
       [ h1 [ A.class "profile-name" ]
-        ([ a [ A.class "link", A.href ("@" ++ model.username) ]
+        ([ a [ A.class "link", A.href ("?@" ++ model.username) ]
           [ text model.info.name ]
         , span [ A.class "flex" ]
           []
@@ -100,8 +100,8 @@ view session model =
               []
           Api.SignedOut ->
             [])
-      , span [ A.class "profile-username" ]
-        [ text model.username ]
+      , span [ A.class "profile-subtitle" ]
+        [ text ("@" ++ model.username) ]
       , p [ A.class "profile-desc" ]
         [ text model.info.bio ]
       , p [ A.class "profile-desc profile-stats" ]

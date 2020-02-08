@@ -297,8 +297,8 @@ type alias GamePlayer =
   }
 
 type alias Game =
-  { owner : String
-  , ownerName : String
+  { creator : String
+  , creatorName : String
   , name : String
   , description : String
   , players : List GamePlayer
