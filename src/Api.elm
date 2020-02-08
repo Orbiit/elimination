@@ -3,6 +3,7 @@ module Api exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 import Http
+import Time
 
 import Utils
 import Pages
@@ -12,6 +13,12 @@ type alias SessionID = String
 type Session
   = SignedIn { session : SessionID, username : String }
   | SignedOut
+
+type alias GlobalModel m =
+  { m
+  | session : Session
+  , zone : Time.Zone
+  }
 
 type PageCmd
   = ChangeSession Session

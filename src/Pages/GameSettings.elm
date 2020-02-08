@@ -5,8 +5,9 @@ import Html.Attributes as A
 import Html.Events exposing (onSubmit, stopPropagationOn, onClick)
 import Json.Decode as D
 import Json.Encode as E
+import Time
 
-import Utils
+import Utils exposing (char, Char(..))
 import Api
 import Pages
 import NProgress
@@ -33,8 +34,8 @@ type alias Model =
   , kicking : Bool
   }
 
-reset : Model
-reset =
+init : Model
+init =
   { game = Nothing
   , name = Utils.updateValue Utils.initInputState "" False
   , desc = Utils.initInputState
@@ -50,9 +51,6 @@ reset =
   , kicking = False
   }
 
-init : Api.Session -> Model
-init _ = reset
-
 type Msg
   = Change Input (String -> Maybe String) String
   | InfoLoaded Api.GameID (Result Utils.HttpError Api.GameSettingsInfo)
@@ -64,8 +62,8 @@ type Msg
   | Kick
   | Kicked String (Result Utils.HttpError ())
 
-update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg session model =
+update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
+update msg { session } model =
   case msg of
     Change input validate value ->
       let
@@ -185,14 +183,17 @@ update msg session model =
         Err ((_, errorMsg) as error) ->
           ({ model | kicking = False, kickProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
 
-renderPlayer : Model -> Api.GameSettingsPlayer -> Html Msg
-renderPlayer model player =
+renderPlayer : Model -> Time.Zone -> Api.GameSettingsPlayer -> Html Msg
+renderPlayer model zone player =
   div [ A.class "member-item" ]
     ([ div [ A.class "member" ]
       [ a [ A.class "link member-link", A.href ("?@" ++ player.username) ]
         [ text player.name ]
       , span [ A.class "member-info" ]
-        [ text "Joined 2020-01-22 · 2 eliminations" ]
+        [ text ("Joined " ++ Utils.displayTime zone player.joined ++ " "
+          ++ char Middot ++ " " ++ String.fromInt player.kills
+          ++ (if player.kills == 1 then " elimination" else " eliminations"))
+        ]
       ]
     , button [ A.class "button kick-btn", onClick (ShowModal player.username) ]
       [ text "Kick" ]
@@ -236,8 +237,8 @@ renderPlayer model player =
       Nothing ->
         [])
 
-view : Api.Session -> Model -> List (Html Msg)
-view session model =
+view : Api.GlobalModel m -> Model -> List (Html Msg)
+view { zone } model =
   [ div [ A.class "main content settings" ]
     [ h1 []
       (Utils.filter
@@ -338,7 +339,7 @@ view session model =
             [ text "Shuffle targets" ] ]
         else
           [])))
-      :: List.map (renderPlayer model) model.players
+      :: List.map (renderPlayer model zone) model.players
       )
     ]
   ]

@@ -19,8 +19,8 @@ type alias Model =
   , problem : Maybe String
   }
 
-init : Api.Session -> Model
-init _ =
+init : Model
+init =
   { game = ""
   , info =
     { creator = ""
@@ -51,8 +51,8 @@ type BtnAction
   = Joining String
   | Leaving String
 
-update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg session model =
+update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
+update msg { session } model =
   case msg of
     InfoLoaded gameID result ->
       case result of
@@ -132,8 +132,8 @@ renderPlayer player =
       ]
     ]
 
-view : Api.Session -> Model -> List (Html Msg)
-view session model =
+view : Api.GlobalModel m -> Model -> List (Html Msg)
+view { session } model =
   [ article [ A.class "main content profile" ]
     [ div [ A.class "profile-info" ]
       [ h1 [ A.class "profile-name" ]

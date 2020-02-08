@@ -29,8 +29,8 @@ type alias Model =
   , problem : Maybe String
   }
 
-init : Api.Session -> Model
-init _ =
+init : Model
+init =
   { name = Utils.initInputState
   , email = Utils.initInputState
   , bio = Utils.initInputState
@@ -49,8 +49,8 @@ type Msg
   | Save
   | Saved (Result Utils.HttpError ())
 
-update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg session model =
+update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
+update msg { session } model =
   case msg of
     Change input validate value ->
       let
@@ -149,8 +149,8 @@ update msg session model =
         Err error ->
           ({ model | loading = False, problem = Just (Tuple.second error) }, Cmd.none, Api.sessionCouldExpire error)
 
-view : Api.Session -> Model -> List (Html Msg)
-view session model =
+view : Api.GlobalModel m -> Model -> List (Html Msg)
+view { session } model =
   [ div [ A.class "main content settings" ]
     [ h1 []
       [ text "User settings"

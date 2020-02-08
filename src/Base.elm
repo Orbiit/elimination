@@ -44,8 +44,8 @@ type alias Model =
   , signUpProblem : Maybe String
   }
 
-init : Api.Session -> Model
-init _ =
+init : Model
+init =
   { open = None
   , loginUsername = Utils.initInputState
   , loginPassword = Utils.initInputState
@@ -69,8 +69,8 @@ type Msg
   | SignUp
   | NewSession AuthMethod String (Result Utils.HttpError Api.SessionID)
 
-update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg session model =
+update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
+update msg { session } model =
   case msg of
     Open window ->
       ({ model | open = window }, Cmd.none, Api.None)
@@ -157,8 +157,8 @@ headerWindow model btnClass btnLabel window windowContent =
       [ text btnLabel ]
       :: windowContent
 
-makeHeader : Api.Session -> Model -> Bool -> List (Html Msg)
-makeHeader session model frontPage =
+makeHeader : Api.GlobalModel m -> Model -> Bool -> List (Html Msg)
+makeHeader { session } model frontPage =
   [ header
     [ A.class "header"
     , A.classList

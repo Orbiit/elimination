@@ -13,8 +13,8 @@ type alias Model =
   , info : Api.User
   }
 
-init : Api.Session -> Model
-init _ =
+init : Model
+init =
   { username = ""
   , info =
     { name = ""
@@ -27,8 +27,8 @@ init _ =
 type Msg
   = InfoLoaded String (Result Utils.HttpError Api.User)
 
-update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg session model =
+update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
+update msg { session } model =
   case msg of
     InfoLoaded username result ->
       case result of
@@ -81,8 +81,8 @@ renderGame game =
       ]
     ]
 
-view : Api.Session -> Model -> List (Html Msg)
-view session model =
+view : Api.GlobalModel m -> Model -> List (Html Msg)
+view { session } model =
   [ article [ A.class "main content profile" ]
     [ div [ A.class "profile-info" ]
       [ h1 [ A.class "profile-name" ]

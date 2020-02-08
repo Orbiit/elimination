@@ -12,8 +12,8 @@ type alias Model =
   , statuses : List Api.Status
   }
 
-init : Api.Session -> Model
-init _ =
+init : Model
+init =
   { stats =
     { kills = 0
     , active = 0
@@ -26,8 +26,8 @@ type Msg
   = StatsLoaded (Result Utils.HttpError Api.Stats)
   | StatusesLoaded (Result Utils.HttpError (List Api.Status))
 
-update : Msg -> Api.Session -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg session model =
+update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
+update msg { session } model =
   case msg of
     StatsLoaded result ->
       case result of
@@ -42,8 +42,8 @@ update msg session model =
         Err error ->
           (model, NProgress.done (), Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ])
 
-view : Api.Session -> Model -> List (Html msg)
-view session model =
+view : Api.GlobalModel m -> Model -> List (Html msg)
+view { session } model =
   case session of
     Api.SignedIn _ ->
       [ div [ A.class "main targets" ]

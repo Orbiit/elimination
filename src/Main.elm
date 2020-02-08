@@ -7,6 +7,8 @@ import Html
 import Url
 import Url.Builder
 import Json.Decode as D
+import Time
+import Task
 
 import Base
 import Api
@@ -125,6 +127,7 @@ removeQueryIfNeeded url key =
 type alias Model =
   { page : Pages.Page
   , key : Nav.Key
+  , zone : Time.Zone
   , session : Api.Session
   , header : Base.Model
   , userSettings : Pages.UserSettings.Model
@@ -152,15 +155,20 @@ init (sessionMaybe, usernameMaybe) url navKey =
   in
     ( { page = page
       , key = navKey
+      , zone = Time.utc
       , session = session
-      , header = Base.init session
-      , userSettings = Pages.UserSettings.init session
-      , user = Pages.User.init session
-      , frontPage = Pages.FrontPage.init session
-      , gameSettings = Pages.GameSettings.init session
-      , game = Pages.Game.init session
+      , header = Base.init
+      , userSettings = Pages.UserSettings.init
+      , user = Pages.User.init
+      , frontPage = Pages.FrontPage.init
+      , gameSettings = Pages.GameSettings.init
+      , game = Pages.Game.init
       }
-    , Cmd.batch [ removeQueryIfNeeded url navKey, cmd ]
+    , Cmd.batch
+      [ removeQueryIfNeeded url navKey
+      , cmd
+      , Task.perform AdjustTimeZone Time.here
+      ]
     )
 
 title : Model -> String
@@ -193,19 +201,19 @@ content : Model -> List (Html.Html Msg)
 content model =
   case model.page of
     Pages.FrontPage ->
-      List.map (Html.map FrontPageMsg) (Pages.FrontPage.view model.session model.frontPage)
+      List.map (Html.map FrontPageMsg) (Pages.FrontPage.view model model.frontPage)
     Pages.Terms ->
       Pages.Terms.view
     Pages.Privacy ->
       Pages.Privacy.view
     Pages.User ->
-      List.map (Html.map UserMsg) (Pages.User.view model.session model.user)
+      List.map (Html.map UserMsg) (Pages.User.view model model.user)
     Pages.Game ->
-      List.map (Html.map GameMsg) (Pages.Game.view model.session model.game)
+      List.map (Html.map GameMsg) (Pages.Game.view model model.game)
     Pages.UserSettings ->
-      List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model.session model.userSettings)
+      List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model model.userSettings)
     Pages.GameSettings ->
-      List.map (Html.map GameSettingsMsg) (Pages.GameSettings.view model.session model.gameSettings)
+      List.map (Html.map GameSettingsMsg) (Pages.GameSettings.view model model.gameSettings)
     Pages.Error error ->
       Pages.Error.view error
     Pages.Loading ->
@@ -219,7 +227,7 @@ view model =
     else
       title model ++ " | Elimination"
   , body
-    = List.map (Html.map BaseMsg) (Base.makeHeader model.session model.header (model.page == Pages.FrontPage))
+    = List.map (Html.map BaseMsg) (Base.makeHeader model model.header (model.page == Pages.FrontPage))
     ++ content model
     ++ Base.makeFooter
   }
@@ -227,6 +235,7 @@ view model =
 type Msg
   = ChangedUrl Url.Url
   | ClickedLink Browser.UrlRequest
+  | AdjustTimeZone Time.Zone
   | BaseMsg Base.Msg
   | UserSettingsMsg Pages.UserSettings.Msg
   | UserMsg Pages.User.Msg
@@ -292,41 +301,43 @@ update msg model =
               case pageType of
                 -- Hacky special case for creating a game
                 Pages.GameSettings ->
-                  ({ model | page = pageType, gameSettings = Pages.GameSettings.reset }, Cmd.none)
+                  ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, Cmd.none)
                 _ ->
                   ({ model | page = pageType }, Cmd.none)
             Command command ->
               (model, command)
       in
         (newModel, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
+    AdjustTimeZone zone ->
+      ({ model | zone = zone }, Cmd.none)
     BaseMsg subMsg ->
       let
-        (subModel, subCmd, pageCmd) = Base.update subMsg model.session model.header
+        (subModel, subCmd, pageCmd) = Base.update subMsg model model.header
       in
         doPageCmd pageCmd ({ model | header = subModel }, Cmd.map BaseMsg subCmd)
     UserSettingsMsg subMsg ->
       let
-        (subModel, subCmd, pageCmd) = Pages.UserSettings.update subMsg model.session model.userSettings
+        (subModel, subCmd, pageCmd) = Pages.UserSettings.update subMsg model model.userSettings
       in
         doPageCmd pageCmd ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg subCmd)
     UserMsg subMsg ->
       let
-        (subModel, subCmd, pageCmd) = Pages.User.update subMsg model.session model.user
+        (subModel, subCmd, pageCmd) = Pages.User.update subMsg model model.user
       in
         doPageCmd pageCmd ({ model | user = subModel }, Cmd.map UserMsg subCmd)
     FrontPageMsg subMsg ->
       let
-        (subModel, subCmd, pageCmd) = Pages.FrontPage.update subMsg model.session model.frontPage
+        (subModel, subCmd, pageCmd) = Pages.FrontPage.update subMsg model model.frontPage
       in
         doPageCmd pageCmd ({ model | frontPage = subModel }, Cmd.map FrontPageMsg subCmd)
     GameSettingsMsg subMsg ->
       let
-        (subModel, subCmd, pageCmd) = Pages.GameSettings.update subMsg model.session model.gameSettings
+        (subModel, subCmd, pageCmd) = Pages.GameSettings.update subMsg model model.gameSettings
       in
         doPageCmd pageCmd ({ model | gameSettings = subModel }, Cmd.map GameSettingsMsg subCmd)
     GameMsg subMsg ->
       let
-        (subModel, subCmd, pageCmd) = Pages.Game.update subMsg model.session model.game
+        (subModel, subCmd, pageCmd) = Pages.Game.update subMsg model model.game
       in
         doPageCmd pageCmd ({ model | game = subModel }, Cmd.map GameMsg subCmd)
 
