@@ -37,8 +37,8 @@ myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, st
     , A.classList
       [ ( "error"
         , case validate value of
-          Just _ ->
-            True
+          Just error ->
+            not (String.isEmpty error)
           Nothing ->
             False
         )
@@ -54,15 +54,21 @@ myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, st
       ]
         ++ case maxChars of
           Just chars ->
-            [ span [ A.class "count" ]
-              [ text (String.fromInt (String.length value) ++ "/" ++ String.fromInt chars) ]
-            ]
+            if toFloat (String.length value) / toFloat chars >= 0.7 then
+              [ span [ A.class "count" ]
+                [ text (String.fromInt (String.length value) ++ "/" ++ String.fromInt chars) ]
+              ]
+            else
+              []
           Nothing ->
             [])
     , span [ A.class "problem" ]
       (case validate value of
         Just error ->
-          [ text error ]
+          if String.isEmpty error then
+            []
+          else
+            [ text error ]
         Nothing ->
           []
       )

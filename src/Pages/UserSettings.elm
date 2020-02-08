@@ -197,7 +197,7 @@ view session model =
           , placeholder = "Billy Chelontuvier"
           , value = model.name.value
           , validate = Api.Validate.nameOk
-          , maxChars = Nothing
+          , maxChars = Just 50
           , storeValueMsg = Change NameInput }
         , Utils.myInput
           { labelText = "Email"
@@ -206,7 +206,7 @@ view session model =
           , placeholder = "billygamer5@example.com"
           , value = model.email.value
           , validate = Api.Validate.emailOk
-          , maxChars = Nothing
+          , maxChars = Just 320
           , storeValueMsg = Change EmailInput }
         ]
       , div [ A.class "input-row" ]
@@ -238,7 +238,7 @@ view session model =
               Nothing
             else
               Api.Validate.passwordOk value
-          , maxChars = Nothing
+          , maxChars = Just 200
           , storeValueMsg = Change PasswordInput }
         , Utils.myInput
           { labelText = "Old password"

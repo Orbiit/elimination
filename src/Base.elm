@@ -29,15 +29,21 @@ type Input
   | SignUpPassword
   | SignUpPasswordAgain
 
+type alias InputState = { value : String, valid : Bool }
+
+initInputState : InputState
+initInputState =
+  { value = "", valid = False }
+
 type alias Model =
   { open : HeaderWindow
-  , loginUsername : (String, Bool)
-  , loginPassword : (String, Bool)
-  , signUpUsername : (String, Bool)
-  , signUpName : (String, Bool)
-  , signUpEmail : (String, Bool)
-  , signUpPassword : (String, Bool)
-  , signUpPasswordAgain : (String, Bool)
+  , loginUsername : InputState
+  , loginPassword : InputState
+  , signUpUsername : InputState
+  , signUpName : InputState
+  , signUpEmail : InputState
+  , signUpPassword : InputState
+  , signUpPasswordAgain : InputState
   , loginLoading : Bool
   , loginProblem : Maybe String
   , signUpLoading : Bool
@@ -47,13 +53,13 @@ type alias Model =
 init : Api.Session -> Model
 init _ =
   { open = None
-  , loginUsername = ("", False)
-  , loginPassword = ("", False)
-  , signUpUsername = ("", False)
-  , signUpName = ("", False)
-  , signUpEmail = ("", False)
-  , signUpPassword = ("", False)
-  , signUpPasswordAgain = ("", False)
+  , loginUsername = initInputState
+  , loginPassword = initInputState
+  , signUpUsername = initInputState
+  , signUpName = initInputState
+  , signUpEmail = initInputState
+  , signUpPassword = initInputState
+  , signUpPasswordAgain = initInputState
   , loginLoading = False
   , loginProblem = Nothing
   , signUpLoading = False
@@ -80,7 +86,7 @@ update msg session model =
       (model, Cmd.none, Api.None)
     Change input validate value ->
       let
-        ok = case validate value of
+        valid = case validate value of
           Just _ ->
             False
           Nothing ->
@@ -88,37 +94,35 @@ update msg session model =
       in
         ( case input of
           LoginUsername ->
-            { model | loginUsername = (value, ok) }
+            { model | loginUsername = { value = value, valid = valid } }
           LoginPassword ->
-            { model | loginPassword = (value, ok) }
+            { model | loginPassword = { value = value, valid = valid } }
           SignUpUsername ->
-            { model | signUpUsername = (value, ok) }
+            { model | signUpUsername = { value = value, valid = valid } }
           SignUpName ->
-            { model | signUpName = (value, ok) }
+            { model | signUpName = { value = value, valid = valid } }
           SignUpEmail ->
-            { model | signUpEmail = (value, ok) }
+            { model | signUpEmail = { value = value, valid = valid } }
           SignUpPassword ->
-            { model | signUpPassword = (value, ok) }
+            { model | signUpPassword = { value = value, valid = valid } }
           SignUpPasswordAgain ->
-            { model | signUpPasswordAgain = (value, ok) }
+            { model | signUpPasswordAgain = { value = value, valid = valid } }
         , Cmd.none
         , Api.None
         )
     Login ->
       ( { model | loginLoading = True, loginProblem = Nothing }
-      , Api.login
-        (Tuple.first model.loginUsername)
-        (Tuple.first model.loginPassword)
+      , Api.login model.loginUsername.value model.loginPassword.value
         (NewSession LoginMethod)
       , Api.None
       )
     SignUp ->
       ( { model | signUpLoading = True, signUpProblem = Nothing }
       , Api.createUser
-        { username = (Tuple.first model.signUpUsername)
-        , name = (Tuple.first model.signUpName)
-        , password = (Tuple.first model.signUpPassword)
-        , email = (Tuple.first model.signUpEmail)
+        { username = model.signUpUsername.value
+        , name = model.signUpName.value
+        , password = model.signUpPassword.value
+        , email = model.signUpEmail.value
         , bio = ""
         }
         (NewSession SignUpMethod)
@@ -129,18 +133,18 @@ update msg session model =
         Ok newSession ->
           ( case method of
             LoginMethod ->
-              { model | loginLoading = False, loginPassword = ("", False) }
+              { model | loginLoading = False, loginPassword = initInputState }
             SignUpMethod ->
-              { model | signUpLoading = False, signUpPassword = ("", False) }
+              { model | signUpLoading = False, signUpPassword = initInputState }
           , Cmd.none
           , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
           )
-        Err error ->
+        Err (_, error) ->
           ( case method of
             LoginMethod ->
-              { model | loginLoading = False, loginProblem = Just (Tuple.second error) }
+              { model | loginLoading = False, loginProblem = Just error }
             SignUpMethod ->
-              { model | signUpLoading = False, signUpProblem = Just (Tuple.second error) }
+              { model | signUpLoading = False, signUpProblem = Just error }
           , Cmd.none
           , Api.None
           )
@@ -215,8 +219,12 @@ makeHeader session model =
               , sublabel = ""
               , type_ = "text"
               , placeholder = "billygamer5"
-              , value = Tuple.first model.loginUsername
-              , validate = \_ -> Nothing
+              , value = model.loginUsername.value
+              , validate = \value ->
+                if String.isEmpty value then
+                  Just ""
+                else
+                  Nothing
               , maxChars = Nothing
               , storeValueMsg = Change LoginUsername
               }
@@ -225,8 +233,12 @@ makeHeader session model =
               , sublabel = ""
               , type_ = "password"
               , placeholder = "hunter2"
-              , value = Tuple.first model.loginPassword
-              , validate = \_ -> Nothing
+              , value = model.loginPassword.value
+              , validate = \value ->
+                if String.isEmpty value then
+                  Just ""
+                else
+                  Nothing
               , maxChars = Nothing
               , storeValueMsg = Change LoginPassword
               }
@@ -235,7 +247,9 @@ makeHeader session model =
               , A.classList [ ("loading", model.loginLoading) ]
               , A.type_ "submit"
               , A.value "Log in"
-              , A.disabled model.loginLoading
+              , A.disabled (model.loginLoading || not
+                (model.loginUsername.valid &&
+                model.loginPassword.valid))
               ]
               []
             ]
@@ -253,9 +267,13 @@ makeHeader session model =
               , sublabel = Api.Validate.usernameLabel
               , type_ = "text"
               , placeholder = "billygamer5"
-              , value = Tuple.first model.signUpUsername
-              , validate = Api.Validate.usernameOk
-              , maxChars = Nothing
+              , value = model.signUpUsername.value
+              , validate = \value ->
+                if String.isEmpty value then
+                  Just ""
+                else
+                  Api.Validate.usernameOk value
+              , maxChars = Just 20
               , storeValueMsg = Change SignUpUsername
               }
             , Utils.myInput
@@ -263,9 +281,13 @@ makeHeader session model =
               , sublabel = Api.Validate.nameLabel
               , type_ = "text"
               , placeholder = "Billy Chelontuvier"
-              , value = Tuple.first model.signUpName
-              , validate = Api.Validate.nameOk
-              , maxChars = Nothing
+              , value = model.signUpName.value
+              , validate = \value ->
+                if String.isEmpty value then
+                  Just ""
+                else
+                  Api.Validate.nameOk value
+              , maxChars = Just 50
               , storeValueMsg = Change SignUpName
               }
             , Utils.myInput
@@ -273,9 +295,13 @@ makeHeader session model =
               , sublabel = Api.Validate.emailLabel
               , type_ = "email"
               , placeholder = "billygamer5@example.com"
-              , value = Tuple.first model.signUpEmail
-              , validate = Api.Validate.emailOk
-              , maxChars = Nothing
+              , value = model.signUpEmail.value
+              , validate = \value ->
+                if String.isEmpty value then
+                  Just ""
+                else
+                  Api.Validate.emailOk value
+              , maxChars = Just 320
               , storeValueMsg = Change SignUpEmail
               }
             , Utils.myInput
@@ -283,9 +309,13 @@ makeHeader session model =
               , sublabel = Api.Validate.passwordLabel
               , type_ = "password"
               , placeholder = "hunter2"
-              , value = Tuple.first model.signUpPassword
-              , validate = Api.Validate.passwordOk
-              , maxChars = Nothing
+              , value = model.signUpPassword.value
+              , validate = \value ->
+                if String.isEmpty value then
+                  Just ""
+                else
+                  Api.Validate.passwordOk value
+              , maxChars = Just 200
               , storeValueMsg = Change SignUpPassword
               }
             , Utils.myInput
@@ -293,9 +323,9 @@ makeHeader session model =
               , sublabel = ""
               , type_ = "password"
               , placeholder = "hunter2"
-              , value = Tuple.first model.signUpPasswordAgain
+              , value = model.signUpPasswordAgain.value
               , validate = \value ->
-                if value /= Tuple.first model.signUpPassword then
+                if value /= model.signUpPassword.value then
                   Just "Passwords do not match!"
                 else
                   Nothing
@@ -307,7 +337,12 @@ makeHeader session model =
               , A.classList [ ("loading", model.signUpLoading) ]
               , A.type_ "submit"
               , A.value "Sign up"
-              , A.disabled model.signUpLoading
+              , A.disabled (model.signUpLoading || not
+                (model.signUpUsername.valid &&
+                model.signUpName.valid &&
+                model.signUpEmail.valid &&
+                model.signUpPassword.valid &&
+                model.signUpPasswordAgain.valid))
               ]
               []
             ]
