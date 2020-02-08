@@ -148,7 +148,10 @@ view session model =
         [ Just (text "Game settings")
         , Just (span [ A.class "flex" ] [])
         , if model.game /= Nothing && not model.started then
-          Just (button [ A.class "button" ]
+          Just (button
+            [ A.class "button"
+            , A.disabled (List.length model.players < 2)
+            ]
             [ text "Start game" ])
         else
           Nothing

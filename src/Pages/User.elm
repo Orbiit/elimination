@@ -37,7 +37,7 @@ update msg session model =
         Err error ->
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
 
-renderMyGame : Api.UserMyGame -> Html msg
+renderMyGame : Api.UserMyGame -> Html Msg
 renderMyGame game =
   a [ A.class "item", A.href ("?!" ++ game.game) ]
     [ span [ A.class "item-name" ]
@@ -45,17 +45,17 @@ renderMyGame game =
     , span [ A.class "item-info" ]
       [ text
         (String.fromInt game.players
-        ++ if game.players == 1 then
+        ++ (if game.players == 1 then
           " participant"
         else
-          " participants"
+          " participants")
         ++ " " ++ char Middot ++ " "
         ++ Api.gameStatusName game
         )
       ]
     ]
 
-renderGame : Api.UserGame -> Html msg
+renderGame : Api.UserGame -> Html Msg
 renderGame game =
   a [ A.class "item", A.href ("?!" ++ game.game) ]
     [ span [ A.class "item-name" ]
@@ -63,25 +63,25 @@ renderGame game =
     , span [ A.class "item-info" ]
       [ text
         (String.fromInt game.players
-        ++ if game.players == 1 then
+        ++ (if game.players == 1 then
           " participant"
         else
-          " participants"
+          " participants")
         ++ " " ++ char Middot ++ " "
         ++ Api.gameStatusName game
         ++ " " ++ char Middot ++ " "
-        ++ if game.alive then "Alive" else "Eliminated"
+        ++ (if game.alive then "Alive" else "Eliminated")
         ++ " " ++ char Middot ++ " "
         ++ String.fromInt game.kills
-        ++ if game.kills == 1 then
+        ++ (if game.kills == 1 then
           " elimination"
         else
           " eliminations"
-        )
+        ))
       ]
     ]
 
-view : Api.Session -> Model -> List (Html msg)
+view : Api.Session -> Model -> List (Html Msg)
 view session model =
   [ article [ A.class "main content profile" ]
     [ div [ A.class "profile-info" ]
