@@ -32,6 +32,8 @@ type alias Model =
   , kickReason : String
   , kickProblem : Maybe String
   , kicking : Bool
+  , starting : Bool
+  , shuffling : Bool
   }
 
 init : Model
@@ -49,6 +51,8 @@ init =
   , kickReason = ""
   , kickProblem = Nothing
   , kicking = False
+  , starting = False
+  , shuffling = False
   }
 
 type Msg
@@ -61,6 +65,10 @@ type Msg
   | DontClose
   | Kick
   | Kicked String (Result Utils.HttpError ())
+  | Start
+  | Started (Result Utils.HttpError ())
+  | Shuffle
+  | Shuffled (Result Utils.HttpError ())
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg { session } model =
@@ -182,6 +190,36 @@ update msg { session } model =
           )
         Err ((_, errorMsg) as error) ->
           ({ model | kicking = False, kickProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    Start ->
+      case (model.game, session) of
+        (Just gameID, Api.SignedIn authSession) ->
+          ( { model | starting = True, problem = Nothing }
+          , Api.start gameID authSession.session Started
+          , Api.None
+          )
+        _ ->
+          (model, Cmd.none, Api.None)
+    Started result ->
+      case result of
+        Ok _ ->
+          ({ model | starting = False, started = True }, Cmd.none, Api.None)
+        Err ((_, errorMsg) as error) ->
+          ({ model | starting = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    Shuffle ->
+      case (model.game, session) of
+        (Just gameID, Api.SignedIn authSession) ->
+          ( { model | shuffling = True, problem = Nothing }
+          , Api.shuffle gameID authSession.session Shuffled
+          , Api.None
+          )
+        _ ->
+          (model, Cmd.none, Api.None)
+    Shuffled result ->
+      case result of
+        Ok _ ->
+          ({ model | shuffling = False }, Cmd.none, Api.None)
+        Err ((_, errorMsg) as error) ->
+          ({ model | shuffling = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
 
 renderPlayer : Model -> Time.Zone -> Api.GameSettingsPlayer -> Html Msg
 renderPlayer model zone player =
@@ -247,7 +285,9 @@ view { zone } model =
         , if model.game /= Nothing && not model.started then
           Just (button
             [ A.class "button"
-            , A.disabled (List.length model.players < 2)
+            , A.classList [ ("loading", model.starting) ]
+            , A.disabled (List.length model.players < 2 || model.starting)
+            , onClick Start
             ]
             [ text "Start game" ])
         else
@@ -335,7 +375,12 @@ view { zone } model =
           []
         ]
         ++ (if model.started then
-          [ button [ A.class "button" ]
+          [ button
+            [ A.class "button"
+            , A.classList [ ("loading", model.shuffling) ]
+            , A.disabled model.shuffling
+            , onClick Shuffle
+            ]
             [ text "Shuffle targets" ] ]
         else
           [])))

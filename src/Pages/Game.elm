@@ -150,11 +150,13 @@ view { session } model =
                   [ text "Settings" ])
               else
                 Nothing
-              , if List.any (\player -> player.username == username) model.info.players then
+              , if model.info.started then
+                Nothing
+              else if List.any (\player -> player.username == username) model.info.players then
                 Just (button
                   [ A.class "button join-btn"
                   , A.classList [ ("loading", model.loading) ]
-                  , A.disabled <| model.loading || model.info.started
+                  , A.disabled model.loading
                   , onClick Leave
                   ]
                   [ text "Leave" ])
