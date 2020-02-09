@@ -152,12 +152,13 @@ init (sessionMaybe, usernameMaybe) url navKey =
           (pageType, Cmd.none)
         Command command ->
           (Pages.Loading, command)
+    (header, headerCmd) = Base.init session
   in
     ( { page = page
       , key = navKey
       , zone = Time.utc
       , session = session
-      , header = Base.init
+      , header = header
       , userSettings = Pages.UserSettings.init
       , user = Pages.User.init
       , frontPage = Pages.FrontPage.init
@@ -167,6 +168,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
     , Cmd.batch
       [ removeQueryIfNeeded url navKey
       , cmd
+      , Cmd.map BaseMsg headerCmd
       , Task.perform AdjustTimeZone Time.here
       ]
     )

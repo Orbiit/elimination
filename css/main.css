@@ -153,8 +153,24 @@ a {
 }
 
 .notif-btn {
+  position: relative;
   background-image: url('../images/material-notifications.svg');
   margin-left: 10px;
+}
+.show-unread {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 12px;
+  color: black;
+  background-color: #faa;
+  display: inline-block;
+  font-weight: bold;
+  min-height: 1em;
+  min-width: 1em;
+  line-height: 1;
+  padding: 2px;
+  border-radius: 50px;
 }
 .notif-header {
   display: flex;
@@ -169,7 +185,14 @@ a {
   margin-left: 10px;
 }
 .notif {
-  margin-top: 10px;
+  padding: 5px 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.unread {
+  border-left-color: #faa;
+  color: white;
 }
 .notif-timestamp {
   display: block;

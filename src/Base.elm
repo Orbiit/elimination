@@ -5,6 +5,7 @@ import Html.Attributes as A
 import Html.Events exposing (stopPropagationOn, onSubmit)
 import Json.Decode as D
 import Http
+import Time
 
 import Api
 import Api.Validate
@@ -42,23 +43,29 @@ type alias Model =
   , loginProblem : Maybe String
   , signUpLoading : Bool
   , signUpProblem : Maybe String
+  , notifs : List Api.NotificationMessage
+  , notifsProblem : Maybe String
   }
 
-init : Model
-init =
-  { open = None
-  , loginUsername = Utils.initInputState
-  , loginPassword = Utils.initInputState
-  , signUpUsername = Utils.initInputState
-  , signUpName = Utils.initInputState
-  , signUpEmail = Utils.initInputState
-  , signUpPassword = Utils.initInputState
-  , signUpPasswordAgain = Utils.initInputState
-  , loginLoading = False
-  , loginProblem = Nothing
-  , signUpLoading = False
-  , signUpProblem = Nothing
-  }
+init : Api.Session -> (Model, Cmd Msg)
+init session =
+  ( { open = None
+    , loginUsername = Utils.initInputState
+    , loginPassword = Utils.initInputState
+    , signUpUsername = Utils.initInputState
+    , signUpName = Utils.initInputState
+    , signUpEmail = Utils.initInputState
+    , signUpPassword = Utils.initInputState
+    , signUpPasswordAgain = Utils.initInputState
+    , loginLoading = False
+    , loginProblem = Nothing
+    , signUpLoading = False
+    , signUpProblem = Nothing
+    , notifs = []
+    , notifsProblem = Nothing
+    }
+  , updateNotifs session
+  )
 
 type Msg
   = Open HeaderWindow
@@ -68,6 +75,15 @@ type Msg
   | Login
   | SignUp
   | NewSession AuthMethod String (Result Utils.HttpError Api.SessionID)
+  | NotificationsLoaded (Result Utils.HttpError Api.NotificationResult)
+
+updateNotifs : Api.Session -> Cmd Msg
+updateNotifs session =
+  case session of
+    Api.SignedIn authSession ->
+      Api.notifications 0 10 authSession.session NotificationsLoaded
+    Api.SignedOut ->
+      Cmd.none
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg { session } model =
@@ -142,8 +158,14 @@ update msg { session } model =
           , Cmd.none
           , Api.None
           )
+    NotificationsLoaded result ->
+      case result of
+        Ok { notifications } ->
+          ({ model | notifs = notifications }, Cmd.none, Api.None)
+        Err ((_, errorMsg) as error) ->
+          ({ model | notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
 
-headerWindow : Model -> String -> String -> HeaderWindow -> List (Html Msg) -> Html Msg
+headerWindow : Model -> String -> List (Html Msg) -> HeaderWindow -> List (Html Msg) -> Html Msg
 headerWindow model btnClass btnLabel window windowContent =
   div
     [ A.class "header-window-wrapper"
@@ -154,11 +176,54 @@ headerWindow model btnClass btnLabel window windowContent =
       [ A.class btnClass
       , stopPropagationOn "click" (D.succeed (Open window, True))
       ]
-      [ text btnLabel ]
+      btnLabel
       :: windowContent
 
+renderNotification : Time.Zone -> Api.NotificationMessage -> Html msg
+renderNotification zone { time, read, message } =
+  div
+    [ A.class "notif"
+    , A.classList [ ("unread", not read) ]
+    ]
+    [ span [ A.class "notif-timestamp" ]
+      [ text (Utils.displayTime zone time) ]
+    , case message of
+      Api.GameStarted gameID gameName ->
+        span [ A.class "notif-msg" ]
+          [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+            [ text gameName ]
+          , text " has started! See the home page for your target."
+          ]
+      Api.GameEnded gameID gameName winner winnerName ->
+        span [ A.class "notif-msg" ]
+          [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+            [ text gameName ]
+          , text " has ended! "
+          , a [ A.class "link", A.href ("?@" ++ winner) ]
+            [ text winnerName ]
+          , text " was the last one standing."
+          ]
+      Api.Killed gameID gameName killer killerName ->
+        span [ A.class "notif-msg" ]
+          [ a [ A.class "link", A.href ("?@" ++ killer) ]
+            [ text killerName ]
+          , text " has just eliminated you in "
+          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+            [ text gameName ]
+          , text "."
+          ]
+      Api.Kicked gameID gameName reason ->
+        span [ A.class "notif-msg" ]
+          [ text "You were kicked from "
+          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+            [ text gameName ]
+          , text
+            (if reason == "" then " for unknown reasons." else " because \"" ++ reason ++ "\".")
+          ]
+    ]
+
 makeHeader : Api.GlobalModel m -> Model -> Bool -> List (Html Msg)
-makeHeader { session } model frontPage =
+makeHeader { session, zone } model frontPage =
   [ header
     [ A.class "header"
     , A.classList
@@ -182,47 +247,33 @@ makeHeader { session } model frontPage =
             [ text "Create game" ] ]
         else
           [])
-        ++ [ headerWindow model "icon-btn header-btn notif-btn" "Notifications" Notifications <|
+        ++ [ headerWindow model "icon-btn header-btn notif-btn"
+          [ text "Notifications ("
+          , let
+              unread = List.length (List.filter (\notif -> not notif.read) model.notifs)
+            in
+              span [ A.classList [ ("show-unread", unread /= 0) ] ]
+                [ text (String.fromInt unread) ]
+          , text ")" ]
+          Notifications
           [ div [ A.class "header-window notifs" ]
-            [ h2 [ A.class "notif-header" ]
+            ((h2 [ A.class "notif-header" ]
               [ text "Notifications"
               , span [ A.class "flex" ]
                 []
-              , label [ A.class "email-notifs" ]
-                [ input [ A.class "checkbox", A.type_ "checkbox" ]
-                  []
-                , text "Send notifications to my email"
-                ]
-              ]
-            , div [ A.class "notif" ]
-              [ span [ A.class "notif-timestamp" ]
-                [ text "2020-01-13 at 16:01" ]
-              , span [ A.class "notif-msg" ]
-                [ a [ A.class "link", A.href "./user.html" ]
-                  [ text "Jame Sooth" ]
-                , text "has just eliminated you in "
-                , a [ A.class "link", A.href "./game.html" ]
-                  [ text "Practice elimination round 6" ]
-                , text "."
-                ]
-              ]
-            , div [ A.class "notif" ]
-              [ span [ A.class "notif-timestamp" ]
-                [ text "2019-12-01 at 06:39" ]
-              , span [ A.class "notif-msg" ]
-                [ text "You were kicked from "
-                , a [ A.class "link", A.href "./game.html" ]
-                  [ text "Test round. DO NOT JOIN." ]
-                , text "because \"boomer\"."
-                ]
-              ]
-            ]
+              -- , label [ A.class "email-notifs" ]
+              --   [ input [ A.class "checkbox", A.type_ "checkbox" ]
+              --     []
+              --   , text "Send notifications to my email"
+              --   ]
+              ])
+            :: List.map (renderNotification zone) model.notifs)
           ]
         , a [ A.class "link username", A.href "?settings" ]
           [ text username ]
         ]
       Api.SignedOut ->
-        [ headerWindow model "header-btn auth-btn" "Log in" LoginWindow <|
+        [ headerWindow model "header-btn auth-btn" [ text "Log in" ] LoginWindow <|
           [ form [ A.class "header-window", onSubmit Login ] <|
             [ Utils.myInput
               { labelText = "Username"
@@ -270,7 +321,7 @@ makeHeader { session } model frontPage =
               Nothing ->
                 []
           ]
-        , headerWindow model "header-btn auth-btn" "Sign up" SignUpWindow <|
+        , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow <|
           [ form [ A.class "header-window", onSubmit SignUp ] <|
             [ Utils.myInput
               { labelText = "Username"

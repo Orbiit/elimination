@@ -211,33 +211,41 @@ type alias NotificationResult =
   , notifications : List NotificationMessage
   }
 
+parseNotifType : String -> D.Decoder Notification
+parseNotifType notifType =
+  case notifType of
+    "game-started" ->
+      D.map2 GameStarted
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+    "game-ended" ->
+      D.map4 GameEnded
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+        (D.field "winner" D.string)
+        (D.field "winnerName" D.string)
+    "killed" ->
+      D.map4 Killed
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+        (D.field "by" D.string)
+        (D.field "name" D.string)
+    "kicked" ->
+      D.map3 Kicked
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+        (D.field "reason" D.string)
+    _ ->
+      D.fail ("Do not know how to deal with notification type \"" ++ notifType ++ "\"")
+
 notifications : Int -> Int -> SessionID -> (Result Utils.HttpError NotificationResult -> msg) -> Cmd msg
 notifications from to session msg =
-  Utils.get "statuses" (Just session) msg (D.map2 NotificationResult
+  Utils.get "notifications" (Just session) msg (D.map2 NotificationResult
     (D.field "end" D.bool)
     (D.field "notifications" (D.list (D.map3 NotificationMessage
       (D.field "time" D.int)
       (D.field "read" D.bool)
-      (D.oneOf
-        [ D.map2 GameStarted
-          (D.field "game" D.string)
-          (D.field "gameName" D.string)
-        , D.map4 GameEnded
-          (D.field "game" D.string)
-          (D.field "gameName" D.string)
-          (D.field "winner" D.string)
-          (D.field "winnerName" D.string)
-        , D.map4 Killed
-          (D.field "game" D.string)
-          (D.field "gameName" D.string)
-          (D.field "by" D.string)
-          (D.field "name" D.string)
-        , D.map3 Kicked
-          (D.field "game" D.string)
-          (D.field "gameName" D.string)
-          (D.field "reason" D.string)
-        ]
-      )
+      (D.andThen parseNotifType (D.field "type" D.string))
     )))
   )
 
