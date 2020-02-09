@@ -17,6 +17,7 @@ import Pages
 import Pages.FrontPage
 import Pages.Terms
 import Pages.Privacy
+import Pages.About
 import Pages.User
 import Pages.Game
 import Pages.UserSettings
@@ -75,6 +76,8 @@ urlToPage url session =
         SwitchPage Pages.Terms
       else if path == "privacy" then
         SwitchPage Pages.Privacy
+      else if path == "about" then
+        SwitchPage Pages.About
       else if path == "game" then
         SwitchPage Pages.Game
       else if path == "settings" then
@@ -182,6 +185,8 @@ title model =
       "Terms of use"
     Pages.Privacy ->
       "Privacy policy"
+    Pages.About ->
+      "About"
     Pages.User ->
       model.user.username
     Pages.Game ->
@@ -208,6 +213,8 @@ content model =
       Pages.Terms.view
     Pages.Privacy ->
       Pages.Privacy.view
+    Pages.About ->
+      Pages.About.view
     Pages.User ->
       List.map (Html.map UserMsg) (Pages.User.view model model.user)
     Pages.Game ->

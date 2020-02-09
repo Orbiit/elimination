@@ -19,3 +19,16 @@ Build for production:
 ```sh
 npm run build
 ```
+
+## Things to add
+
+- (probably easy) Mark the winner on the game page
+  - Could also display the winner in other places too
+  - (a bit less easy but not very hard nonetheless) If so, then it should link to the winner
+- (maybe tedious) Parse for \@mentions, !games, and external links. Could also add support for bold, italics, etc.
+- (requires thinking) Finish content for about, welcome, and maybe terms pages
+- (probably very hard/complicated) Emails:
+  - Password reset forms
+  - Option for email notifications
+
+I don't think this should be a PWA since it requires an internet connection anyways.

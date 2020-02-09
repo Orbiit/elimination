@@ -8,6 +8,8 @@ import Json.Encode as E
 import Json.Decode as D
 import Time
 
+import Api.Host exposing (host)
+
 filter : List (Maybe a) -> List a
 filter list =
   List.filterMap identity list
@@ -152,10 +154,6 @@ inputState value =
 updateValue : InputState -> String -> Bool -> InputState
 updateValue state value ok =
   { state | value = value, valid = ok }
-
-host : String
-host = "http://localhost:3000/assassin/"
--- host = "https://sheep.thingkingland.app/assassin/"
 
 type ErrorStatus
   = ErrorStatusText String

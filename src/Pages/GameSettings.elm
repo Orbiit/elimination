@@ -233,9 +233,12 @@ renderPlayer model zone player =
           ++ (if player.kills == 1 then " elimination" else " eliminations"))
         ]
       ]
-    , button [ A.class "button kick-btn", onClick (ShowModal player.username) ]
-      [ text "Kick" ]
     ]
+    ++ if model.ended then
+      []
+    else
+      [ button [ A.class "button kick-btn", onClick (ShowModal player.username) ]
+        [ text "Kick" ] ]
     ++ case model.modal of
       Just username ->
         if username == player.username then
@@ -374,7 +377,7 @@ view { zone } model =
         , span [ A.class "flex" ]
           []
         ]
-        ++ (if model.started then
+        ++ (if model.started && not model.ended then
           [ button
             [ A.class "button"
             , A.classList [ ("loading", model.shuffling) ]

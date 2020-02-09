@@ -6,6 +6,7 @@ type Page
   = FrontPage
   | Terms
   | Privacy
+  | About
   | User
   | Game
   | UserSettings
