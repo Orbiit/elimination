@@ -219,12 +219,12 @@ view { session } model =
           [ text ("Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")") ])
         :: (List.map renderPlayer
           (List.sortWith (\a -> \b ->
-            case compare a.kills b.kills of
+            case compare b.kills a.kills of
               EQ ->
                 if a.alive && not b.alive then
-                  GT
-                else if b.alive && not a.alive then
                   LT
+                else if b.alive && not a.alive then
+                  GT
                 else
                   EQ
               _ as order ->

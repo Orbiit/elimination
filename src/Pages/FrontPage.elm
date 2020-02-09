@@ -2,6 +2,9 @@ module Pages.FrontPage exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
+import Html.Events exposing (onSubmit, stopPropagationOn, onClick)
+import Json.Decode as D
+
 import Api
 import Utils exposing (char, Char(..))
 import NProgress
@@ -10,6 +13,11 @@ import Pages
 type alias Model =
   { stats : Api.Stats
   , statuses : List Api.Status
+  , modal : Maybe Api.GameID
+  , code : String
+  , killing : Bool
+  , problem : Maybe String
+  , showingCode : Maybe Api.GameID
   }
 
 init : Model
@@ -20,11 +28,23 @@ init =
     , games = 0
     }
   , statuses = []
+  , modal = Nothing
+  , code = ""
+  , killing = False
+  , problem = Nothing
+  , showingCode = Nothing
   }
 
 type Msg
   = StatsLoaded (Result Utils.HttpError Api.Stats)
   | StatusesLoaded (Result Utils.HttpError (List Api.Status))
+  | ShowModal Api.GameID
+  | HideModal
+  | ChangeCode (String -> Maybe String) String
+  | Kill
+  | Killed (Result Utils.HttpError ())
+  | ShowCode Api.GameID
+  | DoNothing
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg { session } model =
@@ -38,7 +58,7 @@ update msg { session } model =
     StatusesLoaded result ->
       case result of
         Ok statuses ->
-          ({ model | statuses = statuses }
+          ({ model | statuses = statuses, showingCode = Nothing }
           , NProgress.done ()
           , Api.ChangePage Pages.FrontPage
           )
@@ -47,10 +67,54 @@ update msg { session } model =
           , NProgress.done ()
           , Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ]
           )
+    ShowModal game ->
+      ({ model | modal = Just game, code = "", problem = Nothing }, Cmd.none, Api.None)
+    HideModal ->
+      ({ model | modal = Nothing }, Cmd.none, Api.None)
+    ChangeCode _ value ->
+      ({ model | code = value }, Cmd.none, Api.None)
+    Kill ->
+      case (session, model.modal) of
+        (Api.SignedIn authSession, Just game) ->
+          ( { model | problem = Nothing, killing = True }
+          , Api.kill model.code game authSession.session Killed
+          , Api.None
+          )
+        _ ->
+          (model, Cmd.none, Api.None)
+    Killed result ->
+      case result of
+        Ok _ ->
+          ( { model | killing = False, modal = Nothing }
+          , case session of
+            Api.SignedIn authSession ->
+              Cmd.batch
+                [ Api.statuses authSession.session StatusesLoaded
+                , NProgress.start ()
+                ]
+            Api.SignedOut ->
+              Cmd.none
+          , Api.None
+          )
+        Err ((_, errorMsg) as error) ->
+          ({ model | killing = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    ShowCode game ->
+      ({ model | showingCode = Just game }, Cmd.none, Api.None)
+    DoNothing ->
+      (model, Cmd.none, Api.None)
 
-renderStatus : Api.Status -> Html msg
-renderStatus status =
-  article [ A.class "target", A.style "background-color" "rgba(255, 0, 0, 0.12)"  ]
+renderStatus : Model -> Api.Status -> Html Msg
+renderStatus model status =
+  article
+    [ A.class "target"
+    , let
+        -- Mess around with numbers for a "random"-ish number; `alpha` will
+        -- become some float between 0 and 0.2
+        number = List.sum (List.map Char.toCode (String.toList status.gameName))
+        alpha = toFloat (modBy 793 number) / (793 / 0.2)
+      in
+        A.style "background-color" ("rgba(255, 0, 0, " ++ String.fromFloat alpha ++ ")")
+    ]
     [ a [ A.class "game-link link", A.href ("?!" ++ status.game) ]
       [ text status.gameName ]
     , span [ A.class "flex" ]
@@ -59,32 +123,64 @@ renderStatus status =
       [ text "Your target is" ]
     , a [ A.class "target-name link", A.href ("?@" ++ status.target) ]
       [ text status.targetName ]
-    , button [ A.class "button kill-btn" ]
+    , button [ A.class "button kill-btn", onClick (ShowModal status.game) ]
       [ text "Eliminate" ]
-    , div [ A.class "modal-back" ]
-      [ form [ A.class "modal join-modal" ]
-        [ label [ A.class "input-wrapper" ]
-          [ span [ A.class "label" ]
-            [ text "Target's elimination sequence" ]
-          , div [ A.class "input" ]
-            [ input [ A.name "password", A.placeholder "hunter2", A.required True, A.type_ "text" ]
-              []
+    , case model.modal of
+      Just modal ->
+        if modal == status.game then
+          div [ A.class "modal-back show", onClick HideModal ]
+            [ form
+              [ A.class "modal join-modal"
+              , stopPropagationOn "click" (D.succeed (DoNothing, True))
+              , onSubmit Kill
+              ]
+              ([ Utils.myInput
+                { labelText = "Target's elimination sequence"
+                , sublabel = ""
+                , type_ = "text"
+                , placeholder = "hunter2"
+                , value = model.code
+                , validate = \value -> Nothing
+                , maxChars = Nothing
+                , storeValueMsg = ChangeCode }
+              , input
+                [ A.class "button submit-btn"
+                , A.classList [ ("loading", model.killing) ]
+                , A.type_ "submit"
+                , A.value "Eliminate"
+                , A.disabled model.killing
+                ]
+                []
+              ]
+              ++ case model.problem of
+                Just errorText ->
+                  [ span [ A.class "problematic-error" ]
+                    [ text errorText ] ]
+                Nothing ->
+                  [])
             ]
-          ]
-        , input
-          [ A.class "button submit-btn"
-          , A.type_ "submit"
-          , A.value "Eliminate"
-          ]
-          []
-        ]
-      ]
+        else
+          text ""
+      _ ->
+        text ""
     , span [ A.class "flex" ]
       []
     , span [ A.class "kill-code" ]
       [ text "Click to reveal your elimination sequence: "
-      , span [ A.class "code" ]
-        [ text status.code ]
+      , let
+          showing =
+            case model.showingCode of
+              Just game ->
+                game == status.game
+              Nothing ->
+                False
+        in
+          span
+            [ A.class "code"
+            , A.classList [ ("revealed", showing) ]
+            , onClick (if showing then DoNothing else ShowCode status.game)
+            ]
+            [ text status.code ]
       , text (" " ++ char MDash ++ " ")
       , a [ A.class "link", A.href "?about#kill-codes" ]
         [ text "What is this for?" ]
@@ -93,7 +189,7 @@ renderStatus status =
       []
     ]
 
-view : Api.GlobalModel m -> Model -> List (Html msg)
+view : Api.GlobalModel m -> Model -> List (Html Msg)
 view { session } model =
   case session of
     Api.SignedIn _ ->
@@ -103,7 +199,7 @@ view { session } model =
         :: if List.isEmpty model.statuses then
           [ p [ A.class "no-statuses" ] [ text "You aren't in any active games." ] ]
         else
-          List.map renderStatus model.statuses)
+          List.map (renderStatus model) model.statuses)
       ]
     Api.SignedOut ->
       [ div [ A.class "main front-text" ]

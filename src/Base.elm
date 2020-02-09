@@ -91,7 +91,7 @@ type Msg
   | MarkedAsRead (Result Utils.HttpError ())
 
 notifsAtATime : Int
-notifsAtATime = 1
+notifsAtATime = 5
 
 updateNotifs : Api.Session -> Cmd Msg
 updateNotifs session =

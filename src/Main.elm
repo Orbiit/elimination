@@ -254,6 +254,8 @@ doPageCmd pageCmd (model, cmd) =
     Api.ChangeSession authSession ->
       ( { model
         | session = authSession
+        -- Reset front page state to clear statuses
+        , frontPage = Pages.FrontPage.init
         }
       , case authSession of
         Api.SignedIn { session, username } ->
@@ -262,6 +264,9 @@ doPageCmd pageCmd (model, cmd) =
             , case model.page of
                 Pages.Error _ ->
                   Nav.pushUrl model.key "?"
+                Pages.FrontPage ->
+                  -- Force "reload" to refetch statuses
+                  Nav.replaceUrl model.key "?"
                 _ ->
                   Cmd.none
             , cmd
