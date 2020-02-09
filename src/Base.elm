@@ -283,6 +283,16 @@ renderNotification zone { time, read, message } =
           , text
             (if reason == "" then " for unknown reasons." else " because \"" ++ reason ++ "\".")
           ]
+      Api.Shuffle gameID gameName ->
+        span [ A.class "notif-msg" ]
+          [ text "The targets of everyone in "
+          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+            [ text gameName ]
+          , text " has been shuffled. See the home page for your new target."
+          ]
+      Api.Unknown msgType ->
+        span [ A.class "notif-msg" ]
+          [ text ("(Indistinct \"" ++ msgType ++ "\" message)") ]
     ]
 
 makeHeader : Api.GlobalModel m -> Model -> Bool -> List (Html Msg)

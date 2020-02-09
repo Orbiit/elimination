@@ -69,12 +69,15 @@ displayTime zone ms =
 
 type Char
   = Middot
+  | MDash
 
 char : Char -> String
 char specialChar =
   case specialChar of
     Middot ->
       "\u{00b7}"
+    MDash ->
+      "\u{2014}"
 
 extLink : String -> String -> String -> Html msg
 extLink linkText url className =
@@ -162,11 +165,11 @@ type alias HttpError = (ErrorStatus, ErrorMessage)
 
 parseWucky : String -> ErrorMessage
 parseWucky body =
-  case D.decodeString (D.field "mistake" D.string) body of
+  case D.decodeString (D.oneOf [ (D.field "mistake" D.string), (D.field "problem" D.string) ]) body of
     Ok wucky ->
       wucky
     Err parseError ->
-      "Supposedly something went wrong, but the server didn't articulate well enough about it.\n"
+      "Supposedly something went wrong, but the server didn't articulate well enough about it:\n"
         ++ D.errorToString parseError
 
 parseResponse : D.Decoder a -> Http.Response String -> Result HttpError a
@@ -188,7 +191,8 @@ parseResponse decoder response =
             400 ->
               parseWucky body
             500 ->
-              "The server hurt itself in the process of fulfilling your request."
+              "The server hurt itself in the process of fulfilling your request:\n"
+                ++ parseWucky body
             404 ->
               "The server apparently doesn't know what it's meant to do."
             _ ->

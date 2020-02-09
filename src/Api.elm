@@ -173,14 +173,18 @@ type alias Status =
   { target : String
   , targetName : String
   , code : String
+  , game : GameID
+  , gameName : String
   }
 
 statusDecoder : D.Decoder Status
 statusDecoder =
-  D.map3 Status
+  D.map5 Status
     (D.field "target" D.string)
     (D.field "targetName" D.string)
     (D.field "code" D.string)
+    (D.field "game" D.string)
+    (D.field "gameName" D.string)
 
 status : GameID -> SessionID -> (Result Utils.HttpError Status -> msg) -> Cmd msg
 status game session msg =
@@ -195,10 +199,12 @@ kill code game session msg =
   Utils.post ("kill?game=" ++ game) (Just session) msg (E.object [("code", E.string code)]) (D.succeed ())
 
 type Notification
-  = GameStarted String String
-  | GameEnded String String String String
-  | Killed String String String String
-  | Kicked String String String
+  = GameStarted GameID String
+  | GameEnded GameID String String String
+  | Killed GameID String String String
+  | Kicked GameID String String
+  | Shuffle GameID String
+  | Unknown String
 
 type alias NotificationMessage =
   { time : Int
@@ -236,8 +242,12 @@ parseNotifType notifType =
         (D.field "game" D.string)
         (D.field "gameName" D.string)
         (D.field "reason" D.string)
+    "shuffle" ->
+      D.map2 Shuffle
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
     _ ->
-      D.fail ("Do not know how to deal with notification type \"" ++ notifType ++ "\"")
+      D.succeed (Unknown notifType)
 
 notifications : Int -> Int -> SessionID -> (Result Utils.HttpError NotificationResult -> msg) -> Cmd msg
 notifications from limit session msg =

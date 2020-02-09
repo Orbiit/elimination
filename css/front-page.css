@@ -13,6 +13,13 @@
     width: 100%;
   }
 }
+.no-statuses {
+  font-size: 16px;
+  width: 100%;
+  text-align: center;
+  align-self: center;
+  color: rgba(255, 255, 255, 0.5);
+}
 .targets {
   display: flex;
   flex-wrap: wrap;
