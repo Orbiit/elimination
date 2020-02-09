@@ -86,17 +86,31 @@ extLink linkText url className =
   a [ A.href url, A.rel "noopener noreferrer", A.target "_blank", A.class className ]
     [ text linkText ]
 
-myInput :
+type alias MyInputOptions =
   { labelText : String
   , sublabel : String
   , type_ : String
   , placeholder : String
   , value : String
+  , name : String
   , validate : String -> Maybe String
   , maxChars : Maybe Int
-  , storeValueMsg : (String -> Maybe String) -> String -> msg
-  } -> Html.Html msg
-myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, storeValueMsg } =
+  }
+
+myInputDefaults : MyInputOptions
+myInputDefaults =
+  { labelText = ""
+  , sublabel = ""
+  , type_ = "text"
+  , placeholder = ""
+  , value = ""
+  , name = ""
+  , validate = \_ -> Nothing
+  , maxChars = Nothing
+  }
+
+myInput : ((String -> Maybe String) -> String -> msg) -> MyInputOptions -> Html.Html msg
+myInput storeValueMsg { labelText, sublabel, type_, placeholder, value, name, validate, maxChars } =
   label
     [ A.class "input-wrapper"
     , A.classList
@@ -113,7 +127,7 @@ myInput { labelText, sublabel, type_, placeholder, value, validate, maxChars, st
       [ text labelText ]
     , div [ A.class "input" ]
       ([ (if type_ == "textarea" then textarea else input)
-        ([ A.placeholder placeholder, A.value value, Events.onInput (storeValueMsg validate) ]
+        ([ A.placeholder placeholder, A.value value, Events.onInput (storeValueMsg validate), A.name name ]
           ++ if type_ == "textarea" then [] else [ A.type_ type_ ])
         []
       ]

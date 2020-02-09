@@ -6,7 +6,7 @@ import Html.Events exposing (onClick, stopPropagationOn, onSubmit)
 import Json.Decode as D
 
 import Api
-import Utils exposing (char, Char(..))
+import Utils exposing (char, Char(..), myInputDefaults)
 import Pages
 import NProgress
 
@@ -173,15 +173,12 @@ view { session } model =
           , stopPropagationOn "click" (D.succeed (DontClose, True))
           , onSubmit Join
           ]
-          ([ Utils.myInput
-            { labelText = "Passphrase"
-            , sublabel = ""
-            , type_ = "text"
+          ([ Utils.myInput ChangePassword
+            { myInputDefaults
+            | labelText = "Passphrase"
             , placeholder = "hunter2"
             , value = model.password
-            , validate = \value -> Nothing
-            , maxChars = Nothing
-            , storeValueMsg = ChangePassword }
+            }
           , input
             [ A.class "button submit-btn"
             , A.classList [ ("loading", model.loading) ]

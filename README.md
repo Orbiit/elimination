@@ -22,10 +22,10 @@ npm run build
 
 ## Things to add
 
+- (server side; simple-ish) Better client-facing error messages
 - (probably easy) Mark the winner on the game page
   - Could also display the winner in other places too
   - (a bit less easy but not very hard nonetheless) If so, then it should link to the winner
-- (maybe easy) Add name attributes to assist with saved password things
 - (requires thinking) Finish content for about, welcome, and maybe terms pages
 - (maybe not very easy) Auto-resize textareas to fit their content
 - (not very easy probably) Prevent navigation away if there are unsaved changes in settings
@@ -34,4 +34,4 @@ npm run build
   - Password reset forms
   - Option for email notifications
 
-I don't think this should be a PWA since it requires an internet connection anyways.
+I don't think this should be a PWA since it requires an internet connection anyways. There shouldn't be a way to publicly list a game because the game requires real life interaction for eliminating people.

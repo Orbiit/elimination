@@ -9,7 +9,7 @@ import Time
 
 import Api
 import Api.Validate
-import Utils
+import Utils exposing (myInputDefaults)
 
 type HeaderWindow
   = SignUpWindow
@@ -372,33 +372,30 @@ makeHeader { session, zone } model frontPage =
       Api.SignedOut ->
         [ headerWindow model "header-btn auth-btn" [ text "Log in" ] LoginWindow <|
           [ form [ A.class "header-window", onSubmit Login ] <|
-            [ Utils.myInput
-              { labelText = "Username"
-              , sublabel = ""
-              , type_ = "text"
+            [ Utils.myInput (Change LoginUsername)
+              { myInputDefaults
+              | labelText = "Username"
               , placeholder = "billygamer5"
+              , name = "username"
               , value = model.loginUsername.value
               , validate = \value ->
                 if String.isEmpty value then
                   Just ""
                 else
                   Nothing
-              , maxChars = Nothing
-              , storeValueMsg = Change LoginUsername
               }
-            , Utils.myInput
-              { labelText = "Password"
-              , sublabel = ""
+            , Utils.myInput (Change LoginPassword)
+              { myInputDefaults
+              | labelText = "Password"
               , type_ = "password"
               , placeholder = "hunter2"
+              , name = "password"
               , value = model.loginPassword.value
               , validate = \value ->
                 if String.isEmpty value then
                   Just ""
                 else
                   Nothing
-              , maxChars = Nothing
-              , storeValueMsg = Change LoginPassword
               }
             , input
               [ A.class "button submit-btn"
@@ -420,11 +417,13 @@ makeHeader { session, zone } model frontPage =
           ]
         , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow <|
           [ form [ A.class "header-window", onSubmit SignUp ] <|
-            [ Utils.myInput
-              { labelText = "Username"
+            [ Utils.myInput (Change SignUpUsername)
+              { myInputDefaults
+              | labelText = "Username"
               , sublabel = Api.Validate.usernameLabel
               , type_ = "text"
               , placeholder = "billygamer5"
+              , name = "username"
               , value = model.signUpUsername.value
               , validate = \value ->
                 if String.isEmpty value then
@@ -432,27 +431,28 @@ makeHeader { session, zone } model frontPage =
                 else
                   Api.Validate.usernameOk value
               , maxChars = Just 20
-              , storeValueMsg = Change SignUpUsername
               }
-            , Utils.myInput
-              { labelText = "Full name"
+            , Utils.myInput (Change SignUpName)
+              { myInputDefaults
+              | labelText = "Full name"
               , sublabel = Api.Validate.nameLabel
-              , type_ = "text"
               , placeholder = "Billy Chelontuvier"
               , value = model.signUpName.value
+              , name = "name"
               , validate = \value ->
                 if String.isEmpty value then
                   Just ""
                 else
                   Api.Validate.nameOk value
               , maxChars = Just 50
-              , storeValueMsg = Change SignUpName
               }
-            , Utils.myInput
-              { labelText = "Email"
+            , Utils.myInput (Change SignUpEmail)
+              { myInputDefaults
+              | labelText = "Email"
               , sublabel = Api.Validate.emailLabel
               , type_ = "email"
               , placeholder = "billygamer5@example.com"
+              , name = "email"
               , value = model.signUpEmail.value
               , validate = \value ->
                 if String.isEmpty value then
@@ -460,13 +460,14 @@ makeHeader { session, zone } model frontPage =
                 else
                   Api.Validate.emailOk value
               , maxChars = Just 320
-              , storeValueMsg = Change SignUpEmail
               }
-            , Utils.myInput
-              { labelText = "Password"
+            , Utils.myInput (Change SignUpPassword)
+              { myInputDefaults
+              | labelText = "Password"
               , sublabel = Api.Validate.passwordLabel
               , type_ = "password"
               , placeholder = "hunter2"
+              , name = "password"
               , value = model.signUpPassword.value
               , validate = \value ->
                 if String.isEmpty value then
@@ -474,21 +475,19 @@ makeHeader { session, zone } model frontPage =
                 else
                   Api.Validate.passwordOk value
               , maxChars = Just 200
-              , storeValueMsg = Change SignUpPassword
               }
-            , Utils.myInput
-              { labelText = "Password again"
-              , sublabel = ""
+            , Utils.myInput (Change SignUpPasswordAgain)
+              { myInputDefaults
+              | labelText = "Password again"
               , type_ = "password"
               , placeholder = "hunter2"
+              , name = "password"
               , value = model.signUpPasswordAgain.value
               , validate = \value ->
                 if value /= model.signUpPassword.value then
                   Just "Passwords do not match!"
                 else
                   Nothing
-              , maxChars = Nothing
-              , storeValueMsg = Change SignUpPasswordAgain
               }
             , input
               [ A.class "button submit-btn"

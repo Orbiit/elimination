@@ -6,7 +6,7 @@ import Html.Events exposing (onSubmit, stopPropagationOn, onClick)
 import Json.Decode as D
 
 import Api
-import Utils exposing (char, Char(..))
+import Utils exposing (char, Char(..), myInputDefaults)
 import NProgress
 import Pages
 
@@ -134,15 +134,12 @@ renderStatus model status =
               , stopPropagationOn "click" (D.succeed (DoNothing, True))
               , onSubmit Kill
               ]
-              ([ Utils.myInput
-                { labelText = "Target's elimination sequence"
-                , sublabel = ""
-                , type_ = "text"
+              ([ Utils.myInput ChangeCode
+                { myInputDefaults
+                | labelText = "Target's elimination sequence"
                 , placeholder = "hunter2"
                 , value = model.code
-                , validate = \value -> Nothing
-                , maxChars = Nothing
-                , storeValueMsg = ChangeCode }
+                }
               , input
                 [ A.class "button submit-btn"
                 , A.classList [ ("loading", model.killing) ]

@@ -7,7 +7,7 @@ import Json.Encode as E
 
 import Api
 import Api.Validate
-import Utils
+import Utils exposing (myInputDefaults)
 import Pages
 import NProgress
 
@@ -176,29 +176,30 @@ view { session } model =
       ]
     , form [ onSubmit Save ]
       ([ div [ A.class "input-row" ]
-        [ Utils.myInput
-          { labelText = "Display name"
+        [ Utils.myInput (Change NameInput)
+          { myInputDefaults
+          | labelText = "Display name"
           , sublabel = Api.Validate.nameLabel
-          , type_ = "text"
           , placeholder = "Billy Chelontuvier"
           , value = model.name.value
           , validate = Api.Validate.nameOk
           , maxChars = Just 50
-          , storeValueMsg = Change NameInput }
-        , Utils.myInput
-          { labelText = "Email"
+          }
+        , Utils.myInput (Change EmailInput)
+          { myInputDefaults
+          | labelText = "Email"
           , sublabel = Api.Validate.emailLabel
           , type_ = "email"
           , placeholder = "billygamer5@example.com"
           , value = model.email.value
           , validate = Api.Validate.emailOk
           , maxChars = Just 320
-          , storeValueMsg = Change EmailInput }
+          }
         ]
       , div [ A.class "input-row" ]
-        [ Utils.myInput
-          { labelText = "Bio"
-          , sublabel = ""
+        [ Utils.myInput (Change BioInput)
+          { myInputDefaults
+          | labelText = "Bio"
           , type_ = "textarea"
           , placeholder = "Introduce yourself here"
           , value = model.bio.value
@@ -208,13 +209,14 @@ view { session } model =
             else
               Nothing
           , maxChars = Just 2000
-          , storeValueMsg = Change BioInput }
+          }
         ]
       , h2 []
         [ text "Change your password" ]
       , div [ A.class "input-row" ]
-        [ Utils.myInput
-          { labelText = "New password"
+        [ Utils.myInput (Change PasswordInput)
+          { myInputDefaults
+          | labelText = "New password"
           , sublabel = Api.Validate.passwordLabel
           , type_ = "password"
           , placeholder = "hunter2"
@@ -225,16 +227,14 @@ view { session } model =
             else
               Api.Validate.passwordOk value
           , maxChars = Just 200
-          , storeValueMsg = Change PasswordInput }
-        , Utils.myInput
-          { labelText = "Old password"
-          , sublabel = ""
+          }
+        , Utils.myInput (Change OldPasswordInput)
+          { myInputDefaults
+          | labelText = "Old password"
           , type_ = "password"
           , placeholder = "hunter2"
           , value = model.oldPassword.value
-          , validate = \value -> Nothing
-          , maxChars = Nothing
-          , storeValueMsg = Change OldPasswordInput }
+          }
         ]
       , let
           valid = model.name.valid &&

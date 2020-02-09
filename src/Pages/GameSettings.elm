@@ -7,7 +7,7 @@ import Json.Decode as D
 import Json.Encode as E
 import Time
 
-import Utils exposing (char, Char(..))
+import Utils exposing (char, Char(..), myInputDefaults)
 import Api
 import Pages
 import NProgress
@@ -248,15 +248,12 @@ renderPlayer model zone player =
               , stopPropagationOn "click" (D.succeed (DontClose, True))
               , onSubmit Kick
               ]
-              ([ Utils.myInput
-                { labelText = "Kick reason (optional)"
-                , sublabel = ""
-                , type_ = "text"
+              ([ Utils.myInput (Change ReasonInput)
+                { myInputDefaults
+                | labelText = "Kick reason (optional)"
                 , placeholder = "Undesirable."
                 , value = model.kickReason
-                , validate = \value -> Nothing
-                , maxChars = Nothing
-                , storeValueMsg = Change ReasonInput }
+                }
               , input
                 [ A.class "button submit-btn"
                 , A.classList [ ("loading", model.kicking) ]
@@ -304,10 +301,10 @@ view { zone } model =
         ])
     , form [ onSubmit Save ]
       ([ div [ A.class "input-row" ]
-        [ Utils.myInput
-          { labelText = "Name"
+        [ Utils.myInput (Change NameInput)
+          { myInputDefaults
+          | labelText = "Name"
           , sublabel = "Required."
-          , type_ = "text"
           , placeholder = "The People's Elimination Game"
           , value = model.name.value
           , validate = \value ->
@@ -318,11 +315,11 @@ view { zone } model =
             else
               Nothing
           , maxChars = Just 100
-          , storeValueMsg = Change NameInput }
-        , Utils.myInput
-          { labelText = "Passphrase to join"
+          }
+        , Utils.myInput (Change PasswordInput)
+          { myInputDefaults
+          | labelText = "Passphrase to join"
           , sublabel = "Share this passphrase to people who you want to join."
-          , type_ = "text"
           , placeholder = "hunter2"
           , value = model.password.value
           , validate = \value ->
@@ -331,11 +328,12 @@ view { zone } model =
             else
               Nothing
           , maxChars = Just 200
-          , storeValueMsg = Change PasswordInput }
+          }
         ]
       , div [ A.class "input-row" ]
-        [ Utils.myInput
-          { labelText = "Description and rules"
+        [ Utils.myInput (Change DescInput)
+          { myInputDefaults
+          | labelText = "Description and rules"
           , sublabel = "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made."
           , type_ = "textarea"
           , placeholder = "Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur inside classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck, Pizzas!"
@@ -346,7 +344,7 @@ view { zone } model =
             else
               Nothing
           , maxChars = Just 2000
-          , storeValueMsg = Change DescInput }
+          }
         ]
       , let
           valid = model.name.valid &&
