@@ -208,6 +208,7 @@ type alias NotificationMessage =
 
 type alias NotificationResult =
   { end : Bool
+  , unread : Int
   , notifications : List NotificationMessage
   }
 
@@ -239,9 +240,11 @@ parseNotifType notifType =
       D.fail ("Do not know how to deal with notification type \"" ++ notifType ++ "\"")
 
 notifications : Int -> Int -> SessionID -> (Result Utils.HttpError NotificationResult -> msg) -> Cmd msg
-notifications from to session msg =
-  Utils.get "notifications" (Just session) msg (D.map2 NotificationResult
+notifications from limit session msg =
+  Utils.get ("notifications?from=" ++ String.fromInt from ++ "&limit=" ++ String.fromInt limit)
+    (Just session) msg (D.map3 NotificationResult
     (D.field "end" D.bool)
+    (D.field "unread" D.int)
     (D.field "notifications" (D.list (D.map3 NotificationMessage
       (D.field "time" D.int)
       (D.field "read" D.bool)

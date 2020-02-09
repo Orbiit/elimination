@@ -2,7 +2,7 @@ module Base exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
-import Html.Events exposing (stopPropagationOn, onSubmit)
+import Html.Events exposing (stopPropagationOn, onSubmit, onClick)
 import Json.Decode as D
 import Http
 import Time
@@ -43,8 +43,10 @@ type alias Model =
   , loginProblem : Maybe String
   , signUpLoading : Bool
   , signUpProblem : Maybe String
-  , notifs : List Api.NotificationMessage
+  , notifs : Api.NotificationResult
+  , notifsLoading : Bool
   , notifsProblem : Maybe String
+  , markingAsRead : Bool
   }
 
 init : Api.Session -> (Model, Cmd Msg)
@@ -61,8 +63,14 @@ init session =
     , loginProblem = Nothing
     , signUpLoading = False
     , signUpProblem = Nothing
-    , notifs = []
+    , notifs =
+      { notifications = []
+      , end = False
+      , unread = 0
+      }
+    , notifsLoading = True
     , notifsProblem = Nothing
+    , markingAsRead = False
     }
   , updateNotifs session
   )
@@ -75,13 +83,21 @@ type Msg
   | Login
   | SignUp
   | NewSession AuthMethod String (Result Utils.HttpError Api.SessionID)
+  | Refresh
   | NotificationsLoaded (Result Utils.HttpError Api.NotificationResult)
+  | LoadMore
+  | MoreNotificationsLoaded (Result Utils.HttpError Api.NotificationResult)
+  | MarkAsRead
+  | MarkedAsRead (Result Utils.HttpError ())
+
+notifsAtATime : Int
+notifsAtATime = 1
 
 updateNotifs : Api.Session -> Cmd Msg
 updateNotifs session =
   case session of
     Api.SignedIn authSession ->
-      Api.notifications 0 10 authSession.session NotificationsLoaded
+      Api.notifications 0 notifsAtATime authSession.session NotificationsLoaded
     Api.SignedOut ->
       Cmd.none
 
@@ -158,12 +174,59 @@ update msg { session } model =
           , Cmd.none
           , Api.None
           )
+    Refresh ->
+      ( { model | notifsLoading = True, notifsProblem = Nothing }
+      , updateNotifs session
+      , Api.None
+      )
     NotificationsLoaded result ->
       case result of
-        Ok { notifications } ->
-          ({ model | notifs = notifications }, Cmd.none, Api.None)
+        Ok notifResult ->
+          ({ model | notifsLoading = False, notifs = notifResult }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
-          ({ model | notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    LoadMore ->
+      ( { model | notifsLoading = True, notifsProblem = Nothing }
+      , case session of
+        Api.SignedIn authSession ->
+          Api.notifications (List.length model.notifs.notifications) notifsAtATime authSession.session MoreNotificationsLoaded
+        Api.SignedOut ->
+          Cmd.none
+      , Api.None
+      )
+    MoreNotificationsLoaded result ->
+      case result of
+        Ok notifResult ->
+          ({ model | notifsLoading = False, notifs =
+            { notifResult
+            | notifications =
+              model.notifs.notifications ++ notifResult.notifications
+            }
+          }, Cmd.none, Api.None)
+        Err ((_, errorMsg) as error) ->
+          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    MarkAsRead ->
+      ( { model | markingAsRead = True, notifsProblem = Nothing }
+      , case session of
+        Api.SignedIn authSession ->
+          Api.read authSession.session MarkedAsRead
+        Api.SignedOut ->
+          Cmd.none
+      , Api.None
+      )
+    MarkedAsRead result ->
+      case result of
+        Ok _ ->
+          let
+            notifs = model.notifs
+          in
+            ({ model | markingAsRead = False, notifs =
+              { notifs | unread = 0, notifications =
+                List.map (\notif -> { notif | read = True }) notifs.notifications
+              }
+            }, Cmd.none, Api.None)
+        Err ((_, errorMsg) as error) ->
+          ({ model | markingAsRead = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
 
 headerWindow : Model -> String -> List (Html Msg) -> HeaderWindow -> List (Html Msg) -> Html Msg
 headerWindow model btnClass btnLabel window windowContent =
@@ -249,11 +312,8 @@ makeHeader { session, zone } model frontPage =
           [])
         ++ [ headerWindow model "icon-btn header-btn notif-btn"
           [ text "Notifications ("
-          , let
-              unread = List.length (List.filter (\notif -> not notif.read) model.notifs)
-            in
-              span [ A.classList [ ("show-unread", unread /= 0) ] ]
-                [ text (String.fromInt unread) ]
+          , span [ A.classList [ ("show-unread", model.notifs.unread > 0) ] ]
+            [ text (String.fromInt model.notifs.unread) ]
           , text ")" ]
           Notifications
           [ div [ A.class "header-window notifs" ]
@@ -261,13 +321,40 @@ makeHeader { session, zone } model frontPage =
               [ text "Notifications"
               , span [ A.class "flex" ]
                 []
+              , button
+                [ A.class "button small-btn notif-action-btn"
+                , A.classList [ ("loading", model.markingAsRead) ]
+                , A.disabled (model.markingAsRead || model.notifs.unread == 0)
+                , onClick MarkAsRead
+                ]
+                [ text "Mark as read" ]
+              , button
+                [ A.class "button small-btn notif-action-btn"
+                , A.disabled model.notifsLoading
+                , onClick Refresh
+                ]
+                [ text "Refresh" ]
               -- , label [ A.class "email-notifs" ]
               --   [ input [ A.class "checkbox", A.type_ "checkbox" ]
               --     []
               --   , text "Send notifications to my email"
               --   ]
               ])
-            :: List.map (renderNotification zone) model.notifs)
+            :: List.map (renderNotification zone) model.notifs.notifications
+            ++ (case model.notifsProblem of
+              Just errorText ->
+                [ span [ A.class "problematic-error" ]
+                  [ text errorText ] ]
+              Nothing ->
+                [])
+            ++ if model.notifsLoading then
+              [ button [ A.class "button load-more-btn loading", A.disabled True ]
+                [ text "Loading" ] ]
+            else if model.notifs.end then
+              []
+            else
+              [ button [ A.class "button load-more-btn", onClick LoadMore ]
+                [ text "Load more" ] ])
           ]
         , a [ A.class "link username", A.href "?settings" ]
           [ text username ]

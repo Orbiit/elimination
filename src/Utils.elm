@@ -165,8 +165,9 @@ parseWucky body =
   case D.decodeString (D.field "mistake" D.string) body of
     Ok wucky ->
       wucky
-    Err _ ->
-      "Supposedly something went wrong, but the server didn't articulate well enough about it."
+    Err parseError ->
+      "Supposedly something went wrong, but the server didn't articulate well enough about it.\n"
+        ++ D.errorToString parseError
 
 parseResponse : D.Decoder a -> Http.Response String -> Result HttpError a
 parseResponse decoder response =
@@ -179,7 +180,7 @@ parseResponse decoder response =
     Http.Timeout_ ->
       Err (ErrorStatusText "Timeout", "The server took too long.")
     Http.NetworkError_ ->
-      Err (ErrorStatusText "Offline", "You're probably offline.")
+      Err (ErrorStatusText "Offline", "Either you or the server is offline.")
     Http.BadStatus_ metadata body ->
       Err
         ( StatusCode metadata.statusCode
@@ -197,10 +198,11 @@ parseResponse decoder response =
       case D.decodeString decoder body of
         Ok value ->
           Ok value
-        Err _ ->
+        Err parseError ->
           Err
             ( ErrorStatusText "Malformed JSON"
-            , "The server spoke in a different language, and we couldn't understand it."
+            , "The server spoke in a different language, and we couldn't understand it.\n"
+              ++ D.errorToString parseError
             )
 
 get : String -> Maybe String -> (Result HttpError a -> msg) -> D.Decoder a -> Cmd msg
