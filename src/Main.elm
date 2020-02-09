@@ -265,6 +265,7 @@ doPageCmd pageCmd (model, cmd) =
                 _ ->
                   Cmd.none
             , cmd
+            , Cmd.map BaseMsg (Base.updateNotifs authSession)
             ]
         Api.SignedOut ->
           Cmd.batch
