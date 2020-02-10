@@ -15,6 +15,10 @@
   margin: 0;
   margin-top: 10px;
 }
+#user-bio,
+#game-desc {
+  overflow: hidden;
+}
 .members {
   border-top: 10px solid var(--blood);
   margin-top: 20px;

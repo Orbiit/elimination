@@ -56,7 +56,7 @@ init =
   }
 
 type Msg
-  = Change Input (String -> Maybe String) String
+  = Change Input Utils.MyInputMsg
   | InfoLoaded Api.GameID (Result Utils.HttpError Api.GameSettingsInfo)
   | Save
   | Saved (Result Utils.HttpError Api.GameID)
@@ -73,7 +73,7 @@ type Msg
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg { session } model =
   case msg of
-    Change input validate value ->
+    Change input { validate, value } ->
       let
         ok = case validate value of
           Just _ ->

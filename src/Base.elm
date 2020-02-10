@@ -79,7 +79,7 @@ type Msg
   = Open HeaderWindow
   | Close
   | DontClose
-  | Change Input (String -> Maybe String) String
+  | Change Input Utils.MyInputMsg
   | Login
   | SignUp
   | NewSession AuthMethod String (Result Utils.HttpError Api.SessionID)
@@ -110,7 +110,7 @@ update msg { session } model =
       ({ model | open = None }, Cmd.none, Api.None)
     DontClose ->
       (model, Cmd.none, Api.None)
-    Change input validate value ->
+    Change input { validate, value } ->
       let
         valid = case validate value of
           Just _ ->

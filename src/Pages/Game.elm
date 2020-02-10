@@ -39,7 +39,7 @@ init =
 
 type Msg
   = InfoLoaded Api.GameID (Result Utils.HttpError Api.Game)
-  | ChangePassword (String -> Maybe String) String
+  | ChangePassword Utils.MyInputMsg
   | ShowModal
   | HideModal
   | Join
@@ -60,7 +60,7 @@ update msg { session } model =
           ({ model | game = gameID, info = game }, NProgress.done (), Api.ChangePage Pages.Game)
         Err error ->
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
-    ChangePassword _ value ->
+    ChangePassword { value } ->
       ({ model | password = value }, Cmd.none, Api.None)
     ShowModal ->
       ({ model | modal = True }, Cmd.none, Api.None)

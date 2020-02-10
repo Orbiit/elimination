@@ -4,6 +4,8 @@ import Html exposing (..)
 import Html.Attributes as A
 import Html.Events exposing (onClick, onSubmit)
 import Json.Encode as E
+import Browser.Dom as Dom
+import Task
 
 import Api
 import Api.Validate
@@ -22,6 +24,7 @@ type alias Model =
   { name : Utils.InputState
   , email : Utils.InputState
   , bio : Utils.InputState
+  , bioHeight : Float
   , password : Utils.InputState
   , oldPassword : Utils.InputState
   , loadingLogout : Bool
@@ -34,6 +37,7 @@ init =
   { name = Utils.initInputState
   , email = Utils.initInputState
   , bio = Utils.initInputState
+  , bioHeight = 0
   , password = Utils.initInputState
   , oldPassword = Utils.initInputState
   , loadingLogout = False
@@ -42,7 +46,8 @@ init =
   }
 
 type Msg
-  = Change Input (String -> Maybe String) String
+  = Change Input Utils.MyInputMsg
+  | ResizeBio (Result Dom.Error Dom.Viewport)
   | Logout
   | LoggedOut (Result Utils.HttpError ())
   | InfoLoaded (Result Utils.HttpError Api.UserSettingsInfo)
@@ -52,7 +57,7 @@ type Msg
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg { session } model =
   case msg of
-    Change input validate value ->
+    Change input { validate, value, scrollHeight } ->
       let
         ok = case validate value of
           Just _ ->
@@ -66,7 +71,7 @@ update msg { session } model =
           EmailInput ->
             { model | email = Utils.updateValue model.email value ok }
           BioInput ->
-            { model | bio = Utils.updateValue model.bio value ok }
+            { model | bio = Utils.updateValue model.bio value ok, bioHeight = scrollHeight }
           PasswordInput ->
             { model | password = Utils.updateValue model.password value ok }
           OldPasswordInput ->
@@ -74,6 +79,12 @@ update msg { session } model =
         , Cmd.none
         , Api.None
         )
+    ResizeBio result ->
+      case result of
+        Ok viewport ->
+          ({ model | bioHeight = viewport.scene.height }, Cmd.none, Api.None)
+        Err _ ->
+          (model, Cmd.none, Api.None)
     Logout ->
       case session of
         Api.SignedIn authSession ->
@@ -93,7 +104,10 @@ update msg { session } model =
             , email = Utils.inputState email
             , bio = Utils.inputState bio
             }
-          , NProgress.done ()
+          , Cmd.batch
+            [ NProgress.done ()
+            , Task.attempt ResizeBio (Dom.getViewportOf "user-bio")
+            ]
           , Api.ChangePage Pages.UserSettings
           )
         Err error ->
@@ -209,6 +223,8 @@ view { session } model =
             else
               Nothing
           , maxChars = Just 2000
+          , id = Just "user-bio"
+          , height = Just (String.fromFloat (model.bioHeight + 6) ++ "px")
           }
         ]
       , h2 []

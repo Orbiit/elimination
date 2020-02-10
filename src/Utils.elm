@@ -95,6 +95,8 @@ type alias MyInputOptions =
   , name : String
   , validate : String -> Maybe String
   , maxChars : Maybe Int
+  , height : Maybe String
+  , id : Maybe String
   }
 
 myInputDefaults : MyInputOptions
@@ -107,15 +109,28 @@ myInputDefaults =
   , name = ""
   , validate = \_ -> Nothing
   , maxChars = Nothing
+  , height = Nothing
+  , id = Nothing
   }
 
-myInput : ((String -> Maybe String) -> String -> msg) -> MyInputOptions -> Html.Html msg
-myInput storeValueMsg { labelText, sublabel, type_, placeholder, value, name, validate, maxChars } =
+type alias MyInputMsg =
+  { value : String
+  , validate : String -> Maybe String
+  , scrollWidth : Float
+  , scrollHeight : Float
+  }
+
+makeMyInputMsg : (MyInputMsg -> msg) -> String -> (String -> Maybe String) -> Float -> Float -> msg
+makeMyInputMsg msg value validate scrollWidth scrollHeight =
+  msg (MyInputMsg value validate scrollWidth scrollHeight)
+
+myInput : (MyInputMsg -> msg) -> MyInputOptions -> Html.Html msg
+myInput msg options =
   label
     [ A.class "input-wrapper"
     , A.classList
       [ ( "error"
-        , case validate value of
+        , case options.validate options.value of
           Just error ->
             not (String.isEmpty error)
           Nothing ->
@@ -124,25 +139,41 @@ myInput storeValueMsg { labelText, sublabel, type_, placeholder, value, name, va
       ]
     ]
     [ span [ A.class "label" ]
-      [ text labelText ]
-    , div [ A.class "input" ]
-      ([ (if type_ == "textarea" then textarea else input)
-        ([ A.placeholder placeholder, A.value value, Events.onInput (storeValueMsg validate), A.name name ]
-          ++ if type_ == "textarea" then [] else [ A.type_ type_ ])
+      [ text options.labelText ]
+    , div [ A.class "input" ] <|
+      [ (if options.type_ == "textarea" then textarea else input)
+        ([ A.placeholder options.placeholder
+        , A.value options.value
+        -- https://gist.github.com/ohanhi/cb42ba2587fefbdae6962518176d114a
+        , Events.on "input" <|
+          D.map4 (makeMyInputMsg msg)
+            (D.at [ "target", "value" ] D.string)
+            (D.succeed options.validate)
+            (D.at [ "target", "scrollWidth" ] D.float)
+            (D.at [ "target", "scrollHeight" ] D.float)
+        , A.name options.name
+        ]
+          ++ (if options.type_ == "textarea" then [] else [ A.type_ options.type_ ])
+          ++ (case options.height of
+            Just height -> [ A.style "height" height ]
+            Nothing -> [])
+          ++ (case options.id of
+            Just id -> [ A.id id ]
+            Nothing -> []))
         []
       ]
-        ++ case maxChars of
+        ++ case options.maxChars of
           Just chars ->
-            if toFloat (String.length value) / toFloat chars >= 0.7 then
+            if toFloat (String.length options.value) / toFloat chars >= 0.7 then
               [ span [ A.class "count" ]
-                [ text (String.fromInt (String.length value) ++ "/" ++ String.fromInt chars) ]
+                [ text (String.fromInt (String.length options.value) ++ "/" ++ String.fromInt chars) ]
               ]
             else
               []
           Nothing ->
-            [])
+            []
     , span [ A.class "problem" ]
-      (case validate value of
+      (case options.validate options.value of
         Just error ->
           if String.isEmpty error then
             []
@@ -152,7 +183,7 @@ myInput storeValueMsg { labelText, sublabel, type_, placeholder, value, name, va
           []
       )
     , span [ A.class "sublabel" ]
-      [ text sublabel ]
+      [ text options.sublabel ]
     ]
 
 type alias InputState = { value : String, original : String, valid : Bool }

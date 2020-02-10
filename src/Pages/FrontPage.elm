@@ -40,7 +40,7 @@ type Msg
   | StatusesLoaded (Result Utils.HttpError (List Api.Status))
   | ShowModal Api.GameID
   | HideModal
-  | ChangeCode (String -> Maybe String) String
+  | ChangeCode Utils.MyInputMsg
   | Kill
   | Killed (Result Utils.HttpError ())
   | ShowCode Api.GameID
@@ -71,7 +71,7 @@ update msg { session } model =
       ({ model | modal = Just game, code = "", problem = Nothing }, Cmd.none, Api.None)
     HideModal ->
       ({ model | modal = Nothing }, Cmd.none, Api.None)
-    ChangeCode _ value ->
+    ChangeCode { value } ->
       ({ model | code = value }, Cmd.none, Api.None)
     Kill ->
       case (session, model.modal) of
