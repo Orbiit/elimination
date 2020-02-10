@@ -29,6 +29,7 @@ import NProgress
 type PageCmd
   = SwitchPage Pages.Page
   | Command (Cmd Msg)
+  | SwitchPageAndCommand Pages.Page (Cmd Msg)
 
 loadFrontPage : Api.Session -> PageCmd
 loadFrontPage session =
@@ -92,7 +93,7 @@ urlToPage url session =
           Api.SignedOut ->
             SwitchPage (Pages.Error (Utils.StatusCode 401, "You're not signed in."))
       else if path == "create-game" then
-        SwitchPage Pages.GameSettings
+        SwitchPageAndCommand Pages.GameSettings (Cmd.map GameSettingsMsg Pages.GameSettings.resizeDesc)
       else if String.startsWith "settings!" path then
         let
           game = String.dropLeft (String.length "settings!") path
@@ -155,6 +156,8 @@ init (sessionMaybe, usernameMaybe) url navKey =
           (pageType, Cmd.none)
         Command command ->
           (Pages.Loading, command)
+        SwitchPageAndCommand pageType command ->
+          (pageType, command)
     (header, headerCmd) = Base.init session
   in
     ( { page = page
@@ -313,14 +316,12 @@ update msg model =
         (newModel, cmd) =
           case urlToPage url model.session of
             SwitchPage pageType ->
-              case pageType of
-                -- Hacky special case for creating a game
-                Pages.GameSettings ->
-                  ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, Cmd.none)
-                _ ->
-                  ({ model | page = pageType }, Cmd.none)
+              ({ model | page = pageType }, Cmd.none)
             Command command ->
               (model, command)
+            SwitchPageAndCommand pageType command ->
+              -- Hacky special case for creating a game
+              ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
       in
         (newModel, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
     AdjustTimeZone zone ->

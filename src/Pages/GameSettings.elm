@@ -6,6 +6,8 @@ import Html.Events exposing (onSubmit, stopPropagationOn, onClick)
 import Json.Decode as D
 import Json.Encode as E
 import Time
+import Browser.Dom as Dom
+import Task
 
 import Utils exposing (char, Char(..), myInputDefaults)
 import Api
@@ -22,6 +24,7 @@ type alias Model =
   { game : Maybe Api.GameID
   , name : Utils.InputState
   , desc : Utils.InputState
+  , descHeight : Float
   , password : Utils.InputState
   , players : List Api.GameSettingsPlayer
   , started : Bool
@@ -41,6 +44,7 @@ init =
   { game = Nothing
   , name = Utils.updateValue Utils.initInputState "" False
   , desc = Utils.initInputState
+  , descHeight = 0
   , password = Utils.initInputState
   , players = []
   , started = False
@@ -57,6 +61,7 @@ init =
 
 type Msg
   = Change Input Utils.MyInputMsg
+  | ResizeDesc (Result Dom.Error Dom.Viewport)
   | InfoLoaded Api.GameID (Result Utils.HttpError Api.GameSettingsInfo)
   | Save
   | Saved (Result Utils.HttpError Api.GameID)
@@ -70,10 +75,14 @@ type Msg
   | Shuffle
   | Shuffled (Result Utils.HttpError ())
 
+resizeDesc : Cmd Msg
+resizeDesc =
+  Task.attempt ResizeDesc (Dom.getViewportOf "game-desc")
+
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg { session } model =
   case msg of
-    Change input { validate, value } ->
+    Change input { validate, value, scrollHeight } ->
       let
         ok = case validate value of
           Just _ ->
@@ -85,7 +94,7 @@ update msg { session } model =
           NameInput ->
             { model | name = Utils.updateValue model.name value ok }
           DescInput ->
-            { model | desc = Utils.updateValue model.desc value ok }
+            { model | desc = Utils.updateValue model.desc value ok, descHeight = scrollHeight }
           PasswordInput ->
             { model | password = Utils.updateValue model.password value ok }
           ReasonInput ->
@@ -93,6 +102,12 @@ update msg { session } model =
         , Cmd.none
         , Api.None
         )
+    ResizeDesc result ->
+      case result of
+        Ok viewport ->
+          ({ model | descHeight = viewport.scene.height }, Cmd.none, Api.None)
+        Err _ ->
+          (model, Cmd.none, Api.None)
     InfoLoaded game result ->
       case result of
         Ok { name, description, password, players, started, ended } ->
@@ -100,12 +115,13 @@ update msg { session } model =
             | game = Just game
             , name = Utils.inputState name
             , desc = Utils.inputState description
+            , descHeight = 0
             , password = Utils.inputState password
             , players = players
             , started = started
             , ended = ended
             }
-          , NProgress.done ()
+          , Cmd.batch [ NProgress.done (), resizeDesc ]
           , Api.ChangePage Pages.GameSettings
           )
         Err error ->
@@ -344,6 +360,8 @@ view { zone } model =
             else
               Nothing
           , maxChars = Just 2000
+          , id = Just "game-desc"
+          , height = Just (String.fromFloat (model.descHeight + 6) ++ "px")
           }
         ]
       , let

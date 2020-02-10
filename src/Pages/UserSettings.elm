@@ -54,6 +54,10 @@ type Msg
   | Save
   | Saved (Result Utils.HttpError ())
 
+resizeBio : Cmd Msg
+resizeBio =
+  Task.attempt ResizeBio (Dom.getViewportOf "user-bio")
+
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg { session } model =
   case msg of
@@ -103,11 +107,9 @@ update msg { session } model =
             | name = Utils.inputState name
             , email = Utils.inputState email
             , bio = Utils.inputState bio
+            , bioHeight = 0
             }
-          , Cmd.batch
-            [ NProgress.done ()
-            , Task.attempt ResizeBio (Dom.getViewportOf "user-bio")
-            ]
+          , Cmd.batch [ NProgress.done (), resizeBio ]
           , Api.ChangePage Pages.UserSettings
           )
         Err error ->
