@@ -27,7 +27,6 @@ npm run build
   - Could also display the winner in other places too
   - (a bit less easy but not very hard nonetheless) If so, then it should link to the winner
 - (requires thinking) Finish content for about, welcome, and maybe terms pages
-- (maybe not very easy) Auto-resize textareas to fit their content
 - (not very easy probably) Prevent navigation away if there are unsaved changes in settings
 - (maybe tedious) Parse for \@mentions, !games, and external links. Could also add support for bold, italics, etc.
 - (probably very hard/complicated) Emails:
