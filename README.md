@@ -22,6 +22,7 @@ npm run build
 
 ## Things to add
 
+- (server side; simple) Non-incremental game IDs
 - (server side; simple-ish) Better client-facing error messages
 - (probably easy) Mark the winner on the game page
   - Could also display the winner in other places too
