@@ -50,7 +50,7 @@ renderMyGame game =
         else
           " participants")
         ++ " " ++ char Middot ++ " "
-        ++ Api.gameStatusName game
+        ++ Api.gameStateName game.state
         )
       ]
     ]
@@ -68,7 +68,7 @@ renderGame game =
         else
           " participants")
         ++ " " ++ char Middot ++ " "
-        ++ Api.gameStatusName game
+        ++ Api.gameStateName game.state
         ++ " " ++ char Middot ++ " "
         ++ (if game.alive then "Alive" else "Eliminated")
         ++ " " ++ char Middot ++ " "

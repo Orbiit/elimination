@@ -205,7 +205,7 @@ view { session } model =
         ]
       , article [ A.class "main content welcome" ]
         [ p []
-          [ text "Elimination is a game where" ]
+          [ text "Elimination is a work in progress right now!" ]
         , div [ A.class "stats" ]
           [ div [ A.class "stat" ]
             [ span [ A.class "stat-name" ]

@@ -29,26 +29,42 @@ type PageCmd
 
 sessionCouldExpire : Utils.HttpError -> PageCmd
 sessionCouldExpire (_, error) =
-  if String.startsWith "(Invalid session)" error then
+  if String.endsWith "(Invalid session)" error then
     ChangeSession SignedOut
   else
     None
 
-type alias GameWithStatus a =
-  { a
-  | started : Bool
-  , ended : Bool
-  }
+type alias Timestamp = Int
 
-gameStatusName : GameWithStatus a -> String
-gameStatusName { started, ended } =
-  if started then
-    if ended then
-      "Ended"
-    else
+type GameState
+  = WillStart
+  | Started
+  | Ended
+
+gameStateParser : D.Decoder GameState
+gameStateParser =
+  D.string
+    |> D.andThen
+      (\string ->
+        case string of
+          "starting" ->
+            D.succeed WillStart
+          "started" ->
+            D.succeed Started
+          "ended" ->
+            D.succeed Ended
+          _ ->
+            D.fail "Invalid game state")
+
+gameStateName : GameState -> String
+gameStateName state =
+  case state of
+    WillStart ->
+      "Awaiting players"
+    Started ->
       "Ongoing"
-  else
-    "Awaiting players"
+    Ended ->
+      "Ended"
 
 -- Authenticate
 
@@ -117,7 +133,7 @@ type alias GameSettingsPlayer =
   , name : String
   , alive : Bool
   , kills : Int
-  , joined : Int
+  , joined : Timestamp
   }
 
 type alias GameSettingsInfo =
@@ -125,14 +141,13 @@ type alias GameSettingsInfo =
   , description : String
   , password : String
   , players : List GameSettingsPlayer
-  , started : Bool
-  , ended : Bool
+  , state : GameState
   }
 
 getGameSettings : GameID -> SessionID -> (Result Utils.HttpError GameSettingsInfo -> msg) -> Cmd msg
 getGameSettings game session msg =
   Utils.get ("game-settings?game=" ++ game) (Just session) msg <|
-    D.map6 GameSettingsInfo
+    D.map5 GameSettingsInfo
       (D.field "name" D.string)
       (D.field "description" D.string)
       (D.field "password" D.string)
@@ -143,8 +158,7 @@ getGameSettings game session msg =
         (D.field "kills" D.int)
         (D.field "joined" D.int)
       )))
-      (D.field "started" D.bool)
-      (D.field "ended" D.bool)
+      (D.field "state" gameStateParser)
 
 join : String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
 join password game session msg =
@@ -271,19 +285,19 @@ read session msg =
 type alias UserMyGame =
   { game : GameID
   , name : String
-  , started : Bool
-  , ended : Bool
+  , state : GameState
+  , time : Timestamp
   , players : Int
   }
 
 type alias UserGame =
   { game : GameID
   , name : String
-  , started : Bool
-  , ended : Bool
+  , state : GameState
   , players : Int
   , kills : Int
   , alive : Bool
+  , updated : Timestamp
   }
 
 type alias User =
@@ -302,18 +316,18 @@ getUser user msg =
       (D.field "myGames" (D.list (D.map5 UserMyGame
         (D.field "game" D.string)
         (D.field "name" D.string)
-        (D.field "started" D.bool)
-        (D.field "ended" D.bool)
+        (D.field "state" gameStateParser)
+        (D.field "time" D.int)
         (D.field "players" D.int)
       )))
       (D.field "games" (D.list (D.map7 UserGame
         (D.field "game" D.string)
         (D.field "name" D.string)
-        (D.field "started" D.bool)
-        (D.field "ended" D.bool)
+        (D.field "state" gameStateParser)
         (D.field "players" D.int)
         (D.field "kills" D.int)
         (D.field "alive" D.bool)
+        (D.field "updated" D.int)
       )))
 
 
@@ -321,6 +335,9 @@ type alias GamePlayer =
   { username : String
   , name : String
   , alive : Bool
+  , killTime : Maybe Timestamp
+  , killer : Maybe String
+  , killerName : Maybe String
   , kills : Int
   }
 
@@ -330,8 +347,8 @@ type alias Game =
   , name : String
   , description : String
   , players : List GamePlayer
-  , started : Bool
-  , ended : Bool
+  , state : GameState
+  , time : Timestamp
   }
 
 getGame : GameID -> (Result Utils.HttpError Game -> msg) -> Cmd msg
@@ -342,14 +359,17 @@ getGame game msg =
       (D.field "creatorName" D.string)
       (D.field "name" D.string)
       (D.field "description" D.string)
-      (D.field "players" (D.list (D.map4 GamePlayer
+      (D.field "players" (D.list (D.map7 GamePlayer
         (D.field "username" D.string)
         (D.field "name" D.string)
         (D.field "alive" D.bool)
+        (D.field "killTime" (D.nullable D.int))
+        (D.field "killer" (D.nullable D.string))
+        (D.field "killerName" (D.nullable D.string))
         (D.field "kills" D.int)
       )))
-      (D.field "started" D.bool)
-      (D.field "ended" D.bool)
+      (D.field "state" gameStateParser)
+      (D.field "time" D.int)
 
 type alias Stats =
   { kills : Int

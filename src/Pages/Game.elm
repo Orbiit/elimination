@@ -28,8 +28,8 @@ init =
     , name = ""
     , description = ""
     , players = []
-    , started = False
-    , ended = False
+    , state = Api.WillStart
+    , time = 0
     }
   , password = ""
   , modal = False
@@ -96,6 +96,9 @@ update msg { session } model =
                     { username = username
                     , name = "You"
                     , alive = True
+                    , killTime = Nothing
+                    , killer = Nothing
+                    , killerName = Nothing
                     , kills = 0
                     }
                     :: info.players
@@ -150,7 +153,7 @@ view { session } model =
                   [ text "Settings" ])
               else
                 Nothing
-              , if model.info.started then
+              , if model.info.state /= Api.WillStart then
                 Nothing
               else if List.any (\player -> player.username == username) model.info.players then
                 Just (button
@@ -203,7 +206,7 @@ view { session } model =
       , p [ A.class "profile-desc" ]
         [ text model.info.description ]
       , p [ A.class "profile-desc profile-stats" ]
-        [ text (Api.gameStatusName model.info ++ " " ++ char Middot ++ " "
+        [ text (Api.gameStateName model.info.state ++ " " ++ char Middot ++ " "
           ++ String.fromInt (List.length (List.filter (\player -> player.alive) model.info.players))
           ++ " of " ++ String.fromInt (List.length model.info.players)
           ++ (if List.length model.info.players == 1 then " participant" else " participants")

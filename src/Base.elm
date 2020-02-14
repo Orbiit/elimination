@@ -161,7 +161,7 @@ update msg { session } model =
             LoginMethod ->
               { model | loginLoading = False, loginPassword = Utils.initInputState }
             SignUpMethod ->
-              { model | signUpLoading = False, signUpPassword = Utils.initInputState }
+              { model | signUpLoading = False, signUpPassword = Utils.initInputState, signUpPasswordAgain = Utils.initInputState }
           , Cmd.none
           , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
           )

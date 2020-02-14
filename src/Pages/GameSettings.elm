@@ -22,13 +22,14 @@ type Input
 
 type alias Model =
   { game : Maybe Api.GameID
+  -- Game info
   , name : Utils.InputState
   , desc : Utils.InputState
   , descHeight : Float
   , password : Utils.InputState
   , players : List Api.GameSettingsPlayer
-  , started : Bool
-  , ended : Bool
+  , state : Api.GameState
+  -- Page state
   , loading : Bool
   , problem : Maybe String
   , modal : Maybe String
@@ -47,8 +48,7 @@ init =
   , descHeight = 0
   , password = Utils.initInputState
   , players = []
-  , started = False
-  , ended = False
+  , state = Api.WillStart
   , loading = False
   , problem = Nothing
   , modal = Nothing
@@ -110,7 +110,7 @@ update msg { session } model =
           (model, Cmd.none, Api.None)
     InfoLoaded game result ->
       case result of
-        Ok { name, description, password, players, started, ended } ->
+        Ok { name, description, password, players, state } ->
           ( { model
             | game = Just game
             , name = Utils.inputState name
@@ -118,8 +118,7 @@ update msg { session } model =
             , descHeight = 0
             , password = Utils.inputState password
             , players = players
-            , started = started
-            , ended = ended
+            , state = state
             }
           , Cmd.batch [ NProgress.done (), resizeDesc ]
           , Api.ChangePage Pages.GameSettings
@@ -218,7 +217,7 @@ update msg { session } model =
     Started result ->
       case result of
         Ok _ ->
-          ({ model | starting = False, started = True }, Cmd.none, Api.None)
+          ({ model | starting = False, state = Api.Started }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
           ({ model | starting = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     Shuffle ->
@@ -250,7 +249,7 @@ renderPlayer model zone player =
         ]
       ]
     ]
-    ++ if model.ended then
+    ++ if model.state == Api.Ended then
       []
     else
       [ button [ A.class "button kick-btn", onClick (ShowModal player.username) ]
@@ -298,7 +297,7 @@ view { zone } model =
       (Utils.filter
         [ Just (text "Game settings")
         , Just (span [ A.class "flex" ] [])
-        , if model.game /= Nothing && not model.started then
+        , if model.game /= Nothing && model.state == Api.WillStart then
           Just (button
             [ A.class "button"
             , A.classList [ ("loading", model.starting) ]
@@ -393,7 +392,7 @@ view { zone } model =
         , span [ A.class "flex" ]
           []
         ]
-        ++ (if model.started && not model.ended then
+        ++ (if model.state == Api.Started then
           [ button
             [ A.class "button"
             , A.classList [ ("loading", model.shuffling) ]
