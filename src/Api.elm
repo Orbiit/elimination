@@ -66,6 +66,17 @@ gameStateName state =
     Ended ->
       "Ended"
 
+gameStateNameWithTime : Time.Zone -> GameState -> Timestamp -> String
+gameStateNameWithTime zone state time =
+  (case state of
+    WillStart ->
+      "Awaiting players since "
+    Started ->
+      "Ongoing since "
+    Ended ->
+      "Ended on ")
+    ++ Utils.displayTime zone time
+
 -- Authenticate
 
 type alias UserInfo =

@@ -114,8 +114,8 @@ update msg { session } model =
     DontClose ->
       (model, Cmd.none, Api.None)
 
-renderPlayer : Api.GamePlayer -> Html Msg
-renderPlayer player =
+renderPlayer : Api.GlobalModel m -> Api.GamePlayer -> Html Msg
+renderPlayer global player =
   a
     [ A.class "item"
     , A.classList [ ("dead", not player.alive) ]
@@ -125,7 +125,12 @@ renderPlayer player =
       [ text player.name ]
     , span [ A.class "item-info" ]
       [ text
-        ((if player.alive then "Alive" else "Eliminated")
+        ((case (player.killTime, player.killer, player.killerName) of
+          (Just time, Just killer, Just killerName) ->
+            "Eliminated on " ++ Utils.displayTime global.zone time ++
+              " by " ++ killerName
+          _ ->
+            "Alive")
         ++ " " ++ char Middot ++ " "
         ++ String.fromInt player.kills
         ++ (if player.kills == 1 then
@@ -136,7 +141,7 @@ renderPlayer player =
     ]
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
-view { session } model =
+view global model =
   [ article [ A.class "main content profile" ]
     [ div [ A.class "profile-info" ]
       [ h1 [ A.class "profile-name" ]
@@ -145,7 +150,7 @@ view { session } model =
         , span [ A.class "flex" ]
           []
         ]
-        ++ case session of
+        ++ case global.session of
           Api.SignedIn { username } ->
             Utils.filter
               [ if username == model.info.creator then
@@ -206,7 +211,8 @@ view { session } model =
       , p [ A.class "profile-desc" ]
         [ text model.info.description ]
       , p [ A.class "profile-desc profile-stats" ]
-        [ text (Api.gameStateName model.info.state ++ " " ++ char Middot ++ " "
+        [ text (Api.gameStateNameWithTime global.zone model.info.state model.info.time
+          ++ " " ++ char Middot ++ " "
           ++ String.fromInt (List.length (List.filter (\player -> player.alive) model.info.players))
           ++ " of " ++ String.fromInt (List.length model.info.players)
           ++ (if List.length model.info.players == 1 then " participant" else " participants")
@@ -217,7 +223,7 @@ view { session } model =
       [ section [ A.class "list" ]
         ((h2 []
           [ text ("Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")") ])
-        :: (List.map renderPlayer
+        :: (List.map (renderPlayer global)
           (List.sortWith (\a -> \b ->
             case compare b.kills a.kills of
               EQ ->

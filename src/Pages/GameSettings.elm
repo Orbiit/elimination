@@ -402,7 +402,10 @@ view { zone } model =
             [ text "Shuffle targets" ] ]
         else
           [])))
-      :: List.map (renderPlayer model zone) model.players
+      :: (model.players
+        |> List.sortBy .joined
+        |> List.reverse
+        |> List.map (renderPlayer model zone))
       )
     ]
   ]

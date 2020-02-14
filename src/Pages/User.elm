@@ -37,8 +37,8 @@ update msg { session } model =
         Err error ->
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
 
-renderMyGame : Api.UserMyGame -> Html Msg
-renderMyGame game =
+renderMyGame : Api.GlobalModel m -> Api.UserMyGame -> Html Msg
+renderMyGame global game =
   a [ A.class "item", A.href ("?!" ++ game.game) ]
     [ span [ A.class "item-name" ]
       [ text game.name ]
@@ -50,7 +50,7 @@ renderMyGame game =
         else
           " participants")
         ++ " " ++ char Middot ++ " "
-        ++ Api.gameStateName game.state
+        ++ Api.gameStateNameWithTime global.zone game.state game.time
         )
       ]
     ]
@@ -82,7 +82,7 @@ renderGame game =
     ]
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
-view { session } model =
+view global model =
   [ article [ A.class "main content profile" ]
     [ div [ A.class "profile-info" ]
       [ h1 [ A.class "profile-name" ]
@@ -91,9 +91,9 @@ view { session } model =
         , span [ A.class "flex" ]
           []
         ]
-        ++ case session of
-          Api.SignedIn authSession ->
-            if authSession.username == model.username then
+        ++ case global.session of
+          Api.SignedIn { username } ->
+            if username == model.username then
               [ a [ A.class "icon-btn settings-btn", A.href "?settings" ]
                 [ text "Settings" ] ]
             else
@@ -113,12 +113,20 @@ view { session } model =
           Nothing
         else
           Just (section [ A.class "list" ]
-            ((h2 [] [ text "Games I created" ]) :: List.map renderMyGame model.info.myGames))
+            ((h2 [] [ text "Games I created" ]) ::
+              (model.info.myGames
+                |> List.sortBy .time
+                |> List.reverse
+                |> List.map (renderMyGame global))))
         , if List.isEmpty model.info.games then
           Nothing
         else
           Just (section [ A.class "list" ]
-            ((h2 [] [ text "Games in which I participate" ]) :: List.map renderGame model.info.games))
+            ((h2 [] [ text "Games in which I participate" ]) ::
+              (model.info.games
+                |> List.sortBy .updated
+                |> List.reverse
+                |> List.map renderGame)))
         ])
     ]
   ]
