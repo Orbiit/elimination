@@ -38,6 +38,7 @@ type alias Model =
   , kicking : Bool
   , starting : Bool
   , shuffling : Bool
+  , shuffled : Bool
   }
 
 init : Model
@@ -57,6 +58,7 @@ init =
   , kicking = False
   , starting = False
   , shuffling = False
+  , shuffled = False
   }
 
 type Msg
@@ -119,6 +121,7 @@ update msg global model =
             , password = Utils.inputState password
             , players = players
             , state = state
+            , shuffled = False
             }
           , Cmd.batch [ NProgress.done (), resizeDesc ]
           , Api.ChangePage Pages.GameSettings
@@ -218,9 +221,9 @@ update msg global model =
         Err ((_, errorMsg) as error) ->
           ({ model | starting = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     Shuffle ->
-      case (model.game, global.session) of
-        (Just gameID, Api.SignedIn { session }) ->
-          ( { model | shuffling = True, problem = Nothing }
+      case model.game of
+        Just gameID ->
+          ( { model | shuffling = True, shuffled = False, problem = Nothing }
           , Api.shuffle global Shuffled gameID
           , Api.None
           )
@@ -229,9 +232,9 @@ update msg global model =
     Shuffled result ->
       case result of
         Ok _ ->
-          ({ model | shuffling = False }, Cmd.none, Api.None)
+          ({ model | shuffling = False, shuffled = True }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
-          ({ model | shuffling = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+          ({ model | shuffling = False, shuffled = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     DoNothing ->
       (model, Cmd.none, Api.None)
 
@@ -366,7 +369,7 @@ view { zone } model =
           | labelText = "Description and rules"
           , sublabel = "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made."
           , type_ = "textarea"
-          , placeholder = "Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur inside classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck, Pizzas!"
+          , placeholder = "Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur during Mr. Leasio's classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck!"
           , value = model.desc.value
           , validate = \value ->
             if String.length value > 2000 then
@@ -412,7 +415,7 @@ view { zone } model =
             , A.disabled model.shuffling
             , onClick Shuffle
             ]
-            [ text "Shuffle targets" ] ]
+            [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ] ]
         else
           [])))
       :: (model.players

@@ -112,7 +112,7 @@ update msg global model =
         Dom.focus <| case window of
           SignUpWindow -> "sign-up-input"
           LoginWindow -> "login-input"
-          Notifications -> "notification-btn"
+          Notifications -> if model.notifs.unread == 0 then "refresh-btn" else "read-btn"
           None -> ""
       , Api.None
       )
@@ -339,13 +339,14 @@ makeHeader { session, zone } model frontPage =
               , button
                 [ A.class "button small-btn notif-action-btn"
                 , A.classList [ ("loading", model.markingAsRead) ]
-                , A.id "notification-btn"
+                , A.id "read-btn"
                 , A.disabled (model.markingAsRead || model.notifs.unread == 0)
                 , onClick MarkAsRead
                 ]
                 [ text "Mark as read" ]
               , button
                 [ A.class "button small-btn notif-action-btn"
+                , A.id "refresh-btn"
                 , A.disabled model.notifsLoading
                 , onClick Refresh
                 ]

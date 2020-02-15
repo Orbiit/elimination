@@ -22,7 +22,6 @@ npm run build
 
 ## Things to add
 
-- (not super easy) Say "Shuffled targets" when targets are shuffled
 - (requires thinking) Finish content for about, welcome, and maybe terms pages (and meta desc tags?)
 - (maybe tedious) Parse for \@mentions, !games, and external links. Could also add support for bold, italics, etc.
 - (probably very hard/complicated) Emails:
