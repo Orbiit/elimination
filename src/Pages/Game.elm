@@ -114,11 +114,11 @@ update msg { session } model =
     DontClose ->
       (model, Cmd.none, Api.None)
 
-renderPlayer : Api.GlobalModel m -> Api.GamePlayer -> Html Msg
-renderPlayer global player =
+renderPlayer : Api.GlobalModel m -> Bool -> Api.GamePlayer -> Html Msg
+renderPlayer global ended player =
   a
     [ A.class "item"
-    , A.classList [ ("dead", not player.alive) ]
+    , A.classList [ ("dead", not player.alive), ("winner", ended && player.alive) ]
     , A.href ("?@" ++ player.username)
     ]
     [ span [ A.class "item-name" ]
@@ -223,7 +223,7 @@ view global model =
       [ section [ A.class "list" ]
         ((h2 []
           [ text ("Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")") ])
-        :: (List.map (renderPlayer global)
+        :: (List.map (renderPlayer global (model.info.state == Api.Ended))
           (List.sortWith (\a -> \b ->
             case compare b.kills a.kills of
               EQ ->

@@ -57,7 +57,11 @@ renderMyGame global game =
 
 renderGame : Api.UserGame -> Html Msg
 renderGame game =
-  a [ A.class "item", A.href ("?!" ++ game.game) ]
+  a
+    [ A.class "item"
+    , A.classList [ ("winner", game.state == Api.Ended && game.alive) ]
+    , A.href ("?!" ++ game.game)
+    ]
     [ span [ A.class "item-name" ]
       [ text game.name ]
     , span [ A.class "item-info" ]

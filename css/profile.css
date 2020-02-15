@@ -55,6 +55,11 @@
   display: block;
   padding: 10px;
 }
+.winner {
+  background-image: url('../images/crown.svg');
+  background-repeat: no-repeat;
+  background-position: right;
+}
 .dead {
   opacity: 0.7;
 }

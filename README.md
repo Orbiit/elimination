@@ -22,9 +22,7 @@ npm run build
 
 ## Things to add
 
-- (requires finding/making a crown icon and updating the server code) Mark winner on game page and whether is winner on user page
 - (requires thinking) Finish content for about, welcome, and maybe terms pages
-- (not very easy probably) Prevent navigation away if there are unsaved changes in settings
 - (maybe tedious) Parse for \@mentions, !games, and external links. Could also add support for bold, italics, etc.
 - (probably very hard/complicated) Emails:
   - Password reset forms
