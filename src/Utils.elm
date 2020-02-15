@@ -8,8 +8,6 @@ import Json.Encode as E
 import Json.Decode as D
 import Time
 
-import Api.Host exposing (host)
-
 filter : List (Maybe a) -> List a
 filter list =
   List.filterMap identity list
@@ -252,28 +250,20 @@ parseResponse decoder response =
               ++ D.errorToString parseError
             )
 
-get : String -> Maybe String -> (Result HttpError a -> msg) -> D.Decoder a -> Cmd msg
-get path session msg decoder =
-  Http.request
-    { method = "GET"
-    , headers =
-      [ Http.header "X-Requested-With" "XMLHttpRequest" ] ++
-        case session of
-          Just sessionID ->
-            [ Http.header "X-Session-Id" sessionID ]
-          Nothing ->
-            []
-    , url = host ++ path
-    , body = Http.emptyBody
-    , expect = Http.expectStringResponse msg (parseResponse decoder)
-    , timeout = Nothing
-    , tracker = Nothing
-    }
+type RequestMethod
+  = Post
+  | Get
 
-post : String -> Maybe String -> (Result HttpError a -> msg) -> E.Value -> D.Decoder a -> Cmd msg
-post path session msg body decoder =
+request : RequestMethod -> String -> Maybe String ->
+  (Result HttpError a -> msg) -> Maybe E.Value -> D.Decoder a -> Cmd msg
+request method url session msg body decoder =
   Http.request
-    { method = "POST"
+    { method =
+      case method of
+        Post ->
+          "POST"
+        Get ->
+          "GET"
     , headers =
       [ Http.header "X-Requested-With" "XMLHttpRequest" ] ++
         case session of
@@ -281,8 +271,13 @@ post path session msg body decoder =
             [ Http.header "X-Session-Id" sessionID ]
           Nothing ->
             []
-    , url = host ++ path
-    , body = Http.jsonBody body
+    , url = url
+    , body =
+      case body of
+        Just jsonBody ->
+          Http.jsonBody jsonBody
+        Nothing ->
+          Http.emptyBody
     , expect = Http.expectStringResponse msg (parseResponse decoder)
     , timeout = Nothing
     , tracker = Nothing

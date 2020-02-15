@@ -90,14 +90,10 @@ update msg global model =
         Err _ ->
           (model, Cmd.none, Api.None)
     Logout ->
-      case global.session of
-        Api.SignedIn { session } ->
-          ( { model | loadingLogout = True }
-          , Api.logout session LoggedOut
-          , Api.None
-          )
-        Api.SignedOut ->
-          (model, Cmd.none, Api.None)
+      ( { model | loadingLogout = True }
+      , Api.logout global LoggedOut
+      , Api.None
+      )
     LoggedOut _ ->
       ({ model | loadingLogout = False }, Cmd.none, Api.ChangeSession Api.SignedOut)
     InfoLoaded result ->
@@ -115,39 +111,35 @@ update msg global model =
         Err error ->
           (model, NProgress.done (), Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ])
     Save ->
-      case global.session of
-        Api.SignedIn { session } ->
-          ( { model | loading = True, problem = Nothing }
-          , Api.setSettings (E.object
-              (Utils.filter
-                [ if model.name.value /= model.name.original then
-                  Just ("name", E.string model.name.value)
-                else
-                  Nothing
-                , if model.email.value /= model.email.original then
-                  Just ("email", E.string model.email.value)
-                else
-                  Nothing
-                , if model.bio.value /= model.bio.original then
-                  Just ("bio", E.string model.bio.value)
-                else
-                  Nothing
-                , if String.isEmpty model.password.value then
-                  Nothing
-                else
-                  Just ("password", E.string model.password.value)
-                -- Using password value here so that oldPassword can be empty
-                , if String.isEmpty model.password.value then
-                  Nothing
-                else
-                  Just ("oldPassword", E.string model.oldPassword.value)
-                ]
-              )
-            ) session Saved
-          , Api.None
+      ( { model | loading = True, problem = Nothing }
+      , Api.setSettings global Saved (E.object
+          (Utils.filter
+            [ if model.name.value /= model.name.original then
+              Just ("name", E.string model.name.value)
+            else
+              Nothing
+            , if model.email.value /= model.email.original then
+              Just ("email", E.string model.email.value)
+            else
+              Nothing
+            , if model.bio.value /= model.bio.original then
+              Just ("bio", E.string model.bio.value)
+            else
+              Nothing
+            , if String.isEmpty model.password.value then
+              Nothing
+            else
+              Just ("password", E.string model.password.value)
+            -- Using password value here so that oldPassword can be empty
+            , if String.isEmpty model.password.value then
+              Nothing
+            else
+              Just ("oldPassword", E.string model.oldPassword.value)
+            ]
           )
-        Api.SignedOut ->
-          (model, Cmd.none, Api.None)
+        )
+      , Api.None
+      )
     Saved result ->
       case result of
         Ok _ ->

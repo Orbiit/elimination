@@ -31,26 +31,26 @@ type PageCmd
   | Command (Cmd Msg)
   | SwitchPageAndCommand Pages.Page (Cmd Msg)
 
-loadFrontPage : Api.Session -> PageCmd
-loadFrontPage sessionType =
-  case sessionType of
-    Api.SignedIn { session } ->
+loadFrontPage : Api.GlobalModel m -> PageCmd
+loadFrontPage global =
+  case global.session of
+    Api.SignedIn _ ->
       Command <|
         Cmd.batch
-          [ Cmd.map FrontPageMsg <|
-            Api.statuses session Pages.FrontPage.StatusesLoaded
+          [ Api.statuses global Pages.FrontPage.StatusesLoaded
+            |> Cmd.map FrontPageMsg
           , NProgress.start ()
           ]
     Api.SignedOut ->
       Command <|
         Cmd.batch
-          [ Cmd.map FrontPageMsg <|
-            Api.getStats Pages.FrontPage.StatsLoaded
+          [ Api.getStats global Pages.FrontPage.StatsLoaded
+            |> Cmd.map FrontPageMsg
           , NProgress.start ()
           ]
 
-urlToPage : Url.Url -> Api.Session -> PageCmd
-urlToPage url sessionType =
+urlToPage : Api.GlobalModel m -> Url.Url -> PageCmd
+urlToPage global url =
   case url.query of
     Just path ->
       if String.startsWith "@" path then
@@ -59,20 +59,20 @@ urlToPage url sessionType =
         in
           Command <|
             Cmd.batch
-              [ Cmd.map UserMsg <|
-                Api.getUser username (Pages.User.InfoLoaded username)
+              [ Api.getUser global (Pages.User.InfoLoaded username) username
+                |> Cmd.map UserMsg
               , NProgress.start ()
               ]
       else if String.startsWith "!" path then
         let
           gameID = String.dropLeft 1 path
         in
-          Command <|
-            Cmd.batch
-              [ Cmd.map GameMsg <|
-                Api.getGame gameID (Pages.Game.InfoLoaded gameID)
-              , NProgress.start ()
-              ]
+        Command <|
+          Cmd.batch
+            [ Api.getGame global (Pages.Game.InfoLoaded gameID) gameID
+              |> Cmd.map GameMsg
+            , NProgress.start ()
+            ]
       else if path == "terms" then
         SwitchPage Pages.Terms
       else if path == "privacy" then
@@ -82,38 +82,30 @@ urlToPage url sessionType =
       else if path == "game" then
         SwitchPage Pages.Game
       else if path == "settings" then
-        case sessionType of
-          Api.SignedIn { session } ->
-            Command <|
-              Cmd.batch
-                [ Cmd.map UserSettingsMsg <|
-                  Api.getSettings session Pages.UserSettings.InfoLoaded
-                , NProgress.start ()
-                ]
-          Api.SignedOut ->
-            SwitchPage (Pages.Error (Utils.StatusCode 401, "You're not signed in."))
+        Command <|
+          Cmd.batch
+            [ Cmd.map UserSettingsMsg <|
+              Api.getSettings global Pages.UserSettings.InfoLoaded
+            , NProgress.start ()
+            ]
       else if path == "create-game" then
         SwitchPageAndCommand Pages.GameSettings (Cmd.map GameSettingsMsg Pages.GameSettings.resizeDesc)
       else if String.startsWith "settings!" path then
         let
           game = String.dropLeft (String.length "settings!") path
         in
-          case sessionType of
-            Api.SignedIn { session } ->
-              Command <|
-                Cmd.batch
-                  [ Cmd.map GameSettingsMsg <|
-                    Api.getGameSettings game session (Pages.GameSettings.InfoLoaded game)
-                  , NProgress.start ()
-                  ]
-            Api.SignedOut ->
-              SwitchPage (Pages.Error (Utils.StatusCode 401, "You're not signed in."))
+        Command <|
+          Cmd.batch
+            [ Api.getGameSettings global (Pages.GameSettings.InfoLoaded game) game
+              |> Cmd.map GameSettingsMsg
+            , NProgress.start ()
+            ]
       else if path == "" then
-        loadFrontPage sessionType
+        loadFrontPage global
       else
         SwitchPage (Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL."))
     Nothing ->
-      loadFrontPage sessionType
+      loadFrontPage global
 
 removeQueryIfNeeded : Url.Url -> Nav.Key -> Cmd Msg
 removeQueryIfNeeded url key =
@@ -133,6 +125,7 @@ type alias Model =
   , key : Nav.Key
   , zone : Time.Zone
   , session : Api.Session
+  , host : String
   , askDiscardChanges : Maybe Browser.UrlRequest
   , header : Base.Model
   , userSettings : Pages.UserSettings.Model
@@ -142,8 +135,8 @@ type alias Model =
   , game : Pages.Game.Model
   }
 
-init : (Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
-init (sessionMaybe, usernameMaybe) url navKey =
+init : (String, Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
+init (host, sessionMaybe, usernameMaybe) url navKey =
   let
     session =
       case (sessionMaybe, usernameMaybe) of
@@ -151,20 +144,23 @@ init (sessionMaybe, usernameMaybe) url navKey =
           Api.SignedIn { session = sessionID, username = username }
         (_, _) ->
           Api.SignedOut
+    semiGlobal =
+      { session = session, zone = Time.utc, host = host }
     (page, cmd) =
-      case urlToPage url session of
+      case urlToPage semiGlobal url of
         SwitchPage pageType ->
           (pageType, Cmd.none)
         Command command ->
           (Pages.Loading, command)
         SwitchPageAndCommand pageType command ->
           (pageType, command)
-    (header, headerCmd) = Base.init session
+    (header, headerCmd) = Base.init semiGlobal
   in
     ( { page = page
       , key = navKey
       , zone = Time.utc
       , session = session
+      , host = host
       , askDiscardChanges = Nothing
       , header = header
       , userSettings = Pages.UserSettings.init
@@ -303,11 +299,15 @@ doPageCmd : Api.PageCmd -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 doPageCmd pageCmd (model, cmd) =
   case pageCmd of
     Api.ChangeSession sessionType ->
-      ( { model
-        | session = sessionType
-        -- Reset front page state to clear statuses
-        , frontPage = Pages.FrontPage.init
-        }
+      let
+        newModel =
+          { model
+          | session = sessionType
+          -- Reset front page state to clear statuses
+          , frontPage = Pages.FrontPage.init
+          }
+      in
+      ( newModel
       , case sessionType of
         Api.SignedIn { session, username } ->
           Cmd.batch
@@ -321,7 +321,7 @@ doPageCmd pageCmd (model, cmd) =
                 _ ->
                   Cmd.none
             , cmd
-            , Cmd.map BaseMsg (Base.updateNotifs sessionType)
+            , Cmd.map BaseMsg (Base.updateNotifs newModel)
             ]
         Api.SignedOut ->
           Cmd.batch
@@ -365,7 +365,7 @@ update msg model =
     ChangedUrl url ->
       let
         (newModel, cmd) =
-          case urlToPage url model.session of
+          case urlToPage model url of
             SwitchPage pageType ->
               ({ model | page = pageType }, Cmd.none)
             Command command ->
@@ -422,7 +422,7 @@ subscriptions model =
     , onBeforeUnload BeforeUnload
     ]
 
-main : Program (Maybe String, Maybe String) Model Msg
+main : Program (String, Maybe String, Maybe String) Model Msg
 main =
   Browser.application
     { init = init

@@ -49,8 +49,8 @@ type alias Model =
   , markingAsRead : Bool
   }
 
-init : Api.Session -> (Model, Cmd Msg)
-init session =
+init : Api.GlobalModel m -> (Model, Cmd Msg)
+init semiGlobal =
   ( { open = None
     , loginUsername = Utils.initInputState
     , loginPassword = Utils.initInputState
@@ -72,7 +72,7 @@ init session =
     , notifsProblem = Nothing
     , markingAsRead = False
     }
-  , updateNotifs session
+  , updateNotifs semiGlobal
   )
 
 type Msg
@@ -93,13 +93,9 @@ type Msg
 notifsAtATime : Int
 notifsAtATime = 5
 
-updateNotifs : Api.Session -> Cmd Msg
-updateNotifs sessionType =
-  case sessionType of
-    Api.SignedIn { session } ->
-      Api.notifications 0 notifsAtATime session NotificationsLoaded
-    Api.SignedOut ->
-      Cmd.none
+updateNotifs : Api.GlobalModel m -> Cmd Msg
+updateNotifs global =
+  Api.notifications global NotificationsLoaded 0 notifsAtATime
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =
@@ -138,20 +134,23 @@ update msg global model =
         )
     Login ->
       ( { model | loginLoading = True, loginProblem = Nothing }
-      , Api.login model.loginUsername.value model.loginPassword.value
+      , Api.login
+        global
         (NewSession LoginMethod)
+        model.loginUsername.value model.loginPassword.value
       , Api.None
       )
     SignUp ->
       ( { model | signUpLoading = True, signUpProblem = Nothing }
       , Api.createUser
+        global
+        (NewSession SignUpMethod)
         { username = model.signUpUsername.value
         , name = model.signUpName.value
         , password = model.signUpPassword.value
         , email = model.signUpEmail.value
         , bio = ""
         }
-        (NewSession SignUpMethod)
       , Api.None
       )
     NewSession method username sessionResult ->
@@ -176,7 +175,7 @@ update msg global model =
           )
     Refresh ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
-      , updateNotifs global.session
+      , updateNotifs global
       , Api.None
       )
     NotificationsLoaded result ->
@@ -187,11 +186,7 @@ update msg global model =
           ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     LoadMore ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
-      , case global.session of
-        Api.SignedIn { session } ->
-          Api.notifications (List.length model.notifs.notifications) notifsAtATime session MoreNotificationsLoaded
-        Api.SignedOut ->
-          Cmd.none
+      , Api.notifications global MoreNotificationsLoaded (List.length model.notifs.notifications) notifsAtATime
       , Api.None
       )
     MoreNotificationsLoaded result ->
@@ -207,11 +202,7 @@ update msg global model =
           ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     MarkAsRead ->
       ( { model | markingAsRead = True, notifsProblem = Nothing }
-      , case global.session of
-        Api.SignedIn { session } ->
-          Api.read session MarkedAsRead
-        Api.SignedOut ->
-          Cmd.none
+      , Api.read global MarkedAsRead
       , Api.None
       )
     MarkedAsRead result ->

@@ -126,39 +126,35 @@ update msg global model =
         Err error ->
           (model, NProgress.done (), Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ])
     Save ->
-      case global.session of
-        Api.SignedIn { session } ->
-          let
-            creating = model.game == Nothing
-            gameInfo =
-              (E.object
-                (Utils.filter
-                  [ if creating || model.name.value /= model.name.original then
-                    Just ("name", E.string model.name.value)
-                  else
-                    Nothing
-                  , if creating || model.desc.value /= model.desc.original then
-                    Just ("description", E.string model.desc.value)
-                  else
-                    Nothing
-                  , if creating || model.password.value /= model.password.original then
-                    Just ("password", E.string model.password.value)
-                  else
-                    Nothing
-                  ]
-                )
-              )
-          in
-            ( { model | loading = True, problem = Nothing }
-            , case model.game of
-              Just gameID ->
-                Api.setGameSettings gameInfo gameID session Saved
-              Nothing ->
-                Api.createGame gameInfo session Saved
-            , Api.None
+      let
+        creating = model.game == Nothing
+        gameInfo =
+          (E.object
+            (Utils.filter
+              [ if creating || model.name.value /= model.name.original then
+                Just ("name", E.string model.name.value)
+              else
+                Nothing
+              , if creating || model.desc.value /= model.desc.original then
+                Just ("description", E.string model.desc.value)
+              else
+                Nothing
+              , if creating || model.password.value /= model.password.original then
+                Just ("password", E.string model.password.value)
+              else
+                Nothing
+              ]
             )
-        Api.SignedOut ->
-          (model, Cmd.none, Api.None)
+          )
+      in
+      ( { model | loading = True, problem = Nothing }
+      , case model.game of
+        Just gameID ->
+          Api.setGameSettings global Saved gameID gameInfo
+        Nothing ->
+          Api.createGame global Saved gameInfo
+      , Api.None
+      )
     Saved result ->
       case result of
         Ok gameID ->
@@ -184,10 +180,10 @@ update msg global model =
     DontClose ->
       (model, Cmd.none, Api.None)
     Kick ->
-      case (model.game, model.modal, global.session) of
-        (Just gameID, Just username, Api.SignedIn { session }) ->
+      case (model.game, model.modal) of
+        (Just gameID, Just username) ->
           ( { model | kicking = True, kickProblem = Nothing }
-          , Api.kick username model.kickReason gameID session (Kicked username)
+          , Api.kick global (Kicked username) gameID username model.kickReason
           , Api.None
           )
         _ ->
@@ -206,10 +202,10 @@ update msg global model =
         Err ((_, errorMsg) as error) ->
           ({ model | kicking = False, kickProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     Start ->
-      case (model.game, global.session) of
-        (Just gameID, Api.SignedIn { session }) ->
+      case model.game of
+        Just gameID ->
           ( { model | starting = True, problem = Nothing }
-          , Api.start gameID session Started
+          , Api.start global Started gameID
           , Api.None
           )
         _ ->
@@ -224,7 +220,7 @@ update msg global model =
       case (model.game, global.session) of
         (Just gameID, Api.SignedIn { session }) ->
           ( { model | shuffling = True, problem = Nothing }
-          , Api.shuffle gameID session Shuffled
+          , Api.shuffle global Shuffled gameID
           , Api.None
           )
         _ ->

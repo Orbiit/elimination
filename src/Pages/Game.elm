@@ -68,18 +68,18 @@ update msg global model =
       ({ model | modal = False }, Cmd.none, Api.None)
     Join ->
       case global.session of
-        Api.SignedIn ({ username, session }) ->
+        Api.SignedIn { username } ->
           ( { model | loading = True, problem = Nothing }
-          , Api.join model.password model.game session (Done (Joining username))
+          , Api.join global (Done (Joining username)) model.game model.password
           , Api.None
           )
         Api.SignedOut ->
           (model, Cmd.none, Api.None)
     Leave ->
       case global.session of
-        Api.SignedIn ({ username, session }) ->
+        Api.SignedIn { username } ->
           ( { model | loading = True, problem = Nothing }
-          , Api.leave model.game session (Done (Leaving username))
+          , Api.leave global (Done (Leaving username)) model.game
           , Api.None
           )
         Api.SignedOut ->

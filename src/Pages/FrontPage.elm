@@ -74,26 +74,22 @@ update msg global model =
     ChangeCode { value } ->
       ({ model | code = value }, Cmd.none, Api.None)
     Kill ->
-      case (global.session, model.modal) of
-        (Api.SignedIn { session }, Just game) ->
+      case model.modal of
+        Just game ->
           ( { model | problem = Nothing, killing = True }
-          , Api.kill model.code game session Killed
+          , Api.kill global Killed game model.code
           , Api.None
           )
-        _ ->
+        Nothing ->
           (model, Cmd.none, Api.None)
     Killed result ->
       case result of
         Ok _ ->
           ( { model | killing = False, modal = Nothing }
-          , case global.session of
-            Api.SignedIn { session } ->
-              Cmd.batch
-                [ Api.statuses session StatusesLoaded
-                , NProgress.start ()
-                ]
-            Api.SignedOut ->
-              Cmd.none
+          , Cmd.batch
+            [ Api.statuses global StatusesLoaded
+            , NProgress.start ()
+            ]
           , Api.None
           )
         Err ((_, errorMsg) as error) ->

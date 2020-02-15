@@ -18,6 +18,7 @@ type alias GlobalModel m =
   { m
   | session : Session
   , zone : Time.Zone
+  , host : String
   }
 
 type PageCmd
@@ -77,6 +78,32 @@ gameStateNameWithTime zone state time =
       "Ended on ")
     ++ Utils.displayTime zone time
 
+type alias ResultMsg a msg = Result Utils.HttpError a -> msg
+
+get : GlobalModel m -> String -> ResultMsg a msg -> D.Decoder a -> Cmd msg
+get global path msg decoder =
+  let
+    sessionID =
+      case global.session of
+        SignedIn { session } ->
+          Just session
+        SignedOut ->
+          Nothing
+  in
+  Utils.request Utils.Get (global.host ++ path) sessionID msg Nothing decoder
+
+post : GlobalModel m -> String -> ResultMsg a msg -> E.Value -> D.Decoder a -> Cmd msg
+post global path msg body decoder =
+  let
+    sessionID =
+      case global.session of
+        SignedIn { session } ->
+          Just session
+        SignedOut ->
+          Nothing
+  in
+  Utils.request Utils.Post (global.host ++ path) sessionID msg (Just body) decoder
+
 -- Authenticate
 
 type alias UserInfo =
@@ -87,9 +114,9 @@ type alias UserInfo =
   , bio : String
   }
 
-createUser : UserInfo -> (String -> Result Utils.HttpError SessionID -> msg) -> Cmd msg
-createUser info msg =
-  Utils.post "create-user" Nothing (msg info.username) (E.object
+createUser : GlobalModel m -> (String -> ResultMsg SessionID msg) -> UserInfo -> Cmd msg
+createUser global msg info =
+  post global "create-user" (msg info.username) (E.object
     [ ("username", E.string info.username)
     , ("name", E.string info.name)
     , ("password", E.string info.password)
@@ -97,9 +124,9 @@ createUser info msg =
     ])
     (D.field "session" D.string)
 
-login : String -> String -> (String -> Result Utils.HttpError SessionID -> msg) -> Cmd msg
-login username password msg =
-  Utils.post "login" Nothing (msg username) (E.object
+login : GlobalModel m -> (String -> ResultMsg SessionID msg) -> String -> String -> Cmd msg
+login global msg username password =
+  post global "login" (msg username) (E.object
     [ ("username", E.string username)
     , ("password", E.string password)
     ])
@@ -107,9 +134,9 @@ login username password msg =
 
 -- Requires authentication
 
-logout : SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-logout session msg =
-  Utils.post "logout" (Just session) msg (E.object []) (D.succeed ())
+logout : GlobalModel m -> ResultMsg () msg -> Cmd msg
+logout global msg =
+  post global "logout" msg (E.object []) (D.succeed ())
 
 type alias UserSettingsInfo =
   { name : String
@@ -117,27 +144,27 @@ type alias UserSettingsInfo =
   , bio : String
   }
 
-getSettings : SessionID -> (Result Utils.HttpError UserSettingsInfo -> msg) -> Cmd msg
-getSettings session msg =
-  Utils.get "user-settings" (Just session) msg <|
+getSettings : GlobalModel m -> ResultMsg UserSettingsInfo msg -> Cmd msg
+getSettings global msg =
+  get global "user-settings" msg <|
     D.map3 UserSettingsInfo
       (D.field "name" D.string)
       (D.field "email" D.string)
       (D.field "bio" D.string)
 
-setSettings : E.Value -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-setSettings changes session msg =
-  Utils.post "user-settings" (Just session) msg changes (D.succeed ())
+setSettings : GlobalModel m -> ResultMsg () msg -> E.Value -> Cmd msg
+setSettings global msg changes =
+  post global "user-settings" msg changes (D.succeed ())
 
 type alias GameID = String
 
-createGame : E.Value -> SessionID -> (Result Utils.HttpError GameID -> msg) -> Cmd msg
-createGame gameInfo session msg =
-  Utils.post "create-game" (Just session) msg gameInfo (D.field "game" D.string)
+createGame : GlobalModel m -> ResultMsg GameID msg -> E.Value -> Cmd msg
+createGame global msg gameInfo =
+  post global "create-game" msg gameInfo (D.field "game" D.string)
 
-setGameSettings : E.Value -> GameID -> SessionID -> (Result Utils.HttpError GameID -> msg) -> Cmd msg
-setGameSettings changes game session msg =
-  Utils.post ("game-settings?game=" ++ game) (Just session) msg changes (D.succeed game)
+setGameSettings : GlobalModel m -> ResultMsg GameID msg -> GameID -> E.Value -> Cmd msg
+setGameSettings global msg game changes =
+  post global ("game-settings?game=" ++ game) msg changes (D.succeed game)
 
 type alias GameSettingsPlayer =
   { username : String
@@ -155,9 +182,9 @@ type alias GameSettingsInfo =
   , state : GameState
   }
 
-getGameSettings : GameID -> SessionID -> (Result Utils.HttpError GameSettingsInfo -> msg) -> Cmd msg
-getGameSettings game session msg =
-  Utils.get ("game-settings?game=" ++ game) (Just session) msg <|
+getGameSettings : GlobalModel m -> ResultMsg GameSettingsInfo msg -> GameID -> Cmd msg
+getGameSettings global msg game =
+  get global ("game-settings?game=" ++ game) msg <|
     D.map5 GameSettingsInfo
       (D.field "name" D.string)
       (D.field "description" D.string)
@@ -171,28 +198,28 @@ getGameSettings game session msg =
       )))
       (D.field "state" gameStateParser)
 
-join : String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-join password game session msg =
-  Utils.post ("join?game=" ++ game) (Just session) msg (E.object [("password", E.string password)]) (D.succeed ())
+join : GlobalModel m -> ResultMsg () msg -> GameID -> String -> Cmd msg
+join global msg game password =
+  post global ("join?game=" ++ game) msg (E.object [("password", E.string password)]) (D.succeed ())
 
-leave : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-leave game session msg =
-  Utils.post ("leave?game=" ++ game) (Just session) msg (E.object []) (D.succeed ())
+leave : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
+leave global msg game =
+  post global ("leave?game=" ++ game) msg (E.object []) (D.succeed ())
 
-kick : String -> String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-kick user reason game session msg =
-  Utils.post ("leave?game=" ++ game) (Just session) msg (E.object
+kick : GlobalModel m -> ResultMsg () msg -> GameID -> String -> String -> Cmd msg
+kick global msg game user reason =
+  post global ("leave?game=" ++ game) msg (E.object
     [ ("user", E.string user)
     , ("reason", E.string reason)
     ]) (D.succeed ())
 
-start : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-start game session msg =
-  Utils.post ("start?game=" ++ game) (Just session) msg (E.object []) (D.succeed ())
+start : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
+start global msg game =
+  post global ("start?game=" ++ game) msg (E.object []) (D.succeed ())
 
-shuffle : GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-shuffle game session msg =
-  Utils.post ("shuffle?game=" ++ game) (Just session) msg (E.object []) (D.succeed ())
+shuffle : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
+shuffle global msg game =
+  post global ("shuffle?game=" ++ game) msg (E.object []) (D.succeed ())
 
 type alias Status =
   { target : String
@@ -211,17 +238,17 @@ statusDecoder =
     (D.field "game" D.string)
     (D.field "gameName" D.string)
 
-status : GameID -> SessionID -> (Result Utils.HttpError Status -> msg) -> Cmd msg
-status game session msg =
-  Utils.get ("status?game=" ++ game) (Just session) msg statusDecoder
+status : GlobalModel m -> ResultMsg Status msg -> GameID -> Cmd msg
+status global msg game =
+  get global ("status?game=" ++ game) msg statusDecoder
 
-statuses : SessionID -> (Result Utils.HttpError (List Status) -> msg) -> Cmd msg
-statuses session msg =
-  Utils.get "statuses" (Just session) msg (D.list statusDecoder)
+statuses : GlobalModel m -> ResultMsg (List Status) msg -> Cmd msg
+statuses global msg =
+  get global "statuses" msg (D.list statusDecoder)
 
-kill : String -> GameID -> SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-kill code game session msg =
-  Utils.post ("kill?game=" ++ game) (Just session) msg (E.object [("code", E.string code)]) (D.succeed ())
+kill : GlobalModel m -> ResultMsg () msg -> GameID -> String -> Cmd msg
+kill global msg game code =
+  post global ("kill?game=" ++ game) msg (E.object [("code", E.string code)]) (D.succeed ())
 
 type Notification
   = GameStarted GameID String
@@ -274,10 +301,10 @@ parseNotifType notifType =
     _ ->
       D.succeed (Unknown notifType)
 
-notifications : Int -> Int -> SessionID -> (Result Utils.HttpError NotificationResult -> msg) -> Cmd msg
-notifications from limit session msg =
-  Utils.get ("notifications?from=" ++ String.fromInt from ++ "&limit=" ++ String.fromInt limit)
-    (Just session) msg (D.map3 NotificationResult
+notifications : GlobalModel m -> ResultMsg NotificationResult msg -> Int -> Int -> Cmd msg
+notifications global msg from limit =
+  get global ("notifications?from=" ++ String.fromInt from ++ "&limit=" ++ String.fromInt limit)
+    msg (D.map3 NotificationResult
     (D.field "end" D.bool)
     (D.field "unread" D.int)
     (D.field "notifications" (D.list (D.map3 NotificationMessage
@@ -287,9 +314,9 @@ notifications from limit session msg =
     )))
   )
 
-read : SessionID -> (Result Utils.HttpError () -> msg) -> Cmd msg
-read session msg =
-  Utils.post "read" (Just session) msg (E.object []) (D.succeed ())
+read : GlobalModel m -> ResultMsg () msg -> Cmd msg
+read global msg =
+  post global "read" msg (E.object []) (D.succeed ())
 
 -- Public
 
@@ -318,9 +345,9 @@ type alias User =
   , games : List UserGame
   }
 
-getUser : String -> (Result Utils.HttpError User -> msg) -> Cmd msg
-getUser user msg =
-  Utils.get ("user?user=" ++ user) Nothing msg <|
+getUser : GlobalModel m -> ResultMsg User msg -> String -> Cmd msg
+getUser global msg user =
+  get global ("user?user=" ++ user) msg <|
     D.map4 User
       (D.field "name" D.string)
       (D.field "bio" D.string)
@@ -362,9 +389,9 @@ type alias Game =
   , time : Timestamp
   }
 
-getGame : GameID -> (Result Utils.HttpError Game -> msg) -> Cmd msg
-getGame game msg =
-  Utils.get ("game?game=" ++ game) Nothing msg <|
+getGame : GlobalModel m -> ResultMsg Game msg -> GameID -> Cmd msg
+getGame global msg game =
+  get global ("game?game=" ++ game) msg <|
     D.map7 Game
       (D.field "creator" D.string)
       (D.field "creatorName" D.string)
@@ -388,9 +415,9 @@ type alias Stats =
   , games : Int
   }
 
-getStats : (Result Utils.HttpError Stats -> msg) -> Cmd msg
-getStats msg =
-  Utils.get "stats" Nothing msg <|
+getStats : GlobalModel m -> ResultMsg Stats msg -> Cmd msg
+getStats global msg =
+  get global "stats" msg <|
     D.map3 Stats
       (D.field "kills" D.int)
       (D.field "active" D.int)

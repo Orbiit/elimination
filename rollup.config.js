@@ -3,6 +3,7 @@ import serve from 'rollup-plugin-serve'
 import { terser } from 'rollup-plugin-terser'
 import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
+import processEnv from './rollup-plugin-process-env.js'
 
 const production = process.env.NODE_ENV === 'production'
 const dir = production ? '.' : './dist'
@@ -25,6 +26,7 @@ export default {
         optimize: production
       }
     }),
+    processEnv(),
     process.env.ROLLUP_WATCH && serve({
       contentBase: [''],
       port: 8080

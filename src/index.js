@@ -5,7 +5,11 @@ const SESSION_KEY = '[elimination] session'
 const USERNAME_KEY = '[elimination] username'
 
 const app = Elm.Main.init({
-  flags: [localStorage.getItem(SESSION_KEY), localStorage.getItem(USERNAME_KEY)]
+  flags: [
+    process.env.NODE_ENV === 'production' ? 'https://sheep.thingkingland.app/assassin/' : 'http://localhost:3000/assassin/',
+    localStorage.getItem(SESSION_KEY),
+    localStorage.getItem(USERNAME_KEY)
+  ]
 })
 
 app.ports.saveSession.subscribe(([session, username]) => {
