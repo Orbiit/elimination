@@ -22,6 +22,7 @@ npm run build
 
 ## Things to add
 
+- (very easy; server-side) "Session doesn't exist!" -> "You are not signed in."
 - (requires thinking) Finish content for about, welcome, and maybe terms pages
 - (maybe tedious) Parse for \@mentions, !games, and external links. Could also add support for bold, italics, etc.
 - (probably very hard/complicated) Emails:

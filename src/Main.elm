@@ -303,6 +303,8 @@ doPageCmd pageCmd (model, cmd) =
         newModel =
           { model
           | session = sessionType
+          -- Clear notifications
+          , header = Base.clearNotifs model.header
           -- Reset front page state to clear statuses
           , frontPage = Pages.FrontPage.init
           }
@@ -326,7 +328,6 @@ doPageCmd pageCmd (model, cmd) =
         Api.SignedOut ->
           Cmd.batch
             [ logout ()
-            , Nav.pushUrl model.key "?"
             , cmd
             ]
       )

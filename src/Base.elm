@@ -75,6 +75,10 @@ init semiGlobal =
   , updateNotifs semiGlobal
   )
 
+clearNotifs : Model -> Model
+clearNotifs model =
+  { model | notifs = { notifications = [], end = False, unread = 0 } }
+
 type Msg
   = Open HeaderWindow
   | Close
@@ -181,9 +185,9 @@ update msg global model =
     NotificationsLoaded result ->
       case result of
         Ok notifResult ->
-          ({ model | notifsLoading = False, notifs = notifResult }, Cmd.none, Api.None)
+          ({ model | notifsLoading = False, notifs = notifResult, notifsProblem = Nothing }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
-          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.None)
+          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     LoadMore ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
       , Api.notifications global MoreNotificationsLoaded (List.length model.notifs.notifications) notifsAtATime
@@ -199,7 +203,7 @@ update msg global model =
             }
           }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
-          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.None)
+          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     MarkAsRead ->
       ( { model | markingAsRead = True, notifsProblem = Nothing }
       , Api.read global MarkedAsRead
