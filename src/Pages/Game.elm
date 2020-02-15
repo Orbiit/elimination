@@ -52,7 +52,7 @@ type BtnAction
   | Leaving String
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg { session } model =
+update msg global model =
   case msg of
     InfoLoaded gameID result ->
       case result of
@@ -67,19 +67,19 @@ update msg { session } model =
     HideModal ->
       ({ model | modal = False }, Cmd.none, Api.None)
     Join ->
-      case session of
-        Api.SignedIn ({ username } as authSession) ->
+      case global.session of
+        Api.SignedIn ({ username, session }) ->
           ( { model | loading = True, problem = Nothing }
-          , Api.join model.password model.game authSession.session (Done (Joining username))
+          , Api.join model.password model.game session (Done (Joining username))
           , Api.None
           )
         Api.SignedOut ->
           (model, Cmd.none, Api.None)
     Leave ->
-      case session of
-        Api.SignedIn ({ username } as authSession) ->
+      case global.session of
+        Api.SignedIn ({ username, session }) ->
           ( { model | loading = True, problem = Nothing }
-          , Api.leave model.game authSession.session (Done (Leaving username))
+          , Api.leave model.game session (Done (Leaving username))
           , Api.None
           )
         Api.SignedOut ->

@@ -28,7 +28,7 @@ type Msg
   = InfoLoaded String (Result Utils.HttpError Api.User)
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg { session } model =
+update msg global model =
   case msg of
     InfoLoaded username result ->
       case result of

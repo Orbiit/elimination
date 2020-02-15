@@ -80,7 +80,7 @@ resizeDesc =
   Task.attempt ResizeDesc (Dom.getViewportOf "game-desc")
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg { session } model =
+update msg global model =
   case msg of
     Change input { validate, value, scrollHeight } ->
       let
@@ -126,8 +126,8 @@ update msg { session } model =
         Err error ->
           (model, NProgress.done (), Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ])
     Save ->
-      case session of
-        Api.SignedIn authSession ->
+      case global.session of
+        Api.SignedIn { session } ->
           let
             creating = model.game == Nothing
             gameInfo =
@@ -152,9 +152,9 @@ update msg { session } model =
             ( { model | loading = True, problem = Nothing }
             , case model.game of
               Just gameID ->
-                Api.setGameSettings gameInfo gameID authSession.session Saved
+                Api.setGameSettings gameInfo gameID session Saved
               Nothing ->
-                Api.createGame gameInfo authSession.session Saved
+                Api.createGame gameInfo session Saved
             , Api.None
             )
         Api.SignedOut ->
@@ -184,10 +184,10 @@ update msg { session } model =
     DontClose ->
       (model, Cmd.none, Api.None)
     Kick ->
-      case (model.game, model.modal, session) of
-        (Just gameID, Just username, Api.SignedIn authSession) ->
+      case (model.game, model.modal, global.session) of
+        (Just gameID, Just username, Api.SignedIn { session }) ->
           ( { model | kicking = True, kickProblem = Nothing }
-          , Api.kick username model.kickReason gameID authSession.session (Kicked username)
+          , Api.kick username model.kickReason gameID session (Kicked username)
           , Api.None
           )
         _ ->
@@ -206,10 +206,10 @@ update msg { session } model =
         Err ((_, errorMsg) as error) ->
           ({ model | kicking = False, kickProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     Start ->
-      case (model.game, session) of
-        (Just gameID, Api.SignedIn authSession) ->
+      case (model.game, global.session) of
+        (Just gameID, Api.SignedIn { session }) ->
           ( { model | starting = True, problem = Nothing }
-          , Api.start gameID authSession.session Started
+          , Api.start gameID session Started
           , Api.None
           )
         _ ->
@@ -221,10 +221,10 @@ update msg { session } model =
         Err ((_, errorMsg) as error) ->
           ({ model | starting = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     Shuffle ->
-      case (model.game, session) of
-        (Just gameID, Api.SignedIn authSession) ->
+      case (model.game, global.session) of
+        (Just gameID, Api.SignedIn { session }) ->
           ( { model | shuffling = True, problem = Nothing }
-          , Api.shuffle gameID authSession.session Shuffled
+          , Api.shuffle gameID session Shuffled
           , Api.None
           )
         _ ->

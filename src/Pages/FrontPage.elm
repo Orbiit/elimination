@@ -47,7 +47,7 @@ type Msg
   | DoNothing
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg { session } model =
+update msg global model =
   case msg of
     StatsLoaded result ->
       case result of
@@ -74,10 +74,10 @@ update msg { session } model =
     ChangeCode { value } ->
       ({ model | code = value }, Cmd.none, Api.None)
     Kill ->
-      case (session, model.modal) of
-        (Api.SignedIn authSession, Just game) ->
+      case (global.session, model.modal) of
+        (Api.SignedIn { session }, Just game) ->
           ( { model | problem = Nothing, killing = True }
-          , Api.kill model.code game authSession.session Killed
+          , Api.kill model.code game session Killed
           , Api.None
           )
         _ ->
@@ -86,10 +86,10 @@ update msg { session } model =
       case result of
         Ok _ ->
           ( { model | killing = False, modal = Nothing }
-          , case session of
-            Api.SignedIn authSession ->
+          , case global.session of
+            Api.SignedIn { session } ->
               Cmd.batch
-                [ Api.statuses authSession.session StatusesLoaded
+                [ Api.statuses session StatusesLoaded
                 , NProgress.start ()
                 ]
             Api.SignedOut ->
@@ -187,8 +187,8 @@ renderStatus model status =
     ]
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
-view { session } model =
-  case session of
+view global model =
+  case global.session of
     Api.SignedIn _ ->
       [ div [ A.class "main targets" ]
         ((a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]

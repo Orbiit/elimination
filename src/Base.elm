@@ -94,15 +94,15 @@ notifsAtATime : Int
 notifsAtATime = 5
 
 updateNotifs : Api.Session -> Cmd Msg
-updateNotifs session =
-  case session of
-    Api.SignedIn authSession ->
-      Api.notifications 0 notifsAtATime authSession.session NotificationsLoaded
+updateNotifs sessionType =
+  case sessionType of
+    Api.SignedIn { session } ->
+      Api.notifications 0 notifsAtATime session NotificationsLoaded
     Api.SignedOut ->
       Cmd.none
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg { session } model =
+update msg global model =
   case msg of
     Open window ->
       ({ model | open = window }, Cmd.none, Api.None)
@@ -176,7 +176,7 @@ update msg { session } model =
           )
     Refresh ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
-      , updateNotifs session
+      , updateNotifs global.session
       , Api.None
       )
     NotificationsLoaded result ->
@@ -187,9 +187,9 @@ update msg { session } model =
           ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     LoadMore ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
-      , case session of
-        Api.SignedIn authSession ->
-          Api.notifications (List.length model.notifs.notifications) notifsAtATime authSession.session MoreNotificationsLoaded
+      , case global.session of
+        Api.SignedIn { session } ->
+          Api.notifications (List.length model.notifs.notifications) notifsAtATime session MoreNotificationsLoaded
         Api.SignedOut ->
           Cmd.none
       , Api.None
@@ -207,9 +207,9 @@ update msg { session } model =
           ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     MarkAsRead ->
       ( { model | markingAsRead = True, notifsProblem = Nothing }
-      , case session of
-        Api.SignedIn authSession ->
-          Api.read authSession.session MarkedAsRead
+      , case global.session of
+        Api.SignedIn { session } ->
+          Api.read session MarkedAsRead
         Api.SignedOut ->
           Cmd.none
       , Api.None

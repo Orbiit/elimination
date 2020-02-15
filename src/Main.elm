@@ -32,13 +32,13 @@ type PageCmd
   | SwitchPageAndCommand Pages.Page (Cmd Msg)
 
 loadFrontPage : Api.Session -> PageCmd
-loadFrontPage session =
-  case session of
-    Api.SignedIn authSession ->
+loadFrontPage sessionType =
+  case sessionType of
+    Api.SignedIn { session } ->
       Command <|
         Cmd.batch
           [ Cmd.map FrontPageMsg <|
-            Api.statuses authSession.session Pages.FrontPage.StatusesLoaded
+            Api.statuses session Pages.FrontPage.StatusesLoaded
           , NProgress.start ()
           ]
     Api.SignedOut ->
@@ -50,7 +50,7 @@ loadFrontPage session =
           ]
 
 urlToPage : Url.Url -> Api.Session -> PageCmd
-urlToPage url session =
+urlToPage url sessionType =
   case url.query of
     Just path ->
       if String.startsWith "@" path then
@@ -82,12 +82,12 @@ urlToPage url session =
       else if path == "game" then
         SwitchPage Pages.Game
       else if path == "settings" then
-        case session of
-          Api.SignedIn authSession ->
+        case sessionType of
+          Api.SignedIn { session } ->
             Command <|
               Cmd.batch
                 [ Cmd.map UserSettingsMsg <|
-                  Api.getSettings authSession.session Pages.UserSettings.InfoLoaded
+                  Api.getSettings session Pages.UserSettings.InfoLoaded
                 , NProgress.start ()
                 ]
           Api.SignedOut ->
@@ -98,22 +98,22 @@ urlToPage url session =
         let
           game = String.dropLeft (String.length "settings!") path
         in
-          case session of
-            Api.SignedIn authSession ->
+          case sessionType of
+            Api.SignedIn { session } ->
               Command <|
                 Cmd.batch
                   [ Cmd.map GameSettingsMsg <|
-                    Api.getGameSettings game authSession.session (Pages.GameSettings.InfoLoaded game)
+                    Api.getGameSettings game session (Pages.GameSettings.InfoLoaded game)
                   , NProgress.start ()
                   ]
             Api.SignedOut ->
               SwitchPage (Pages.Error (Utils.StatusCode 401, "You're not signed in."))
       else if path == "" then
-        loadFrontPage session
+        loadFrontPage sessionType
       else
         SwitchPage (Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL."))
     Nothing ->
-      loadFrontPage session
+      loadFrontPage sessionType
 
 removeQueryIfNeeded : Url.Url -> Nav.Key -> Cmd Msg
 removeQueryIfNeeded url key =
@@ -302,13 +302,13 @@ discardChanges model =
 doPageCmd : Api.PageCmd -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 doPageCmd pageCmd (model, cmd) =
   case pageCmd of
-    Api.ChangeSession authSession ->
+    Api.ChangeSession sessionType ->
       ( { model
-        | session = authSession
+        | session = sessionType
         -- Reset front page state to clear statuses
         , frontPage = Pages.FrontPage.init
         }
-      , case authSession of
+      , case sessionType of
         Api.SignedIn { session, username } ->
           Cmd.batch
             [ saveSession (session, username)
@@ -321,7 +321,7 @@ doPageCmd pageCmd (model, cmd) =
                 _ ->
                   Cmd.none
             , cmd
-            , Cmd.map BaseMsg (Base.updateNotifs authSession)
+            , Cmd.map BaseMsg (Base.updateNotifs sessionType)
             ]
         Api.SignedOut ->
           Cmd.batch

@@ -59,7 +59,7 @@ resizeBio =
   Task.attempt ResizeBio (Dom.getViewportOf "user-bio")
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
-update msg { session } model =
+update msg global model =
   case msg of
     Change input { validate, value, scrollHeight } ->
       let
@@ -90,10 +90,10 @@ update msg { session } model =
         Err _ ->
           (model, Cmd.none, Api.None)
     Logout ->
-      case session of
-        Api.SignedIn authSession ->
+      case global.session of
+        Api.SignedIn { session } ->
           ( { model | loadingLogout = True }
-          , Api.logout authSession.session LoggedOut
+          , Api.logout session LoggedOut
           , Api.None
           )
         Api.SignedOut ->
@@ -115,8 +115,8 @@ update msg { session } model =
         Err error ->
           (model, NProgress.done (), Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ])
     Save ->
-      case session of
-        Api.SignedIn authSession ->
+      case global.session of
+        Api.SignedIn { session } ->
           ( { model | loading = True, problem = Nothing }
           , Api.setSettings (E.object
               (Utils.filter
@@ -143,7 +143,7 @@ update msg { session } model =
                   Just ("oldPassword", E.string model.oldPassword.value)
                 ]
               )
-            ) authSession.session Saved
+            ) session Saved
           , Api.None
           )
         Api.SignedOut ->
@@ -184,7 +184,7 @@ hasUnsavedChanges model =
     not (String.isEmpty model.password.value)
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
-view { session } model =
+view global model =
   [ div [ A.class "main content settings" ]
     [ h1 []
       [ text "User settings"
@@ -193,9 +193,9 @@ view { session } model =
       , a
         [ A.class "button"
         , A.href <|
-          case session of
-            Api.SignedIn authSession ->
-              "?@" ++ authSession.username
+          case global.session of
+            Api.SignedIn { username } ->
+              "?@" ++ username
             Api.SignedOut ->
               "?"
         ]
