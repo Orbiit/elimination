@@ -534,7 +534,9 @@ makeFooter =
       ]
     , span [ A.class "flex" ] []
     , span []
-      [ a [ A.href "?about", A.class "link" ]
+      [ Utils.extLink "Github" "https://github.com/Orbiit/elimination" "link"
+      , text (" " ++ Utils.char Utils.Middot ++ " ")
+      , a [ A.href "?about", A.class "link" ]
         [ text "About" ]
       , text (" " ++ Utils.char Utils.Middot ++ " ")
       , a [ A.href "?privacy", A.class "link" ]
