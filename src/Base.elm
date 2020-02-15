@@ -183,7 +183,7 @@ update msg global model =
         Ok notifResult ->
           ({ model | notifsLoading = False, notifs = notifResult }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
-          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.None)
     LoadMore ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
       , Api.notifications global MoreNotificationsLoaded (List.length model.notifs.notifications) notifsAtATime
@@ -199,7 +199,7 @@ update msg global model =
             }
           }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
-          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+          ({ model | notifsLoading = False, notifsProblem = Just errorMsg }, Cmd.none, Api.None)
     MarkAsRead ->
       ( { model | markingAsRead = True, notifsProblem = Nothing }
       , Api.read global MarkedAsRead
