@@ -6,6 +6,8 @@ import Html.Events exposing (stopPropagationOn, onSubmit, onClick)
 import Json.Decode as D
 import Http
 import Time
+import Browser.Dom as Dom
+import Task
 
 import Api
 import Api.Validate
@@ -105,7 +107,15 @@ update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =
   case msg of
     Open window ->
-      ({ model | open = window }, Cmd.none, Api.None)
+      ( { model | open = window }
+      , Task.attempt (\_ -> DoNothing) <|
+        Dom.focus <| case window of
+          SignUpWindow -> "sign-up-input"
+          LoginWindow -> "login-input"
+          Notifications -> "notification-btn"
+          None -> ""
+      , Api.None
+      )
     Close ->
       ({ model | open = None }, Cmd.none, Api.None)
     Change input { validate, value } ->
@@ -329,6 +339,7 @@ makeHeader { session, zone } model frontPage =
               , button
                 [ A.class "button small-btn notif-action-btn"
                 , A.classList [ ("loading", model.markingAsRead) ]
+                , A.id "notification-btn"
                 , A.disabled (model.markingAsRead || model.notifs.unread == 0)
                 , onClick MarkAsRead
                 ]
@@ -378,6 +389,7 @@ makeHeader { session, zone } model frontPage =
                   Just ""
                 else
                   Nothing
+              , id = Just "login-input"
               }
             , Utils.myInput (Change LoginPassword)
               { myInputDefaults
@@ -426,6 +438,7 @@ makeHeader { session, zone } model frontPage =
                 else
                   Api.Validate.usernameOk value
               , maxChars = Just 20
+              , id = Just "sign-up-input"
               }
             , Utils.myInput (Change SignUpName)
               { myInputDefaults
