@@ -22,8 +22,6 @@ npm run build
 
 ## Things to add
 
-- (super easy) Link to Github, maybe
-- (fairly easyish) Autorefresh notifications every unit of time
 - (not super easy) Say "Shuffled targets" when targets are shuffled
 - (might be complex) Autofocus in modals please!!!
 - (vvv) Update meta description tag (or is it necessary? not sure)

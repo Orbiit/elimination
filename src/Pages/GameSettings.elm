@@ -345,7 +345,7 @@ view { zone } model =
         , Utils.myInput (Change PasswordInput)
           { myInputDefaults
           | labelText = "Passphrase to join"
-          , sublabel = "Share this passphrase to people who you want to join."
+          , sublabel = "Share this passphrase to people who you want to join. Passphrases are case insensitive."
           , placeholder = "hunter2"
           , value = model.password.value
           , validate = \value ->

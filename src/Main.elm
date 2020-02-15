@@ -238,13 +238,13 @@ view : Model -> Browser.Document Msg
 view model =
   { title =
     let
-      notifs = model.header.notifs.notifications
+      unread = model.header.notifs.unread
       append =
         (if unsavedChanges model then "*" else "") ++
-          if List.isEmpty notifs then
+          if unread == 0 then
             ""
           else
-            " (" ++ String.fromInt (List.length notifs) ++ ")"
+            " (" ++ String.fromInt unread ++ ")"
     in
     if model.page == Pages.FrontPage then
       "Elimination" ++ append
@@ -276,6 +276,7 @@ type Msg
   | GameSettingsMsg Pages.GameSettings.Msg
   | GameMsg Pages.Game.Msg
   | BeforeUnload ()
+  | CheckNotifs Time.Posix
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
@@ -412,6 +413,8 @@ update msg model =
         doPageCmd pageCmd ({ model | game = subModel }, Cmd.map GameMsg subCmd)
     BeforeUnload _ ->
       (model, if unsavedChanges model then preventUnload () else Cmd.none)
+    CheckNotifs _ ->
+      (model, Cmd.map BaseMsg (Base.updateNotifs model))
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -421,6 +424,8 @@ subscriptions model =
       else
         Sub.none
     , onBeforeUnload BeforeUnload
+    -- Check notifications every five minutes (same rate as Scratch)
+    , Time.every 300000 CheckNotifs
     ]
 
 main : Program (String, Maybe String, Maybe String) Model Msg
