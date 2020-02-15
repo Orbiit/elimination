@@ -2,7 +2,7 @@ port module Main exposing (main)
 
 import Browser
 import Browser.Dom as Dom
-import Browser.Events
+import Browser.Events as Events
 import Browser.Navigation as Nav
 import Html
 import Url
@@ -278,6 +278,7 @@ type Msg
   | GameMsg Pages.Game.Msg
   | BeforeUnload ()
   | CheckNotifs Time.Posix
+  | OnKeyDown String
   | DoNothing
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
@@ -419,6 +420,26 @@ update msg model =
       (model, if unsavedChanges model then preventUnload () else Cmd.none)
     CheckNotifs _ ->
       (model, Cmd.map BaseMsg (Base.updateNotifs model))
+    OnKeyDown key ->
+      case key of
+        "Escape" ->
+          let
+            (header, _, _) = Base.update Base.Close model model.header
+            (frontPage, _, _) = Pages.FrontPage.update Pages.FrontPage.HideModal model model.frontPage
+            (gameSettings, _, _) = Pages.GameSettings.update Pages.GameSettings.HideModal model model.gameSettings
+            (game, _, _) = Pages.Game.update Pages.Game.HideModal model model.game
+          in
+          ( { model
+            | askDiscardChanges = Nothing
+            , header = header
+            , frontPage = frontPage
+            , gameSettings = gameSettings
+            , game = game
+            }
+          , Cmd.none
+          )
+        _ ->
+          (model, Cmd.none)
     DoNothing ->
       (model, Cmd.none)
 
@@ -426,10 +447,11 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.batch
     [ if model.header.open /= Base.None then
-        Browser.Events.onClick (D.succeed (BaseMsg Base.Close))
+        Events.onClick (D.succeed (BaseMsg Base.Close))
       else
         Sub.none
     , onBeforeUnload BeforeUnload
+    , Events.onKeyDown (D.map OnKeyDown (D.field "key" D.string))
     -- Check notifications every five minutes (same rate as Scratch)
     , Time.every 300000 CheckNotifs
     ]
