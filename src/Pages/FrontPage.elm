@@ -4,6 +4,8 @@ import Html exposing (..)
 import Html.Attributes as A
 import Html.Events exposing (onSubmit, stopPropagationOn, onClick)
 import Json.Decode as D
+import Browser.Dom as Dom
+import Task
 
 import Api
 import Utils exposing (char, Char(..), myInputDefaults)
@@ -68,7 +70,10 @@ update msg global model =
           , Api.Batch [ Api.ChangePage (Pages.Error error), Api.sessionCouldExpire error ]
           )
     ShowModal game ->
-      ({ model | modal = Just game, code = "", problem = Nothing }, Cmd.none, Api.None)
+      ( { model | modal = Just game, code = "", problem = Nothing }
+      , Task.attempt (\_ -> DoNothing) (Dom.focus "kill-modal-input")
+      , Api.None
+      )
     HideModal ->
       ({ model | modal = Nothing }, Cmd.none, Api.None)
     ChangeCode { value } ->
@@ -126,7 +131,7 @@ renderStatus model status =
         if modal == status.game then
           div [ A.class "modal-back show", onClick HideModal ]
             [ form
-              [ A.class "modal join-modal"
+              [ A.class "modal kill-modal"
               , stopPropagationOn "click" (D.succeed (DoNothing, True))
               , onSubmit Kill
               ]
@@ -135,6 +140,7 @@ renderStatus model status =
                 | labelText = "Target's elimination sequence"
                 , placeholder = "hunter2"
                 , value = model.code
+                , id = Just "kill-modal-input"
                 }
               , input
                 [ A.class "button submit-btn"

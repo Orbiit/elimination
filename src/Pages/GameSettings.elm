@@ -67,13 +67,13 @@ type Msg
   | Saved (Result Utils.HttpError Api.GameID)
   | ShowModal String
   | HideModal
-  | DontClose
   | Kick
   | Kicked String (Result Utils.HttpError ())
   | Start
   | Started (Result Utils.HttpError ())
   | Shuffle
   | Shuffled (Result Utils.HttpError ())
+  | DoNothing
 
 resizeDesc : Cmd Msg
 resizeDesc =
@@ -174,11 +174,12 @@ update msg global model =
         Err error ->
           ({ model | loading = False, problem = Just (Tuple.second error) }, Cmd.none, Api.sessionCouldExpire error)
     ShowModal username ->
-      ({ model | modal = Just username, kickReason = "", kickProblem = Nothing }, Cmd.none, Api.None)
+      ( { model | modal = Just username, kickReason = "", kickProblem = Nothing }
+      , Task.attempt (\_ -> DoNothing) (Dom.focus "kick-modal-input")
+      , Api.None
+      )
     HideModal ->
       ({ model | modal = Nothing }, Cmd.none, Api.None)
-    DontClose ->
-      (model, Cmd.none, Api.None)
     Kick ->
       case (model.game, model.modal) of
         (Just gameID, Just username) ->
@@ -231,6 +232,8 @@ update msg global model =
           ({ model | shuffling = False }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
           ({ model | shuffling = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    DoNothing ->
+      (model, Cmd.none, Api.None)
 
 discardChanges : Model -> Model
 discardChanges model =
@@ -264,8 +267,8 @@ renderPlayer model zone player =
         if username == player.username then
           [ div [ A.class "modal-back show", onClick HideModal ]
             [ form
-              [ A.class "modal join-modal"
-              , stopPropagationOn "click" (D.succeed (DontClose, True))
+              [ A.class "modal kick-modal"
+              , stopPropagationOn "click" (D.succeed (DoNothing, True))
               , onSubmit Kick
               ]
               ([ Utils.myInput (Change ReasonInput)
@@ -273,6 +276,7 @@ renderPlayer model zone player =
                 | labelText = "Kick reason (optional)"
                 , placeholder = "Undesirable."
                 , value = model.kickReason
+                , id = Just "kick-modal-input"
                 }
               , input
                 [ A.class "button submit-btn"

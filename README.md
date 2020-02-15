@@ -23,9 +23,9 @@ npm run build
 ## Things to add
 
 - (not super easy) Say "Shuffled targets" when targets are shuffled
-- (might be complex) Autofocus in modals please!!!
-- (vvv) Update meta description tag (or is it necessary? not sure)
-- (requires thinking) Finish content for about, welcome, and maybe terms pages
+- (requires thinking) Finish content for about, welcome, and maybe terms pages (and meta desc tags?)
+- (could be complicated) Press escape to close modal/cancel unsaved changes warning
+  - One way is to use Browser.Events to listen for the key press, then close every single modal manually. This would mean that each page's HideModal would lose its Cmd/Api.PageCmd functionality, but this is fine (assuming no page uses such for hiding modals). Cancelling the unsaved changes warning could be done directly
 - (maybe tedious) Parse for \@mentions, !games, and external links. Could also add support for bold, italics, etc.
 - (probably very hard/complicated) Emails:
   - Password reset forms

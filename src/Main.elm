@@ -1,6 +1,7 @@
 port module Main exposing (main)
 
 import Browser
+import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
 import Html
@@ -277,6 +278,7 @@ type Msg
   | GameMsg Pages.Game.Msg
   | BeforeUnload ()
   | CheckNotifs Time.Posix
+  | DoNothing
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
@@ -350,7 +352,9 @@ update msg model =
   case msg of
     ClickedLink checkChanges request ->
       if checkChanges && unsavedChanges model then
-        ({ model | askDiscardChanges = Just request }, Cmd.none)
+        ( { model | askDiscardChanges = Just request }
+        , Task.attempt (\_ -> DoNothing) (Dom.focus "confirm-leave-btn")
+        )
       else
         let
           newModel =
@@ -415,6 +419,8 @@ update msg model =
       (model, if unsavedChanges model then preventUnload () else Cmd.none)
     CheckNotifs _ ->
       (model, Cmd.map BaseMsg (Base.updateNotifs model))
+    DoNothing ->
+      (model, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

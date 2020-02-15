@@ -82,7 +82,6 @@ clearNotifs model =
 type Msg
   = Open HeaderWindow
   | Close
-  | DontClose
   | Change Input Utils.MyInputMsg
   | Login
   | SignUp
@@ -93,6 +92,7 @@ type Msg
   | MoreNotificationsLoaded (Result Utils.HttpError Api.NotificationResult)
   | MarkAsRead
   | MarkedAsRead (Result Utils.HttpError ())
+  | DoNothing
 
 notifsAtATime : Int
 notifsAtATime = 5
@@ -108,8 +108,6 @@ update msg global model =
       ({ model | open = window }, Cmd.none, Api.None)
     Close ->
       ({ model | open = None }, Cmd.none, Api.None)
-    DontClose ->
-      (model, Cmd.none, Api.None)
     Change input { validate, value } ->
       let
         valid = case validate value of
@@ -222,13 +220,15 @@ update msg global model =
             }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
           ({ model | markingAsRead = False, notifsProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    DoNothing ->
+      (model, Cmd.none, Api.None)
 
 headerWindow : Model -> String -> List (Html Msg) -> HeaderWindow -> List (Html Msg) -> Html Msg
 headerWindow model btnClass btnLabel window windowContent =
   div
     [ A.class "header-window-wrapper"
     , A.classList [ ("open", model.open == window) ]
-    , stopPropagationOn "click" (D.succeed (DontClose, True))
+    , stopPropagationOn "click" (D.succeed (DoNothing, True))
     ] <|
     button
       [ A.class btnClass
@@ -515,7 +515,7 @@ makeConfirmLeave onLeave onCancel =
       [ p [ A.class "confirm-msg" ]
         [ text "You have unsaved changes. Are you sure you want to leave?" ]
       , div [ A.class "confirm-btn-wrapper" ]
-        [ button [ A.class "button", onClick onLeave ]
+        [ button [ A.class "button", A.id "confirm-leave-btn", onClick onLeave ]
           [ text "Leave" ]
         , button [ A.class "button cancel-btn", onClick onCancel ]
           [ text "Cancel" ]

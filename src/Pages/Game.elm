@@ -4,6 +4,8 @@ import Html exposing (..)
 import Html.Attributes as A
 import Html.Events exposing (onClick, stopPropagationOn, onSubmit)
 import Json.Decode as D
+import Browser.Dom as Dom
+import Task
 
 import Api
 import Utils exposing (char, Char(..), myInputDefaults)
@@ -45,7 +47,7 @@ type Msg
   | Join
   | Leave
   | Done BtnAction (Result Utils.HttpError ())
-  | DontClose
+  | DoNothing
 
 type BtnAction
   = Joining String
@@ -63,7 +65,10 @@ update msg global model =
     ChangePassword { value } ->
       ({ model | password = value }, Cmd.none, Api.None)
     ShowModal ->
-      ({ model | modal = True }, Cmd.none, Api.None)
+      ( { model | modal = True }
+      , Task.attempt (\_ -> DoNothing) (Dom.focus "join-modal-input")
+      , Api.None
+      )
     HideModal ->
       ({ model | modal = False }, Cmd.none, Api.None)
     Join ->
@@ -111,7 +116,7 @@ update msg global model =
             ({ newModel | modal = False, loading = False }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
           ({ model | loading = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
-    DontClose ->
+    DoNothing ->
       (model, Cmd.none, Api.None)
 
 renderPlayer : Api.GlobalModel m -> Bool -> Api.GamePlayer -> Html Msg
@@ -178,7 +183,7 @@ view global model =
       , div [ A.class "modal-back", A.classList [ ("show", model.modal) ], onClick HideModal ]
         [ form
           [ A.class "modal join-modal"
-          , stopPropagationOn "click" (D.succeed (DontClose, True))
+          , stopPropagationOn "click" (D.succeed (DoNothing, True))
           , onSubmit Join
           ]
           ([ Utils.myInput ChangePassword
@@ -186,6 +191,7 @@ view global model =
             | labelText = "Passphrase"
             , placeholder = "hunter2"
             , value = model.password
+            , id = Just "join-modal-input"
             }
           , input
             [ A.class "button submit-btn"
