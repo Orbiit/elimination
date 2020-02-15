@@ -43,10 +43,10 @@ type alias Model =
 init : Model
 init =
   { game = Nothing
-  , name = Utils.updateValue Utils.initInputState "" False
-  , desc = Utils.initInputState
+  , name = Utils.initInputState
+  , desc = Utils.updateValue Utils.initInputState "" True
   , descHeight = 0
-  , password = Utils.initInputState
+  , password = Utils.updateValue Utils.initInputState "" True
   , players = []
   , state = Api.WillStart
   , loading = False
@@ -236,6 +236,15 @@ update msg { session } model =
         Err ((_, errorMsg) as error) ->
           ({ model | shuffling = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
 
+discardChanges : Model -> Model
+discardChanges model =
+  { model
+  | name = Utils.initInputState
+  , desc = Utils.updateValue Utils.initInputState "" True
+  , descHeight = 0
+  , password = Utils.updateValue Utils.initInputState "" True
+  }
+
 renderPlayer : Model -> Time.Zone -> Api.GameSettingsPlayer -> Html Msg
 renderPlayer model zone player =
   div [ A.class "member-item" ]
@@ -289,6 +298,12 @@ renderPlayer model zone player =
           []
       Nothing ->
         [])
+
+hasUnsavedChanges : Model -> Bool
+hasUnsavedChanges model =
+  model.name.value /= model.name.original ||
+    model.desc.value /= model.desc.original ||
+    model.password.value /= model.password.original
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view { zone } model =
@@ -367,9 +382,7 @@ view { zone } model =
           valid = model.name.valid &&
             model.desc.valid &&
             model.password.valid
-          changed = model.name.value /= model.name.original ||
-            model.desc.value /= model.desc.original ||
-            model.password.value /= model.password.original
+          changed = hasUnsavedChanges model
         in
           input
             [ A.class "button submit-btn"

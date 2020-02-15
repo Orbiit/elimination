@@ -133,6 +133,7 @@ type alias Model =
   , key : Nav.Key
   , zone : Time.Zone
   , session : Api.Session
+  , askDiscardChanges : Maybe Browser.UrlRequest
   , header : Base.Model
   , userSettings : Pages.UserSettings.Model
   , user : Pages.User.Model
@@ -164,6 +165,7 @@ init (sessionMaybe, usernameMaybe) url navKey =
       , key = navKey
       , zone = Time.utc
       , session = session
+      , askDiscardChanges = Nothing
       , header = header
       , userSettings = Pages.UserSettings.init
       , user = Pages.User.init
@@ -211,7 +213,8 @@ content : Model -> List (Html.Html Msg)
 content model =
   case model.page of
     Pages.FrontPage ->
-      List.map (Html.map FrontPageMsg) (Pages.FrontPage.view model model.frontPage)
+      Pages.FrontPage.view model model.frontPage
+        |> List.map (Html.map FrontPageMsg)
     Pages.Terms ->
       Pages.Terms.view
     Pages.Privacy ->
@@ -219,13 +222,17 @@ content model =
     Pages.About ->
       Pages.About.view
     Pages.User ->
-      List.map (Html.map UserMsg) (Pages.User.view model model.user)
+      Pages.User.view model model.user
+        |> List.map (Html.map UserMsg)
     Pages.Game ->
-      List.map (Html.map GameMsg) (Pages.Game.view model model.game)
+      Pages.Game.view model model.game
+        |> List.map (Html.map GameMsg)
     Pages.UserSettings ->
-      List.map (Html.map UserSettingsMsg) (Pages.UserSettings.view model model.userSettings)
+      Pages.UserSettings.view model model.userSettings
+        |> List.map (Html.map UserSettingsMsg)
     Pages.GameSettings ->
-      List.map (Html.map GameSettingsMsg) (Pages.GameSettings.view model model.gameSettings)
+      Pages.GameSettings.view model model.gameSettings
+        |> List.map (Html.map GameSettingsMsg)
     Pages.Error error ->
       Pages.Error.view error
     Pages.Loading ->
@@ -234,19 +241,37 @@ content model =
 view : Model -> Browser.Document Msg
 view model =
   { title =
+    let
+      notifs = model.header.notifs.notifications
+      append =
+        (if unsavedChanges model then "*" else "") ++
+          if List.isEmpty notifs then
+            ""
+          else
+            " (" ++ String.fromInt (List.length notifs) ++ ")"
+    in
     if model.page == Pages.FrontPage then
-      "Elimination"
+      "Elimination" ++ append
     else
-      title model ++ " | Elimination"
-  , body
-    = List.map (Html.map BaseMsg) (Base.makeHeader model model.header (model.page == Pages.FrontPage))
-    ++ content model
-    ++ Base.makeFooter
+      title model ++ append ++ " | Elimination"
+  , body =
+    List.concat
+      [ Base.makeHeader model model.header (model.page == Pages.FrontPage)
+        |> List.map (Html.map BaseMsg)
+      , content model
+      , case model.askDiscardChanges of
+        Just request ->
+          Base.makeConfirmLeave (ClickedLink False request) CloseConfirmLeave
+        Nothing ->
+          []
+      , Base.makeFooter
+      ]
   }
 
 type Msg
-  = ChangedUrl Url.Url
-  | ClickedLink Browser.UrlRequest
+  = ClickedLink Bool Browser.UrlRequest
+  | ChangedUrl Url.Url
+  | CloseConfirmLeave
   | AdjustTimeZone Time.Zone
   | BaseMsg Base.Msg
   | UserSettingsMsg Pages.UserSettings.Msg
@@ -254,9 +279,25 @@ type Msg
   | FrontPageMsg Pages.FrontPage.Msg
   | GameSettingsMsg Pages.GameSettings.Msg
   | GameMsg Pages.Game.Msg
+  | BeforeUnload ()
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
 port logout : () -> Cmd msg
+
+port onBeforeUnload : (() -> msg) -> Sub msg
+port preventUnload : () -> Cmd msg
+
+unsavedChanges : Model -> Bool
+unsavedChanges model =
+  Pages.UserSettings.hasUnsavedChanges model.userSettings ||
+    Pages.GameSettings.hasUnsavedChanges model.gameSettings
+
+discardChanges : Model -> Model
+discardChanges model =
+  { model
+  | userSettings = Pages.UserSettings.discardChanges model.userSettings
+  , gameSettings = Pages.GameSettings.discardChanges model.gameSettings
+  }
 
 doPageCmd : Api.PageCmd -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 doPageCmd pageCmd (model, cmd) =
@@ -305,12 +346,22 @@ doPageCmd pageCmd (model, cmd) =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    ClickedLink request ->
-      case request of
-        Browser.Internal url ->
-          (model, Nav.pushUrl model.key (Url.toString url) )
-        Browser.External url ->
-          (model, Nav.load url)
+    ClickedLink checkChanges request ->
+      if checkChanges && unsavedChanges model then
+        ({ model | askDiscardChanges = Just request }, Cmd.none)
+      else
+        let
+          newModel =
+            if checkChanges then
+              model
+            else
+              discardChanges { model | askDiscardChanges = Nothing }
+        in
+        case request of
+          Browser.Internal url ->
+            (newModel, Nav.pushUrl model.key (Url.toString url) )
+          Browser.External url ->
+            (newModel, Nav.load url)
     ChangedUrl url ->
       let
         (newModel, cmd) =
@@ -324,6 +375,8 @@ update msg model =
               ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
       in
         (newModel, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
+    CloseConfirmLeave ->
+      ({ model | askDiscardChanges = Nothing }, Cmd.none)
     AdjustTimeZone zone ->
       ({ model | zone = zone }, Cmd.none)
     BaseMsg subMsg ->
@@ -356,13 +409,18 @@ update msg model =
         (subModel, subCmd, pageCmd) = Pages.Game.update subMsg model model.game
       in
         doPageCmd pageCmd ({ model | game = subModel }, Cmd.map GameMsg subCmd)
+    BeforeUnload _ ->
+      (model, if unsavedChanges model then preventUnload () else Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  if model.header.open /= Base.None then
-    Browser.Events.onClick (D.succeed (BaseMsg Base.Close))
-  else
-    Sub.none
+  Sub.batch
+    [ if model.header.open /= Base.None then
+        Browser.Events.onClick (D.succeed (BaseMsg Base.Close))
+      else
+        Sub.none
+    , onBeforeUnload BeforeUnload
+    ]
 
 main : Program (Maybe String, Maybe String) Model Msg
 main =
@@ -372,5 +430,5 @@ main =
     , subscriptions = subscriptions
     , view = view
     , onUrlChange = ChangedUrl
-    , onUrlRequest = ClickedLink
+    , onUrlRequest = ClickedLink True
     }

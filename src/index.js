@@ -7,6 +7,7 @@ const USERNAME_KEY = '[elimination] username'
 const app = Elm.Main.init({
   flags: [localStorage.getItem(SESSION_KEY), localStorage.getItem(USERNAME_KEY)]
 })
+
 app.ports.saveSession.subscribe(([session, username]) => {
   localStorage.setItem(SESSION_KEY, session)
   localStorage.setItem(USERNAME_KEY, username)
@@ -15,6 +16,20 @@ app.ports.logout.subscribe(() => {
   localStorage.removeItem(SESSION_KEY)
   localStorage.removeItem(USERNAME_KEY)
 })
+
+let preventUnload
+window.addEventListener('beforeunload', e => {
+  preventUnload = false
+  app.ports.onBeforeUnload.send(null)
+  if (preventUnload) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+})
+app.ports.preventUnload.subscribe(() => {
+  preventUnload = true
+})
+
 app.ports.start.subscribe(() => {
   NProgress.start()
 })

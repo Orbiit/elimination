@@ -513,6 +513,22 @@ makeHeader { session, zone } model frontPage =
         ]
   ]
 
+makeConfirmLeave : msg -> msg -> List (Html msg)
+makeConfirmLeave onLeave onCancel =
+  [ div [ A.class "modal-back show" ]
+    [ div [ A.class "modal unsaved-changes" ]
+      [ p [ A.class "confirm-msg" ]
+        [ text "You have unsaved changes. Are you sure you want to leave?" ]
+      , div [ A.class "confirm-btn-wrapper" ]
+        [ button [ A.class "button", onClick onLeave ]
+          [ text "Leave" ]
+        , button [ A.class "button cancel-btn", onClick onCancel ]
+          [ text "Cancel" ]
+        ]
+      ]
+    ]
+  ]
+
 makeFooter : List (Html msg)
 makeFooter =
   [ footer [ A.class "footer" ]

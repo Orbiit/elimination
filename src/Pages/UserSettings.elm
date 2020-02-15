@@ -38,8 +38,8 @@ init =
   , email = Utils.initInputState
   , bio = Utils.initInputState
   , bioHeight = 0
-  , password = Utils.initInputState
-  , oldPassword = Utils.initInputState
+  , password = Utils.updateValue Utils.initInputState "" True
+  , oldPassword = Utils.updateValue Utils.initInputState "" True
   , loadingLogout = False
   , loading = False
   , problem = Nothing
@@ -165,6 +165,24 @@ update msg { session } model =
         Err error ->
           ({ model | loading = False, problem = Just (Tuple.second error) }, Cmd.none, Api.sessionCouldExpire error)
 
+discardChanges : Model -> Model
+discardChanges model =
+  { model
+  | name = Utils.initInputState
+  , email = Utils.initInputState
+  , bio = Utils.initInputState
+  , bioHeight = 0
+  , password = Utils.updateValue Utils.initInputState "" True
+  , oldPassword = Utils.updateValue Utils.initInputState "" True
+  }
+
+hasUnsavedChanges : Model -> Bool
+hasUnsavedChanges model =
+  model.name.value /= model.name.original ||
+    model.email.value /= model.email.original ||
+    model.bio.value /= model.bio.original ||
+    not (String.isEmpty model.password.value)
+
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view { session } model =
   [ div [ A.class "main content settings" ]
@@ -260,10 +278,7 @@ view { session } model =
             model.bio.valid &&
             model.password.valid &&
             model.oldPassword.valid
-          changed = model.name.value /= model.name.original ||
-            model.email.value /= model.email.original ||
-            model.bio.value /= model.bio.original ||
-            not (String.isEmpty model.password.value)
+          changed = hasUnsavedChanges model
         in
           input
             [ A.class "button submit-btn"

@@ -190,7 +190,7 @@ type alias InputState = { value : String, original : String, valid : Bool }
 
 initInputState : InputState
 initInputState =
-  { value = "", original = "", valid = True }
+  { value = "", original = "", valid = False }
 
 inputState : String -> InputState
 inputState value =
