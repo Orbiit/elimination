@@ -75,7 +75,7 @@ renderGame game =
         ++ " " ++ char Middot ++ " "
         ++ Api.gameStateName game.state
         ++ " " ++ char Middot ++ " "
-        ++ (if game.alive then "Alive" else "Eliminated")
+        ++ (if game.alive then (if game.state == Api.Ended then "Winner" else "Alive") else "Eliminated")
         ++ " " ++ char Middot ++ " "
         ++ String.fromInt game.kills
         ++ (if game.kills == 1 then

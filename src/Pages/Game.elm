@@ -138,7 +138,7 @@ renderPlayer global ended player =
             "Eliminated on " ++ HumanTime.display global.zone time ++
               " by " ++ killerName
           _ ->
-            "Alive")
+            if ended then "Winner" else "Alive")
         ++ " " ++ char Middot ++ " "
         ++ String.fromInt player.kills
         ++ (if player.kills == 1 then
