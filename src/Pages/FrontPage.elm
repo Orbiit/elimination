@@ -199,9 +199,12 @@ view global model =
   case global.session of
     Api.SignedIn _ ->
       [ div [ A.class "main targets" ]
-        ((a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]
-          [ text "Create game" ])
-        :: if List.isEmpty model.statuses then
+        ([ a [ A.class "button small-screen-create-game-btn", A.href "?!bbdd6" ]
+          [ text "Gunn Elimination 2020" ]
+        , a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]
+          [ text "Create game" ]
+        ]
+        ++ if List.isEmpty model.statuses then
           [ p [ A.class "no-statuses" ] [ text "You aren't in any ongoing games." ] ]
         else
           List.map (renderStatus model) model.statuses)

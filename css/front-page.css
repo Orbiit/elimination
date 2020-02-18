@@ -4,13 +4,15 @@
 .small-screen-create-game-btn {
   display: none;
 }
-@media (max-width: 600px) {
+@media (max-width: 670px) { /* TEMP: Return to 600px later */
+  .targets {
+    flex-direction: column;
+  }
   .create-game-btn {
     display: none;
   }
   .small-screen-create-game-btn {
     display: block;
-    width: 100%;
   }
 }
 .no-statuses {
