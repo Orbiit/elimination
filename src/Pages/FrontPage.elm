@@ -206,6 +206,8 @@ view global model =
       [ div [ A.class "main front-text" ]
         [ h1 [ A.class "website-title" ]
           [ text "Elimination" ]
+        , a [ A.class "button temp-btn", A.href "?!bbdd6" ]
+          [ text "Gunn Elimination 2020" ]
         ]
       , article [ A.class "main content welcome" ]
         [ p []
