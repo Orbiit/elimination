@@ -6,7 +6,7 @@ import Regex
 
 import Utils
 
-urlRegex = Utils.makeRegex "\\bhttps?://([-A-Za-z0-9+@#/%?=~_|!:,.;]|&)*[-A-Za-z0-9#/=_]"
+urlRegex = Utils.makeRegex "\\bhttps?://([-A-Za-z0-9+@#/%?=~_|!:,.;]|&)*[-A-Za-z0-9#/=_]|@[a-z0-9_-]{3,20}\\b|![0-9a-f]{5}"
 
 type alias FoldState msg =
   { lastIndex : Int
@@ -23,7 +23,14 @@ fold totalString match { lastIndex, htmls } =
           []
         else
           [ text (String.slice lastIndex match.index totalString) ]
-      , [ a [ A.class "link", A.href match.match ] [ text match.match ] ]
+      , let
+          url =
+            case String.left 1 match.match of
+              "@" -> "?" ++ match.match
+              "!" -> "?" ++ match.match
+              _ -> match.match
+        in
+        [ a [ A.class "link", A.href url ] [ text match.match ] ]
       ]
   }
 
