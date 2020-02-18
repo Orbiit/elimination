@@ -7,6 +7,7 @@ import Api
 import NProgress
 import Utils exposing (char, Char(..))
 import Utils.Request as Request
+import Utils.MarkupSimple as Markup
 import Pages
 
 type alias Model =
@@ -108,7 +109,7 @@ view global model =
       , span [ A.class "profile-subtitle" ]
         [ text ("@" ++ model.username) ]
       , p [ A.class "profile-desc" ]
-        [ text model.info.bio ]
+        (Markup.markup (model.info.bio))
       , p [ A.class "profile-desc profile-stats" ]
         [ text ("Total eliminations: " ++ String.fromInt (List.sum (List.map .kills model.info.games))) ]
       ]
