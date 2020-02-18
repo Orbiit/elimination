@@ -7,7 +7,7 @@ import Api
 import NProgress
 import Utils exposing (char, Char(..))
 import Utils.Request as Request
-import Utils.MarkupSimple as Markup
+import Utils.MarkupSimpleRegex as Markup
 import Pages
 
 type alias Model =
