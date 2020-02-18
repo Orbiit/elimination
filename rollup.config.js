@@ -23,7 +23,8 @@ export default {
     elm({
       exclude: 'elm_stuff/**',
       compiler: {
-        optimize: production
+        optimize: production,
+        // debug: true
       }
     }),
     processEnv(),
