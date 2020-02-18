@@ -224,6 +224,13 @@ shuffle : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
 shuffle global msg game =
   post global ("shuffle?game=" ++ game) msg (E.object []) (D.succeed ())
 
+announce : GlobalModel m -> ResultMsg () msg -> GameID -> String -> Bool -> Cmd msg
+announce global msg game announcement includeDead =
+  post global ("announce?game=" ++ game) msg (E.object
+    [ ("message", E.string announcement)
+    , ("includeDead", E.bool includeDead)
+    ]) (D.succeed ())
+
 type alias Status =
   { target : String
   , targetName : String

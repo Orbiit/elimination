@@ -22,6 +22,7 @@ type Input
   | DescInput
   | PasswordInput
   | ReasonInput
+  | AnnouncementInput
 
 type alias Model =
   { game : Maybe Api.GameID
@@ -35,6 +36,11 @@ type alias Model =
   -- Page state
   , loading : Bool
   , problem : Maybe String
+  , announcement : String
+  , announcementHeight : Float
+  , announcing : Bool
+  , announced : Bool
+  , announceProblem : Maybe String
   , modal : Maybe String
   , kickReason : String
   , kickProblem : Maybe String
@@ -55,6 +61,11 @@ init =
   , state = Api.WillStart
   , loading = False
   , problem = Nothing
+  , announcement = ""
+  , announcementHeight = 0
+  , announcing = False
+  , announced = False
+  , announceProblem = Nothing
   , modal = Nothing
   , kickReason = ""
   , kickProblem = Nothing
@@ -67,6 +78,7 @@ init =
 type Msg
   = Change Input Input.MyInputMsg
   | ResizeDesc (Result Dom.Error Dom.Viewport)
+  | ResizeAnnouncement (Result Dom.Error Dom.Viewport)
   | InfoLoaded Api.GameID (Result Request.HttpError Api.GameSettingsInfo)
   | Save
   | Saved (Result Request.HttpError Api.GameID)
@@ -78,11 +90,16 @@ type Msg
   | Started (Result Request.HttpError ())
   | Shuffle
   | Shuffled (Result Request.HttpError ())
+  | Announce
+  | Announced
   | DoNothing
 
 resizeDesc : Cmd Msg
 resizeDesc =
-  Task.attempt ResizeDesc (Dom.getViewportOf "game-desc")
+  Cmd.batch
+    [ Task.attempt ResizeDesc (Dom.getViewportOf "game-desc")
+    , Task.attempt ResizeAnnouncement (Dom.getViewportOf "game-announcement")
+    ]
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =
@@ -104,6 +121,8 @@ update msg global model =
             { model | password = Input.updateValue model.password value ok }
           ReasonInput ->
             { model | kickReason = value }
+          AnnouncementInput ->
+            { model | announcement = value, announcementHeight = scrollHeight }
         , Cmd.none
         , Api.None
         )
@@ -111,6 +130,12 @@ update msg global model =
       case result of
         Ok viewport ->
           ({ model | descHeight = viewport.scene.height }, Cmd.none, Api.None)
+        Err _ ->
+          (model, Cmd.none, Api.None)
+    ResizeAnnouncement result ->
+      case result of
+        Ok viewport ->
+          ({ model | announcementHeight = viewport.scene.height }, Cmd.none, Api.None)
         Err _ ->
           (model, Cmd.none, Api.None)
     InfoLoaded game result ->
@@ -124,6 +149,8 @@ update msg global model =
             , password = Input.inputState password
             , players = players
             , state = state
+            , announcement = Input.initInputState
+            , announcementHeight = 0
             , shuffled = False
             }
           , Cmd.batch [ NProgress.done (), resizeDesc ]
@@ -238,6 +265,12 @@ update msg global model =
           ({ model | shuffling = False, shuffled = True }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
           ({ model | shuffling = False, shuffled = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    Announce ->
+      case model.game of
+        Just gameID ->
+          ( { model | announcing = True, announced = False, anno = Nothing })
+        Nothing ->
+
     DoNothing ->
       (model, Cmd.none, Api.None)
 
@@ -248,6 +281,8 @@ discardChanges model =
   , desc = Input.updateValue Input.initInputState "" True
   , descHeight = 0
   , password = Input.updateValue Input.initInputState "" True
+  , announcement = ""
+  , announcementHeight = 0
   }
 
 renderPlayer : Model -> Time.Zone -> Api.GameSettingsPlayer -> Html Msg
@@ -398,6 +433,34 @@ view { zone } model =
             , A.disabled <| model.loading || not changed || not valid
             ]
             []
+      ]
+      ++ case model.problem of
+        Just errorText ->
+          [ span [ A.class "problematic-error" ]
+            [ text errorText ] ]
+        Nothing ->
+          [])
+    , form [ onSubmit Announce ]
+      ([ div [ A.class "input-row" ]
+        [ Input.myInput (Change AnnouncementInput)
+          { myInputDefaults
+          | labelText = "Send an announcement"
+          , type_ = "textarea"
+          , placeholder = "A reminder: we have always been at war with Eastasia."
+          , value = model.announcement
+          , maxChars = Just 2000
+          , id = Just "game-desc"
+          , height = Just (String.fromFloat (model.announcementHeight + 6) ++ "px")
+          }
+        ]
+      , input
+        [ A.class "button submit-btn"
+        , A.classList [ ("loading", model.announcing) ]
+        , A.type_ "submit"
+        , A.value (if model.announcing then "Sending" else if model.announced then "Sent" else "Send")
+        , A.disabled <| model.announcing
+        ]
+        []
       ]
       ++ case model.problem of
         Just errorText ->
