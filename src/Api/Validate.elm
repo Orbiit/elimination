@@ -3,15 +3,9 @@ module Api.Validate exposing (..)
 import Regex
 import Email
 
-makeRegex : String -> Regex.Regex
-makeRegex string =
-  case Regex.fromString string of
-    Just regex ->
-      regex
-    Nothing ->
-      Regex.never
+import Utils
 
-username = makeRegex "^[a-z0-9_-]{3,20}$"
+username = Utils.makeRegex "^[a-z0-9_-]{3,20}$"
 
 usernameLabel = "Only letters, digits, underscores, and hyphens are allowed. This cannot be changed later."
 

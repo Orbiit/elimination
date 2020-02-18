@@ -2,6 +2,15 @@ module Utils exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
+import Regex
+
+makeRegex : String -> Regex.Regex
+makeRegex string =
+  case Regex.fromString string of
+    Just regex ->
+      regex
+    Nothing ->
+      Regex.never
 
 filter : List (Maybe a) -> List a
 filter list =
