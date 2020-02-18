@@ -12,6 +12,7 @@ import Utils exposing (char, Char(..))
 import Utils.Input as Input exposing (myInputDefaults)
 import Utils.HumanTime as HumanTime
 import Utils.Request as Request
+import Utils.MarkupSimpleRegex as Markup
 import Pages
 import NProgress
 
@@ -218,7 +219,7 @@ view global model =
           [ text model.info.creatorName ]
         ]
       , p [ A.class "profile-desc" ]
-        [ text model.info.description ]
+        (Markup.markup model.info.description)
       , p [ A.class "profile-desc profile-stats" ]
         [ text (Api.gameStateNameWithTime global.zone model.info.state model.info.time
           ++ " " ++ char Middot ++ " "
