@@ -383,7 +383,7 @@ makeHeader { session, zone } model frontPage =
               [ button [ A.class "button load-more-btn", onClick LoadMore ]
                 [ text "Load more" ] ])
           ]
-        , a [ A.class "link username", A.href "?settings" ]
+        , a [ A.class "link username", A.href ("?@" ++ username) ]
           [ text username ]
         ]
       Api.SignedOut ->

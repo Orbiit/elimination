@@ -22,6 +22,7 @@ npm run build
 
 ## Things to add
 
+- Cannot save bio changes after saving
 - Display list of upcoming and finished games
 - broadcast to players of game (option to limit to alive ppl)
 - (requires thinking) Finish content for about, welcome, and maybe terms pages (and meta desc tags?)
