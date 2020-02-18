@@ -8,7 +8,10 @@ import Browser.Dom as Dom
 import Task
 
 import Api
-import Utils exposing (char, Char(..), myInputDefaults)
+import Utils exposing (char, Char(..))
+import Utils.Input as Input exposing (myInputDefaults)
+import Utils.HumanTime as HumanTime
+import Utils.Request as Request
 import Pages
 import NProgress
 
@@ -40,13 +43,13 @@ init =
   }
 
 type Msg
-  = InfoLoaded Api.GameID (Result Utils.HttpError Api.Game)
-  | ChangePassword Utils.MyInputMsg
+  = InfoLoaded Api.GameID (Result Request.HttpError Api.Game)
+  | ChangePassword Input.MyInputMsg
   | ShowModal
   | HideModal
   | Join
   | Leave
-  | Done BtnAction (Result Utils.HttpError ())
+  | Done BtnAction (Result Request.HttpError ())
   | DoNothing
 
 type BtnAction
@@ -132,7 +135,7 @@ renderPlayer global ended player =
       [ text
         ((case (player.killTime, player.killer, player.killerName) of
           (Just time, Just killer, Just killerName) ->
-            "Eliminated on " ++ Utils.displayTime global.zone time ++
+            "Eliminated on " ++ HumanTime.display global.zone time ++
               " by " ++ killerName
           _ ->
             "Alive")
@@ -186,7 +189,7 @@ view global model =
           , stopPropagationOn "click" (D.succeed (DoNothing, True))
           , onSubmit Join
           ]
-          ([ Utils.myInput ChangePassword
+          ([ Input.myInput ChangePassword
             { myInputDefaults
             | labelText = "Passphrase"
             , placeholder = "hunter2"

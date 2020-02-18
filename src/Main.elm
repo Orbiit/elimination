@@ -13,7 +13,7 @@ import Task
 
 import Base
 import Api
-import Utils
+import Utils.Request as Request
 import Pages
 import Pages.FrontPage
 import Pages.Terms
@@ -104,7 +104,7 @@ urlToPage global url =
       else if path == "" then
         loadFrontPage global
       else
-        SwitchPage (Pages.Error (Utils.StatusCode 404, "We don't have a page for this URL."))
+        SwitchPage (Pages.Error (Request.StatusCode 404, "We don't have a page for this URL."))
     Nothing ->
       loadFrontPage global
 
@@ -199,9 +199,9 @@ title model =
       if model.gameSettings.game == Nothing then "Create a game" else "Game settings"
     Pages.Error (status, _) ->
       case status of
-        Utils.ErrorStatusText text ->
+        Request.ErrorStatusText text ->
           text
-        Utils.StatusCode code ->
+        Request.StatusCode code ->
           String.fromInt code
     Pages.Loading ->
       "Loading"

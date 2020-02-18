@@ -1,6 +1,6 @@
 module Pages exposing (..)
 
-import Utils
+import Utils.Request as Request
 
 type Page
   = FrontPage
@@ -12,4 +12,4 @@ type Page
   | UserSettings
   | GameSettings
   | Loading
-  | Error Utils.HttpError
+  | Error Request.HttpError

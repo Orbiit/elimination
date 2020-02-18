@@ -6,6 +6,8 @@ import Http
 import Time
 
 import Utils
+import Utils.Request as Request
+import Utils.HumanTime as HumanTime
 import Pages
 
 type alias SessionID = String
@@ -28,7 +30,7 @@ type PageCmd
   | Batch (List PageCmd)
   | None
 
-sessionCouldExpire : Utils.HttpError -> PageCmd
+sessionCouldExpire : Request.HttpError -> PageCmd
 sessionCouldExpire (_, error) =
   if String.endsWith "(Invalid session)" error then
     ChangeSession SignedOut
@@ -76,9 +78,9 @@ gameStateNameWithTime zone state time =
       "Ongoing since "
     Ended ->
       "Ended on ")
-    ++ Utils.displayTime zone time
+    ++ HumanTime.display zone time
 
-type alias ResultMsg a msg = Result Utils.HttpError a -> msg
+type alias ResultMsg a msg = Result Request.HttpError a -> msg
 
 get : GlobalModel m -> String -> ResultMsg a msg -> D.Decoder a -> Cmd msg
 get global path msg decoder =
@@ -90,7 +92,7 @@ get global path msg decoder =
         SignedOut ->
           Nothing
   in
-  Utils.request Utils.Get (global.host ++ path) sessionID msg Nothing decoder
+  Request.request Request.Get (global.host ++ path) sessionID msg Nothing decoder
 
 post : GlobalModel m -> String -> ResultMsg a msg -> E.Value -> D.Decoder a -> Cmd msg
 post global path msg body decoder =
@@ -102,7 +104,7 @@ post global path msg body decoder =
         SignedOut ->
           Nothing
   in
-  Utils.request Utils.Post (global.host ++ path) sessionID msg (Just body) decoder
+  Request.request Request.Post (global.host ++ path) sessionID msg (Just body) decoder
 
 -- Authenticate
 

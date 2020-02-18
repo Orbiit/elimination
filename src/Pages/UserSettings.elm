@@ -9,7 +9,9 @@ import Task
 
 import Api
 import Api.Validate
-import Utils exposing (myInputDefaults)
+import Utils
+import Utils.Request as Request
+import Utils.Input as Input exposing (myInputDefaults)
 import Pages
 import NProgress
 
@@ -21,12 +23,12 @@ type Input
   | OldPasswordInput
 
 type alias Model =
-  { name : Utils.InputState
-  , email : Utils.InputState
-  , bio : Utils.InputState
+  { name : Input.InputState
+  , email : Input.InputState
+  , bio : Input.InputState
   , bioHeight : Float
-  , password : Utils.InputState
-  , oldPassword : Utils.InputState
+  , password : Input.InputState
+  , oldPassword : Input.InputState
   , loadingLogout : Bool
   , loading : Bool
   , problem : Maybe String
@@ -34,25 +36,25 @@ type alias Model =
 
 init : Model
 init =
-  { name = Utils.initInputState
-  , email = Utils.initInputState
-  , bio = Utils.initInputState
+  { name = Input.initInputState
+  , email = Input.initInputState
+  , bio = Input.initInputState
   , bioHeight = 0
-  , password = Utils.updateValue Utils.initInputState "" True
-  , oldPassword = Utils.updateValue Utils.initInputState "" True
+  , password = Input.updateValue Input.initInputState "" True
+  , oldPassword = Input.updateValue Input.initInputState "" True
   , loadingLogout = False
   , loading = False
   , problem = Nothing
   }
 
 type Msg
-  = Change Input Utils.MyInputMsg
+  = Change Input Input.MyInputMsg
   | ResizeBio (Result Dom.Error Dom.Viewport)
   | Logout
-  | LoggedOut (Result Utils.HttpError ())
-  | InfoLoaded (Result Utils.HttpError Api.UserSettingsInfo)
+  | LoggedOut (Result Request.HttpError ())
+  | InfoLoaded (Result Request.HttpError Api.UserSettingsInfo)
   | Save
-  | Saved (Result Utils.HttpError ())
+  | Saved (Result Request.HttpError ())
 
 resizeBio : Cmd Msg
 resizeBio =
@@ -71,15 +73,15 @@ update msg global model =
       in
         ( case input of
           NameInput ->
-            { model | name = Utils.updateValue model.name value ok }
+            { model | name = Input.updateValue model.name value ok }
           EmailInput ->
-            { model | email = Utils.updateValue model.email value ok }
+            { model | email = Input.updateValue model.email value ok }
           BioInput ->
-            { model | bio = Utils.updateValue model.bio value ok, bioHeight = scrollHeight }
+            { model | bio = Input.updateValue model.bio value ok, bioHeight = scrollHeight }
           PasswordInput ->
-            { model | password = Utils.updateValue model.password value ok }
+            { model | password = Input.updateValue model.password value ok }
           OldPasswordInput ->
-            { model | oldPassword = Utils.updateValue model.oldPassword value ok }
+            { model | oldPassword = Input.updateValue model.oldPassword value ok }
         , Cmd.none
         , Api.None
         )
@@ -103,9 +105,9 @@ update msg global model =
       case result of
         Ok { name, email, bio } ->
           ( { model
-            | name = Utils.inputState name
-            , email = Utils.inputState email
-            , bio = Utils.inputState bio
+            | name = Input.inputState name
+            , email = Input.inputState email
+            , bio = Input.inputState bio
             , bioHeight = 0
             }
           , Cmd.batch [ NProgress.done (), resizeBio ]
@@ -148,11 +150,11 @@ update msg global model =
         Ok _ ->
           ( { model
             | loading = False
-            , name = Utils.inputState model.name.value
-            , email = Utils.inputState model.email.value
-            , bio = Utils.inputState model.bio.value
-            , password = Utils.initInputState
-            , oldPassword = Utils.initInputState
+            , name = Input.inputState model.name.value
+            , email = Input.inputState model.email.value
+            , bio = Input.inputState model.bio.value
+            , password = Input.initInputState
+            , oldPassword = Input.initInputState
             }
           , Cmd.none
           , Api.None
@@ -163,12 +165,12 @@ update msg global model =
 discardChanges : Model -> Model
 discardChanges model =
   { model
-  | name = Utils.initInputState
-  , email = Utils.initInputState
-  , bio = Utils.initInputState
+  | name = Input.initInputState
+  , email = Input.initInputState
+  , bio = Input.initInputState
   , bioHeight = 0
-  , password = Utils.updateValue Utils.initInputState "" True
-  , oldPassword = Utils.updateValue Utils.initInputState "" True
+  , password = Input.updateValue Input.initInputState "" True
+  , oldPassword = Input.updateValue Input.initInputState "" True
   }
 
 hasUnsavedChanges : Model -> Bool
@@ -205,7 +207,7 @@ view global model =
       ]
     , form [ onSubmit Save ]
       ([ div [ A.class "input-row" ]
-        [ Utils.myInput (Change NameInput)
+        [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Display name"
           , sublabel = Api.Validate.nameLabel
@@ -214,7 +216,7 @@ view global model =
           , validate = Api.Validate.nameOk
           , maxChars = Just 50
           }
-        , Utils.myInput (Change EmailInput)
+        , Input.myInput (Change EmailInput)
           { myInputDefaults
           | labelText = "Email"
           , sublabel = Api.Validate.emailLabel
@@ -226,7 +228,7 @@ view global model =
           }
         ]
       , div [ A.class "input-row" ]
-        [ Utils.myInput (Change BioInput)
+        [ Input.myInput (Change BioInput)
           { myInputDefaults
           | labelText = "Bio"
           , type_ = "textarea"
@@ -245,7 +247,7 @@ view global model =
       , h2 []
         [ text "Change your password" ]
       , div [ A.class "input-row" ]
-        [ Utils.myInput (Change PasswordInput)
+        [ Input.myInput (Change PasswordInput)
           { myInputDefaults
           | labelText = "New password"
           , sublabel = Api.Validate.passwordLabel
@@ -259,7 +261,7 @@ view global model =
               Api.Validate.passwordOk value
           , maxChars = Just 200
           }
-        , Utils.myInput (Change OldPasswordInput)
+        , Input.myInput (Change OldPasswordInput)
           { myInputDefaults
           | labelText = "Old password"
           , type_ = "password"

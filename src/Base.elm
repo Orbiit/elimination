@@ -11,7 +11,10 @@ import Task
 
 import Api
 import Api.Validate
-import Utils exposing (myInputDefaults)
+import Utils exposing (Char(..), char)
+import Utils.Input as Input exposing (myInputDefaults)
+import Utils.HumanTime as HumanTime
+import Utils.Request as Request
 
 type HeaderWindow
   = SignUpWindow
@@ -34,13 +37,13 @@ type Input
 
 type alias Model =
   { open : HeaderWindow
-  , loginUsername : Utils.InputState
-  , loginPassword : Utils.InputState
-  , signUpUsername : Utils.InputState
-  , signUpName : Utils.InputState
-  , signUpEmail : Utils.InputState
-  , signUpPassword : Utils.InputState
-  , signUpPasswordAgain : Utils.InputState
+  , loginUsername : Input.InputState
+  , loginPassword : Input.InputState
+  , signUpUsername : Input.InputState
+  , signUpName : Input.InputState
+  , signUpEmail : Input.InputState
+  , signUpPassword : Input.InputState
+  , signUpPasswordAgain : Input.InputState
   , loginLoading : Bool
   , loginProblem : Maybe String
   , signUpLoading : Bool
@@ -54,13 +57,13 @@ type alias Model =
 init : Api.GlobalModel m -> (Model, Cmd Msg)
 init semiGlobal =
   ( { open = None
-    , loginUsername = Utils.initInputState
-    , loginPassword = Utils.initInputState
-    , signUpUsername = Utils.initInputState
-    , signUpName = Utils.initInputState
-    , signUpEmail = Utils.initInputState
-    , signUpPassword = Utils.initInputState
-    , signUpPasswordAgain = Utils.initInputState
+    , loginUsername = Input.initInputState
+    , loginPassword = Input.initInputState
+    , signUpUsername = Input.initInputState
+    , signUpName = Input.initInputState
+    , signUpEmail = Input.initInputState
+    , signUpPassword = Input.initInputState
+    , signUpPasswordAgain = Input.initInputState
     , loginLoading = False
     , loginProblem = Nothing
     , signUpLoading = False
@@ -84,16 +87,16 @@ clearNotifs model =
 type Msg
   = Open HeaderWindow
   | Close
-  | Change Input Utils.MyInputMsg
+  | Change Input Input.MyInputMsg
   | Login
   | SignUp
-  | NewSession AuthMethod String (Result Utils.HttpError Api.SessionID)
+  | NewSession AuthMethod String (Result Request.HttpError Api.SessionID)
   | Refresh
-  | NotificationsLoaded (Result Utils.HttpError Api.NotificationResult)
+  | NotificationsLoaded (Result Request.HttpError Api.NotificationResult)
   | LoadMore
-  | MoreNotificationsLoaded (Result Utils.HttpError Api.NotificationResult)
+  | MoreNotificationsLoaded (Result Request.HttpError Api.NotificationResult)
   | MarkAsRead
-  | MarkedAsRead (Result Utils.HttpError ())
+  | MarkedAsRead (Result Request.HttpError ())
   | DoNothing
 
 notifsAtATime : Int
@@ -128,19 +131,19 @@ update msg global model =
       in
         ( case input of
           LoginUsername ->
-            { model | loginUsername = Utils.updateValue model.loginUsername value valid }
+            { model | loginUsername = Input.updateValue model.loginUsername value valid }
           LoginPassword ->
-            { model | loginPassword = Utils.updateValue model.loginPassword value valid }
+            { model | loginPassword = Input.updateValue model.loginPassword value valid }
           SignUpUsername ->
-            { model | signUpUsername = Utils.updateValue model.signUpUsername value valid }
+            { model | signUpUsername = Input.updateValue model.signUpUsername value valid }
           SignUpName ->
-            { model | signUpName = Utils.updateValue model.signUpName value valid }
+            { model | signUpName = Input.updateValue model.signUpName value valid }
           SignUpEmail ->
-            { model | signUpEmail = Utils.updateValue model.signUpEmail value valid }
+            { model | signUpEmail = Input.updateValue model.signUpEmail value valid }
           SignUpPassword ->
-            { model | signUpPassword = Utils.updateValue model.signUpPassword value valid }
+            { model | signUpPassword = Input.updateValue model.signUpPassword value valid }
           SignUpPasswordAgain ->
-            { model | signUpPasswordAgain = Utils.updateValue model.signUpPasswordAgain value valid }
+            { model | signUpPasswordAgain = Input.updateValue model.signUpPasswordAgain value valid }
         , Cmd.none
         , Api.None
         )
@@ -170,9 +173,9 @@ update msg global model =
         Ok newSession ->
           ( case method of
             LoginMethod ->
-              { model | loginLoading = False, loginPassword = Utils.initInputState }
+              { model | loginLoading = False, loginPassword = Input.initInputState }
             SignUpMethod ->
-              { model | signUpLoading = False, signUpPassword = Utils.initInputState, signUpPasswordAgain = Utils.initInputState }
+              { model | signUpLoading = False, signUpPassword = Input.initInputState, signUpPasswordAgain = Input.initInputState }
           , Cmd.none
           , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
           )
@@ -254,7 +257,7 @@ renderNotification zone { time, read, message } =
     , A.classList [ ("unread", not read) ]
     ]
     [ span [ A.class "notif-timestamp" ]
-      [ text (Utils.displayTime zone time) ]
+      [ text (HumanTime.display zone time) ]
     , case message of
       Api.GameStarted gameID gameName ->
         span [ A.class "notif-msg" ]
@@ -379,7 +382,7 @@ makeHeader { session, zone } model frontPage =
       Api.SignedOut ->
         [ headerWindow model "header-btn auth-btn" [ text "Log in" ] LoginWindow <|
           [ form [ A.class "header-window", onSubmit Login ] <|
-            [ Utils.myInput (Change LoginUsername)
+            [ Input.myInput (Change LoginUsername)
               { myInputDefaults
               | labelText = "Username"
               , placeholder = "billygamer5"
@@ -392,7 +395,7 @@ makeHeader { session, zone } model frontPage =
                   Nothing
               , id = Just "login-input"
               }
-            , Utils.myInput (Change LoginPassword)
+            , Input.myInput (Change LoginPassword)
               { myInputDefaults
               | labelText = "Password"
               , type_ = "password"
@@ -425,7 +428,7 @@ makeHeader { session, zone } model frontPage =
           ]
         , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow <|
           [ form [ A.class "header-window", onSubmit SignUp ] <|
-            [ Utils.myInput (Change SignUpUsername)
+            [ Input.myInput (Change SignUpUsername)
               { myInputDefaults
               | labelText = "Username"
               , sublabel = Api.Validate.usernameLabel
@@ -441,7 +444,7 @@ makeHeader { session, zone } model frontPage =
               , maxChars = Just 20
               , id = Just "sign-up-input"
               }
-            , Utils.myInput (Change SignUpName)
+            , Input.myInput (Change SignUpName)
               { myInputDefaults
               | labelText = "Full name"
               , sublabel = Api.Validate.nameLabel
@@ -455,7 +458,7 @@ makeHeader { session, zone } model frontPage =
                   Api.Validate.nameOk value
               , maxChars = Just 50
               }
-            , Utils.myInput (Change SignUpEmail)
+            , Input.myInput (Change SignUpEmail)
               { myInputDefaults
               | labelText = "Email"
               , sublabel = Api.Validate.emailLabel
@@ -470,7 +473,7 @@ makeHeader { session, zone } model frontPage =
                   Api.Validate.emailOk value
               , maxChars = Just 320
               }
-            , Utils.myInput (Change SignUpPassword)
+            , Input.myInput (Change SignUpPassword)
               { myInputDefaults
               | labelText = "Password"
               , sublabel = Api.Validate.passwordLabel
@@ -485,7 +488,7 @@ makeHeader { session, zone } model frontPage =
                   Api.Validate.passwordOk value
               , maxChars = Just 200
               }
-            , Utils.myInput (Change SignUpPasswordAgain)
+            , Input.myInput (Change SignUpPasswordAgain)
               { myInputDefaults
               | labelText = "Password again"
               , type_ = "password"
@@ -549,13 +552,13 @@ makeFooter =
     , span [ A.class "flex" ] []
     , span []
       [ Utils.extLink "Github" "https://github.com/Orbiit/elimination" "link"
-      , text (" " ++ Utils.char Utils.Middot ++ " ")
+      , text (" " ++ char Middot ++ " ")
       , a [ A.href "?about", A.class "link" ]
         [ text "About" ]
-      , text (" " ++ Utils.char Utils.Middot ++ " ")
+      , text (" " ++ char Middot ++ " ")
       , a [ A.href "?privacy", A.class "link" ]
         [ text "Privacy policy" ]
-      , text (" " ++ Utils.char Utils.Middot ++ " ")
+      , text (" " ++ char Middot ++ " ")
       , a [ A.href "?terms", A.class "link" ]
         [ text "Terms of use" ]
       ]

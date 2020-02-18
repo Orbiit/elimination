@@ -25,8 +25,6 @@ npm run build
 - no password restrictions
 - Display list of upcoming and finished games
 - broadcast to players of game (option to limit to alive ppl)
-- calc total elims
-- display total games
 - (requires thinking) Finish content for about, welcome, and maybe terms pages (and meta desc tags?)
 - (maybe tedious) Parse for \@mentions, !games, and external links. Could also add support for bold, italics, etc.
   - Current idea: use elm/parser to convert plain text -> `List (Html msg)` (the hard part). Needs a server endpoint for converting game IDs into names, then this will have to be updated again. Perhaps to avoid reparsing, it could return a different type that gets converted to `Html msg`

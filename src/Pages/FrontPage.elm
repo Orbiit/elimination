@@ -8,7 +8,9 @@ import Browser.Dom as Dom
 import Task
 
 import Api
-import Utils exposing (char, Char(..), myInputDefaults)
+import Utils exposing (char, Char(..))
+import Utils.Input as Input exposing (myInputDefaults)
+import Utils.Request as Request
 import NProgress
 import Pages
 
@@ -38,13 +40,13 @@ init =
   }
 
 type Msg
-  = StatsLoaded (Result Utils.HttpError Api.Stats)
-  | StatusesLoaded (Result Utils.HttpError (List Api.Status))
+  = StatsLoaded (Result Request.HttpError Api.Stats)
+  | StatusesLoaded (Result Request.HttpError (List Api.Status))
   | ShowModal Api.GameID
   | HideModal
-  | ChangeCode Utils.MyInputMsg
+  | ChangeCode Input.MyInputMsg
   | Kill
-  | Killed (Result Utils.HttpError ())
+  | Killed (Result Request.HttpError ())
   | ShowCode Api.GameID
   | DoNothing
 
@@ -135,7 +137,7 @@ renderStatus model status =
               , stopPropagationOn "click" (D.succeed (DoNothing, True))
               , onSubmit Kill
               ]
-              ([ Utils.myInput ChangeCode
+              ([ Input.myInput ChangeCode
                 { myInputDefaults
                 | labelText = "Target's elimination sequence"
                 , placeholder = "hunter2"

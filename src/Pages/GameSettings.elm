@@ -9,7 +9,10 @@ import Time
 import Browser.Dom as Dom
 import Task
 
-import Utils exposing (char, Char(..), myInputDefaults)
+import Utils exposing (char, Char(..))
+import Utils.Input as Input exposing (myInputDefaults)
+import Utils.HumanTime as HumanTime
+import Utils.Request as Request
 import Api
 import Pages
 import NProgress
@@ -23,10 +26,10 @@ type Input
 type alias Model =
   { game : Maybe Api.GameID
   -- Game info
-  , name : Utils.InputState
-  , desc : Utils.InputState
+  , name : Input.InputState
+  , desc : Input.InputState
   , descHeight : Float
-  , password : Utils.InputState
+  , password : Input.InputState
   , players : List Api.GameSettingsPlayer
   , state : Api.GameState
   -- Page state
@@ -44,10 +47,10 @@ type alias Model =
 init : Model
 init =
   { game = Nothing
-  , name = Utils.initInputState
-  , desc = Utils.updateValue Utils.initInputState "" True
+  , name = Input.initInputState
+  , desc = Input.updateValue Input.initInputState "" True
   , descHeight = 0
-  , password = Utils.updateValue Utils.initInputState "" True
+  , password = Input.updateValue Input.initInputState "" True
   , players = []
   , state = Api.WillStart
   , loading = False
@@ -62,19 +65,19 @@ init =
   }
 
 type Msg
-  = Change Input Utils.MyInputMsg
+  = Change Input Input.MyInputMsg
   | ResizeDesc (Result Dom.Error Dom.Viewport)
-  | InfoLoaded Api.GameID (Result Utils.HttpError Api.GameSettingsInfo)
+  | InfoLoaded Api.GameID (Result Request.HttpError Api.GameSettingsInfo)
   | Save
-  | Saved (Result Utils.HttpError Api.GameID)
+  | Saved (Result Request.HttpError Api.GameID)
   | ShowModal String
   | HideModal
   | Kick
-  | Kicked String (Result Utils.HttpError ())
+  | Kicked String (Result Request.HttpError ())
   | Start
-  | Started (Result Utils.HttpError ())
+  | Started (Result Request.HttpError ())
   | Shuffle
-  | Shuffled (Result Utils.HttpError ())
+  | Shuffled (Result Request.HttpError ())
   | DoNothing
 
 resizeDesc : Cmd Msg
@@ -94,11 +97,11 @@ update msg global model =
       in
         ( case input of
           NameInput ->
-            { model | name = Utils.updateValue model.name value ok }
+            { model | name = Input.updateValue model.name value ok }
           DescInput ->
-            { model | desc = Utils.updateValue model.desc value ok, descHeight = scrollHeight }
+            { model | desc = Input.updateValue model.desc value ok, descHeight = scrollHeight }
           PasswordInput ->
-            { model | password = Utils.updateValue model.password value ok }
+            { model | password = Input.updateValue model.password value ok }
           ReasonInput ->
             { model | kickReason = value }
         , Cmd.none
@@ -115,10 +118,10 @@ update msg global model =
         Ok { name, description, password, players, state } ->
           ( { model
             | game = Just game
-            , name = Utils.inputState name
-            , desc = Utils.inputState description
+            , name = Input.inputState name
+            , desc = Input.inputState description
             , descHeight = 0
-            , password = Utils.inputState password
+            , password = Input.inputState password
             , players = players
             , state = state
             , shuffled = False
@@ -164,9 +167,9 @@ update msg global model =
           ( { model
             | loading = False
             , game = Just gameID
-            , name = Utils.inputState model.name.value
-            , desc = Utils.inputState model.desc.value
-            , password = Utils.inputState model.password.value
+            , name = Input.inputState model.name.value
+            , desc = Input.inputState model.desc.value
+            , password = Input.inputState model.password.value
             }
           , Cmd.none
           , if model.game == Nothing then
@@ -241,10 +244,10 @@ update msg global model =
 discardChanges : Model -> Model
 discardChanges model =
   { model
-  | name = Utils.initInputState
-  , desc = Utils.updateValue Utils.initInputState "" True
+  | name = Input.initInputState
+  , desc = Input.updateValue Input.initInputState "" True
   , descHeight = 0
-  , password = Utils.updateValue Utils.initInputState "" True
+  , password = Input.updateValue Input.initInputState "" True
   }
 
 renderPlayer : Model -> Time.Zone -> Api.GameSettingsPlayer -> Html Msg
@@ -254,7 +257,7 @@ renderPlayer model zone player =
       [ a [ A.class "link member-link", A.href ("?@" ++ player.username) ]
         [ text player.name ]
       , span [ A.class "member-info" ]
-        [ text ("Joined " ++ Utils.displayTime zone player.joined ++ " "
+        [ text ("Joined " ++ HumanTime.display zone player.joined ++ " "
           ++ char Middot ++ " " ++ String.fromInt player.kills
           ++ (if player.kills == 1 then " elimination" else " eliminations"))
         ]
@@ -274,7 +277,7 @@ renderPlayer model zone player =
               , stopPropagationOn "click" (D.succeed (DoNothing, True))
               , onSubmit Kick
               ]
-              ([ Utils.myInput (Change ReasonInput)
+              ([ Input.myInput (Change ReasonInput)
                 { myInputDefaults
                 | labelText = "Kick reason (optional)"
                 , placeholder = "Undesirable."
@@ -334,7 +337,7 @@ view { zone } model =
         ])
     , form [ onSubmit Save ]
       ([ div [ A.class "input-row" ]
-        [ Utils.myInput (Change NameInput)
+        [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Name"
           , sublabel = "Required."
@@ -349,7 +352,7 @@ view { zone } model =
               Nothing
           , maxChars = Just 100
           }
-        , Utils.myInput (Change PasswordInput)
+        , Input.myInput (Change PasswordInput)
           { myInputDefaults
           | labelText = "Passphrase to join"
           , sublabel = "Share this passphrase to people who you want to join. Passphrases are case insensitive."
@@ -364,7 +367,7 @@ view { zone } model =
           }
         ]
       , div [ A.class "input-row" ]
-        [ Utils.myInput (Change DescInput)
+        [ Input.myInput (Change DescInput)
           { myInputDefaults
           | labelText = "Description and rules"
           , sublabel = "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made."

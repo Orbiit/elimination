@@ -6,6 +6,7 @@ import Html.Attributes as A
 import Api
 import NProgress
 import Utils exposing (char, Char(..))
+import Utils.Request as Request
 import Pages
 
 type alias Model =
@@ -25,7 +26,7 @@ init =
   }
 
 type Msg
-  = InfoLoaded String (Result Utils.HttpError Api.User)
+  = InfoLoaded String (Result Request.HttpError Api.User)
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =
