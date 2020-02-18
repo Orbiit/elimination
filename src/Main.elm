@@ -53,7 +53,14 @@ loadFrontPage global =
 urlToPage : Api.GlobalModel m -> Url.Url -> PageCmd
 urlToPage global url =
   case url.query of
-    Just path ->
+    Just query ->
+      let
+        path = case List.head (String.split "&" query) of
+          Just str ->
+            str
+          Nothing ->
+            ""
+      in
       if String.startsWith "@" path then
         let
           username = String.dropLeft 1 path

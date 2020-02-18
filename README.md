@@ -51,4 +51,8 @@ I don't think this should be a PWA since it requires an internet connection anyw
 
   - The current system makes it easier to sign out, but I guess not many people need to sign out that often.
 
+  - Trigonal recommends making it link to profile instead of settings
+
 - Serif font
+
+- Should be able to mark oneself as killed for honesty and speed
