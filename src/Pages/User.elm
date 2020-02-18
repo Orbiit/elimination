@@ -109,7 +109,7 @@ view global model =
       , p [ A.class "profile-desc" ]
         [ text model.info.bio ]
       , p [ A.class "profile-desc profile-stats" ]
-        [ text "Total eliminations: 22" ]
+        [ text ("Total eliminations: " ++ String.fromInt (List.sum (List.map .kills model.info.games))) ]
       ]
     , div [ A.class "lists" ]
       (Utils.filter
@@ -117,7 +117,7 @@ view global model =
           Nothing
         else
           Just (section [ A.class "list" ]
-            ((h2 [] [ text "Games I created" ]) ::
+            ((h2 [] [ text ("Games I created (" ++ String.fromInt (List.length model.info.myGames) ++ ")") ]) ::
               (model.info.myGames
                 |> List.sortBy .time
                 |> List.reverse
@@ -126,7 +126,7 @@ view global model =
           Nothing
         else
           Just (section [ A.class "list" ]
-            ((h2 [] [ text "Games in which I participate" ]) ::
+            ((h2 [] [ text ("Games in which I participate (" ++ String.fromInt (List.length model.info.games) ++ ")") ]) ::
               (model.info.games
                 |> List.sortBy .updated
                 |> List.reverse
