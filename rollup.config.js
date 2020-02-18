@@ -24,7 +24,7 @@ export default {
       exclude: 'elm_stuff/**',
       compiler: {
         optimize: production,
-        // debug: true
+        debug: true
       }
     }),
     processEnv(),

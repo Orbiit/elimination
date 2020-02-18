@@ -106,6 +106,10 @@ update msg global model =
     DoNothing ->
       (model, Cmd.none, Api.None)
 
+clearStatus : Model -> Model
+clearStatus model =
+  { model | statuses = [] }
+
 renderStatus : Model -> Api.Status -> Html Msg
 renderStatus model status =
   article

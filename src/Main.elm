@@ -318,7 +318,7 @@ doPageCmd pageCmd (model, cmd) =
           -- Clear notifications
           , header = Base.clearNotifs model.header
           -- Reset front page state to clear statuses
-          , frontPage = Pages.FrontPage.init
+          , frontPage = Pages.FrontPage.clearStatus model.frontPage
           }
       in
       ( newModel
