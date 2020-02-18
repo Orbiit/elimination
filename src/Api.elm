@@ -200,13 +200,14 @@ getGameSettings global msg game =
       )))
       (D.field "state" gameStateParser)
 
-join : GlobalModel m -> ResultMsg () msg -> GameID -> String -> Cmd msg
+join : GlobalModel m -> ResultMsg String msg -> GameID -> String -> Cmd msg
 join global msg game password =
-  post global ("join?game=" ++ game) msg (E.object [("password", E.string password)]) (D.succeed ())
+  post global ("join?game=" ++ game) msg (E.object [("password", E.string password)]) (D.field "name" D.string)
 
-leave : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
+-- `leave` returns a string to have symmetry with `join`
+leave : GlobalModel m -> ResultMsg String msg -> GameID -> Cmd msg
 leave global msg game =
-  post global ("leave?game=" ++ game) msg (E.object []) (D.succeed ())
+  post global ("leave?game=" ++ game) msg (E.object []) (D.succeed "")
 
 kick : GlobalModel m -> ResultMsg () msg -> GameID -> String -> String -> Cmd msg
 kick global msg game user reason =
@@ -258,6 +259,7 @@ type Notification
   | Killed GameID String String String
   | Kicked GameID String String
   | Shuffle GameID String
+  | Announcement GameID String String
   | Unknown String
 
 type alias NotificationMessage =
@@ -300,6 +302,11 @@ parseNotifType notifType =
       D.map2 Shuffle
         (D.field "game" D.string)
         (D.field "gameName" D.string)
+    "announcement" ->
+      D.map3 Announcement
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+        (D.field "message" D.string)
     _ ->
       D.succeed (Unknown notifType)
 

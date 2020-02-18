@@ -35,7 +35,7 @@ nameOk string =
   else
     Nothing
 
-passwordLabel = "Must be at least 6 characters long and contain at least a space. We recommend using a memorable sentence, such as \"Do not use example passwords.\""
+passwordLabel = "Must be at least 6 characters long. We recommend using a memorable sentence, such as \"Do not use example passwords.\""
 
 passwordOk : String -> Maybe String
 passwordOk string =
@@ -43,13 +43,10 @@ passwordOk string =
     Just "Yeah, don't."
   else if String.length string > 200 then
     Just "Passwords can't be over 200 characters."
-  else if String.length string >= 6 then
-    if String.contains " " string then
-      Nothing
-    else
-      Just "Passwords are required to contain at least one space."
+  else if String.length string < 6 then
+    Just "Password too short. It must be at least six characters long."
   else
-    Just "Password too short. They must be at least six characters long."
+    Nothing
 
 emailLabel = "For password reset forms. You can also turn on email notifications if you want."
 

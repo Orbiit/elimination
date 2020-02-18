@@ -209,7 +209,7 @@ view global model =
         ]
       , article [ A.class "main content welcome" ]
         [ p []
-          [ text "Elimination is a work in progress right now!" ]
+          [ text "Elimination may still be a work in progress, but it's currently functionally complete and usable." ]
         , div [ A.class "stats" ]
           [ div [ A.class "stat" ]
             [ span [ A.class "stat-name" ]

@@ -298,6 +298,13 @@ renderNotification zone { time, read, message } =
             [ text gameName ]
           , text " has been shuffled. See the home page for your new target."
           ]
+      Api.Announcement gameID gameName announcement ->
+        span [ A.class "notif-msg" ]
+          [ text "An announcement from "
+          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+            [ text gameName ]
+          , text (": \"" ++ announcement ++ "\"")
+          ]
       Api.Unknown msgType ->
         span [ A.class "notif-msg" ]
           [ text ("(Indistinct \"" ++ msgType ++ "\" message)") ]

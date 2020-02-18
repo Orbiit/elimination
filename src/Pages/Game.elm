@@ -49,7 +49,7 @@ type Msg
   | HideModal
   | Join
   | Leave
-  | Done BtnAction (Result Request.HttpError ())
+  | Done BtnAction (Result Request.HttpError String)
   | DoNothing
 
 type BtnAction
@@ -94,7 +94,7 @@ update msg global model =
           (model, Cmd.none, Api.None)
     Done action result ->
       case result of
-        Ok _ ->
+        Ok name ->
           let
             info = model.info
             newModel =
@@ -102,7 +102,7 @@ update msg global model =
                 Joining username ->
                   { model | info = { info | players =
                     { username = username
-                    , name = "You"
+                    , name = name
                     , alive = True
                     , killTime = Nothing
                     , killer = Nothing
