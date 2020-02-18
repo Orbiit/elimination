@@ -101,7 +101,8 @@ urlToPage global url =
               |> Cmd.map GameSettingsMsg
             , NProgress.start ()
             ]
-      else if path == "" then
+      -- = probably means there are trackers in the URL
+      else if path == "" || String.contains "=" path then
         loadFrontPage global
       else
         SwitchPage (Pages.Error (Request.StatusCode 404, "We don't have a page for this URL."))
