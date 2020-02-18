@@ -40,8 +40,8 @@ init =
   , email = Input.initInputState
   , bio = Input.initInputState
   , bioHeight = 0
-  , password = Input.updateValue Input.initInputState "" True
-  , oldPassword = Input.updateValue Input.initInputState "" True
+  , password = Input.inputState ""
+  , oldPassword = Input.inputState ""
   , loadingLogout = False
   , loading = False
   , problem = Nothing
@@ -153,8 +153,8 @@ update msg global model =
             , name = Input.inputState model.name.value
             , email = Input.inputState model.email.value
             , bio = Input.inputState model.bio.value
-            , password = Input.initInputState
-            , oldPassword = Input.initInputState
+            , password = Input.inputState ""
+            , oldPassword = Input.inputState ""
             }
           , Cmd.none
           , Api.None
@@ -169,8 +169,8 @@ discardChanges model =
   , email = Input.initInputState
   , bio = Input.initInputState
   , bioHeight = 0
-  , password = Input.updateValue Input.initInputState "" True
-  , oldPassword = Input.updateValue Input.initInputState "" True
+  , password = Input.inputState ""
+  , oldPassword = Input.inputState ""
   }
 
 hasUnsavedChanges : Model -> Bool
