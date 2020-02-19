@@ -555,7 +555,7 @@ makeFooter : List (Html msg)
 makeFooter =
   [ footer [ A.class "footer" ]
     [ span []
-      [ text "Created by the creators of "
+      [ text "From the creators of "
       , Utils.extLink "UGWA" "https://gunn.app/" "link"
       , text "."
       ]
