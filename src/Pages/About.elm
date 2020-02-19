@@ -2,6 +2,7 @@ module Pages.About exposing (view)
 
 import Html exposing (..)
 import Html.Attributes as A
+import Utils
 
 view : List (Html msg)
 view =
@@ -9,6 +10,44 @@ view =
     [ h1 []
       [ text "About" ]
     , p []
-      [ text "Yes..." ]
+      [ text "" ]
+    , h2 [ A.id "elimination-sequences" ]
+      [ text "What are elimination sequences?" ]
+    , p []
+      [ text "When a game starts, each player is assigned an elimination sequence and a target. The player must locate their target and \"eliminate\" them according to the game's rules. Then, the target is obligated to their elimination sequence to the player. On the website, the player clicks the \"Eliminate\" button and enters in their target's elimination sequence to eliminate them, and the website will assign them a new target to find." ]
+    , h2 [ A.id "formatting" ]
+      [ text "Formatting" ]
+    , p []
+      [ text "User bios and game descriptions support basic formatting. The following" ]
+    , blockquote []
+      [ p []
+        [ text "Mention a user: @example\nMention a game: !28a5b\nPost links: https://gunn.app/\n\n**Bold**, *italics*, ***both bold and italics***. Escaping characters: \\* lmunkler\\@example.com" ]
+      ]
+    , p []
+      [ text "produces" ]
+    , blockquote []
+      [ p []
+        [ text "Mention a user: "
+        , a [ A.class "link", A.href "?@example" ]
+          [ text "@example" ]
+        , text "\nMention a game: "
+        , a [ A.class "link", A.href "?!28a5b" ]
+          [ text "Example game" ]
+        , text "\nPost links: "
+        , Utils.extLink "https://gunn.app/" "https://gunn.app/" "link"
+        , text "\n\n"
+        , strong []
+          [ text "Bold" ]
+        , text ", "
+        , em []
+          [ text "italics" ]
+        , text ", "
+        , strong []
+          [ em []
+            [ text "both bold and italics" ]
+          ]
+        , text ". Escaping characters: * lmunkler@example.com"
+        ]
+      ]
     ]
   ]

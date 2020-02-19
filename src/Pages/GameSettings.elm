@@ -340,7 +340,7 @@ view { zone } model =
         [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Name"
-          , sublabel = "Required."
+          , sublabel = [ text "Required." ]
           , placeholder = "The People's Elimination Game"
           , value = model.name.value
           , validate = \value ->
@@ -355,7 +355,7 @@ view { zone } model =
         , Input.myInput (Change PasswordInput)
           { myInputDefaults
           | labelText = "Passphrase to join"
-          , sublabel = "Share this passphrase to people who you want to join. Passphrases are case insensitive."
+          , sublabel = [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive." ]
           , placeholder = "hunter2"
           , value = model.password.value
           , validate = \value ->
@@ -370,7 +370,12 @@ view { zone } model =
         [ Input.myInput (Change DescInput)
           { myInputDefaults
           | labelText = "Description and rules"
-          , sublabel = "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made."
+          , sublabel =
+            [ text "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made. "
+            , a [ A.class "link", A.href "?about#formatting" ]
+              [ text "Basic formatting" ]
+            , text " is available."
+            ]
           , type_ = "textarea"
           , placeholder = "Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur during Mr. Leasio's classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck!"
           , value = model.desc.value

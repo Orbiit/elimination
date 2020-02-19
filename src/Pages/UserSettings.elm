@@ -210,7 +210,7 @@ view global model =
         [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Display name"
-          , sublabel = Api.Validate.nameLabel
+          , sublabel = [ text Api.Validate.nameLabel ]
           , placeholder = "Billy Chelontuvier"
           , value = model.name.value
           , validate = Api.Validate.nameOk
@@ -219,7 +219,7 @@ view global model =
         , Input.myInput (Change EmailInput)
           { myInputDefaults
           | labelText = "Email"
-          , sublabel = Api.Validate.emailLabel
+          , sublabel = [ text Api.Validate.emailLabel ]
           , type_ = "email"
           , placeholder = "billygamer5@example.com"
           , value = model.email.value
@@ -231,6 +231,11 @@ view global model =
         [ Input.myInput (Change BioInput)
           { myInputDefaults
           | labelText = "Bio"
+          , sublabel =
+            [ a [ A.class "link", A.href "?about#formatting" ]
+              [ text "Basic formatting" ]
+            , text " is available."
+            ]
           , type_ = "textarea"
           , placeholder = "Introduce yourself here"
           , value = model.bio.value
@@ -250,7 +255,7 @@ view global model =
         [ Input.myInput (Change PasswordInput)
           { myInputDefaults
           | labelText = "New password"
-          , sublabel = Api.Validate.passwordLabel
+          , sublabel = [ text Api.Validate.passwordLabel ]
           , type_ = "password"
           , placeholder = "hunter2"
           , value = model.password.value

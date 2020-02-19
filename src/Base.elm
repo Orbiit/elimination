@@ -441,7 +441,7 @@ makeHeader { session, zone } model frontPage =
             [ Input.myInput (Change SignUpUsername)
               { myInputDefaults
               | labelText = "Username"
-              , sublabel = Api.Validate.usernameLabel
+              , sublabel = [ text Api.Validate.usernameLabel ]
               , type_ = "text"
               , placeholder = "billygamer5"
               , name = "username"
@@ -457,7 +457,7 @@ makeHeader { session, zone } model frontPage =
             , Input.myInput (Change SignUpName)
               { myInputDefaults
               | labelText = "Full name"
-              , sublabel = Api.Validate.nameLabel
+              , sublabel = [ text Api.Validate.nameLabel ]
               , placeholder = "Billy Chelontuvier"
               , value = model.signUpName.value
               , name = "name"
@@ -471,7 +471,7 @@ makeHeader { session, zone } model frontPage =
             , Input.myInput (Change SignUpEmail)
               { myInputDefaults
               | labelText = "Email"
-              , sublabel = Api.Validate.emailLabel
+              , sublabel = [ text Api.Validate.emailLabel ]
               , type_ = "email"
               , placeholder = "billygamer5@example.com"
               , name = "email"
@@ -486,7 +486,7 @@ makeHeader { session, zone } model frontPage =
             , Input.myInput (Change SignUpPassword)
               { myInputDefaults
               | labelText = "Password"
-              , sublabel = Api.Validate.passwordLabel
+              , sublabel = [ text Api.Validate.passwordLabel ]
               , type_ = "password"
               , placeholder = "hunter2"
               , name = "password"

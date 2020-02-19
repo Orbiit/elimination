@@ -13,7 +13,7 @@ export default {
   output: {
     file: `${dir}/bundle.js`,
     format: 'iife',
-    sourcemap: true
+    // sourcemap: true
   },
   plugins: [
     resolve({

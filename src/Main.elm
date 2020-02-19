@@ -13,6 +13,7 @@ import Task
 
 import Base
 import Api
+import Utils
 import Utils.Request as Request
 import Pages
 import Pages.FrontPage
@@ -183,6 +184,7 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
       , cmd
       , Cmd.map BaseMsg headerCmd
       , Task.perform AdjustTimeZone Time.here
+      , Utils.scrollIfNeeded DoNothing url.fragment
       ]
     )
 
@@ -382,7 +384,9 @@ update msg model =
         (newModel, cmd) =
           case urlToPage model url of
             SwitchPage pageType ->
-              ({ model | page = pageType }, Cmd.none)
+              ( { model | page = pageType }
+              , Utils.scrollIfNeeded DoNothing url.fragment
+              )
             Command command ->
               (model, command)
             SwitchPageAndCommand pageType command ->

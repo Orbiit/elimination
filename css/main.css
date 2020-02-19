@@ -263,6 +263,9 @@ a {
   color: rgba(255, 255, 255, 0.5);
   margin: 10px 0;
 }
+.sublabel .link {
+  color: #a77;
+}
 .input {
   margin: 10px 0;
   position: relative;

@@ -187,7 +187,7 @@ renderStatus model status =
             ]
             [ text status.code ]
       , text (" " ++ char MDash ++ " ")
-      , a [ A.class "link", A.href "?about#kill-codes" ]
+      , a [ A.class "link", A.href "?about#elimination-sequences" ]
         [ text "What is this for?" ]
       ]
     , span [ A.class "flex" ]
