@@ -237,17 +237,25 @@ view global model =
     , div [ A.class "lists" ]
       [ section [ A.class "list" ]
         ((h2 []
-          [ text ("Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")") ])
+          [ text
+            (if model.info.state == Api.WillStart then
+              "Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")"
+            else
+              "Leaderboard by most eliminations"
+            ) ])
         :: (List.map (renderPlayer global (model.info.state == Api.Ended))
           (List.sortWith (\a -> \b ->
             case compare b.kills a.kills of
               EQ ->
-                if a.alive && not b.alive then
-                  LT
-                else if b.alive && not a.alive then
-                  GT
-                else
-                  EQ
+                case (a.killTime, b.killTime) of
+                  (Just aKillTime, Just bKillTime) ->
+                    compare bKillTime aKillTime
+                  (Nothing, Just _) ->
+                    LT
+                  (Just _, Nothing) ->
+                    GT
+                  (Nothing, Nothing) ->
+                    EQ
               _ as order ->
                 order
           ) model.info.players))
