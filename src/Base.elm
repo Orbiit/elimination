@@ -293,10 +293,10 @@ renderNotification zone { time, read, message } =
           ]
       Api.Shuffle gameID gameName ->
         span [ A.class "notif-msg" ]
-          [ text "The targets of everyone in "
+          [ text "The targets of everyone still alive in "
           , a [ A.class "link", A.href ("?!" ++ gameID) ]
             [ text gameName ]
-          , text " has been shuffled. See the home page for your new target."
+          , text " have been shuffled. See the home page for your new target."
           ]
       Api.Announcement gameID gameName announcement ->
         span [ A.class "notif-msg" ]
