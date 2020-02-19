@@ -70,11 +70,14 @@
 .kill-code .link {
   color: #faa;
 }
-.game-link {
-  font-size: 14px;
+.leaderboard-link {
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.3);
   word-break: break-word;
 }
-.game-link:hover {
+.game-link {
   color: rgba(255, 255, 255, 0.7);
+}
+.game-link:hover {
+  color: rgba(255, 255, 255, 0.9);
 }

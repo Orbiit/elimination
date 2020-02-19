@@ -122,8 +122,11 @@ renderStatus model status =
       in
         A.style "background-color" ("rgba(255, 0, 0, " ++ String.fromFloat alpha ++ ")")
     ]
-    [ a [ A.class "game-link link", A.href ("?!" ++ status.game) ]
-      [ text status.gameName ]
+    [ span [ A.class "leaderboard-link" ]
+      [ text "See leaderboard for "
+      , a [ A.class "game-link link", A.href ("?!" ++ status.game) ]
+        [ text status.gameName ]
+      ]
     , span [ A.class "flex" ]
       []
     , span [ A.class "target-label" ]
