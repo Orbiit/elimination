@@ -4,6 +4,7 @@ import Json.Decode as D
 import Json.Encode as E
 import Http
 import Time
+import Url.Builder as Builder
 
 import Utils
 import Utils.Request as Request
@@ -164,6 +165,10 @@ createGame : GlobalModel m -> ResultMsg GameID msg -> E.Value -> Cmd msg
 createGame global msg gameInfo =
   post global "create-game" msg gameInfo (D.field "game" D.string)
 
+deleteGame : GlobalModel m -> ResultMsg () msg -> E.Value -> Cmd msg
+deleteGame global msg game =
+  post global "delete-game" msg (E.object []) (D.succeed ())
+
 setGameSettings : GlobalModel m -> ResultMsg GameID msg -> GameID -> E.Value -> Cmd msg
 setGameSettings global msg game changes =
   post global ("game-settings?game=" ++ game) msg changes (D.succeed game)
@@ -199,6 +204,23 @@ getGameSettings global msg game =
         (D.field "joined" D.int)
       )))
       (D.field "state" gameStateParser)
+
+-- https://til.hashrocket.com/posts/jtgloksqxf-where-is-listzip-in-elm
+mapGameIDToName : List GameID -> List String -> D.Decoder (List (GameID, String))
+mapGameIDToName games names =
+  D.succeed (List.map2 Tuple.pair games names)
+
+getNames : GlobalModel m -> ResultMsg (List (GameID, String)) msg -> List GameID -> Cmd msg
+getNames global msg games =
+  get
+    global
+    (Builder.relative
+      [ "names" ]
+      [ Builder.string "games" (String.join "," games)
+      , Builder.string "defaultGame" "Nonexistent game"
+      ])
+    msg <|
+      D.andThen (mapGameIDToName games) (D.list D.string)
 
 join : GlobalModel m -> ResultMsg String msg -> GameID -> String -> Cmd msg
 join global msg game password =
@@ -247,11 +269,17 @@ status global msg game =
 
 statuses : GlobalModel m -> ResultMsg (List Status) msg -> Cmd msg
 statuses global msg =
-  get global "statuses" msg (D.list statusDecoder)
+  get global "statuses?all=true" msg <|
+    (D.field "statuses" (D.list statusDecoder))
 
 kill : GlobalModel m -> ResultMsg () msg -> GameID -> String -> Cmd msg
 kill global msg game code =
   post global ("kill?game=" ++ game) msg (E.object [("code", E.string code)]) (D.succeed ())
+
+-- "Be sincere!"
+beHonest : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
+beHonest global msg game =
+  post global ("kill?self=true&game=" ++ game) msg (E.object []) (D.succeed ())
 
 type Notification
   = GameStarted GameID String (Maybe String) (Maybe String)
