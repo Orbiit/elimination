@@ -254,11 +254,13 @@ kill global msg game code =
   post global ("kill?game=" ++ game) msg (E.object [("code", E.string code)]) (D.succeed ())
 
 type Notification
-  = GameStarted GameID String
+  = GameStarted GameID String (Maybe String) (Maybe String)
   | GameEnded GameID String String String
   | Killed GameID String String String
+  | KilledSelf GameID String (Maybe String) (Maybe String)
   | Kicked GameID String String
-  | Shuffle GameID String
+  | TargetKicked GameID String String String
+  | Shuffle GameID String (Maybe String) (Maybe String)
   | Announcement GameID String String
   | Unknown String
 
@@ -278,9 +280,11 @@ parseNotifType : String -> D.Decoder Notification
 parseNotifType notifType =
   case notifType of
     "game-started" ->
-      D.map2 GameStarted
+      D.map4 GameStarted
         (D.field "game" D.string)
         (D.field "gameName" D.string)
+        (D.maybe (D.field "target" D.string))
+        (D.maybe (D.field "targetName" D.string))
     "game-ended" ->
       D.map4 GameEnded
         (D.field "game" D.string)
@@ -293,15 +297,29 @@ parseNotifType notifType =
         (D.field "gameName" D.string)
         (D.field "by" D.string)
         (D.field "name" D.string)
+    "killed-self" ->
+      D.map4 KilledSelf
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+        (D.maybe (D.field "target" D.string))
+        (D.maybe (D.field "targetName" D.string))
     "kicked" ->
       D.map3 Kicked
         (D.field "game" D.string)
         (D.field "gameName" D.string)
         (D.field "reason" D.string)
-    "shuffle" ->
-      D.map2 Shuffle
+    "kicked-new-target" ->
+      D.map4 TargetKicked
         (D.field "game" D.string)
         (D.field "gameName" D.string)
+        (D.field "target" D.string)
+        (D.field "targetName" D.string)
+    "shuffle" ->
+      D.map4 Shuffle
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+        (D.maybe (D.field "target" D.string))
+        (D.maybe (D.field "targetName" D.string))
     "announcement" ->
       D.map3 Announcement
         (D.field "game" D.string)
@@ -376,7 +394,6 @@ getUser global msg user =
         (D.field "alive" D.bool)
         (D.field "updated" D.int)
       )))
-
 
 type alias GamePlayer =
   { username : String
