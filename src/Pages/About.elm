@@ -10,7 +10,23 @@ view =
     [ h1 []
       [ text "About" ]
     , p []
-      [ text "" ]
+      [ text "If you have any questions or something isn't working, you can email "
+      , a [ A.class "link", A.href "mailto:sy24484@pausd.us" ]
+        [ text "sy24484@pausd.us" ]
+      , text " or send a message to "
+      , Utils.extLink "Ovinus Real" "https://www.facebook.com/ovinus.genuine" "link"
+      , text " on Facebook."
+      ]
+    , h2 []
+      [ text "How do I join?" ]
+    , p []
+      [ text "You're probably looking for "
+      , a [ A.class "link", A.href "?!bbdd6" ]
+        [ text "Gunn Elimination 2020" ]
+      , text " if you're a Gunn student."
+      ]
+    , p []
+      [ text "Once you find the game page, click on the \"Join\" button on the top right (make sure you're logged in first) and enter in the passphrase. If you want to leave, you can click the \"Leave\" button on the top right." ]
     , h2 [ A.id "elimination-sequences" ]
       [ text "What are elimination sequences?" ]
     , p []
