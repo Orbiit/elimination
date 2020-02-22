@@ -117,18 +117,17 @@ urlToPage global url =
     Nothing ->
       loadFrontPage global
 
-removeQueryIfNeeded : Url.Url -> Nav.Key -> Cmd Msg
-removeQueryIfNeeded url key =
+shouldRemoveQuery : Url.Url -> Bool
+shouldRemoveQuery url =
   case url.query of
-    Just path ->
-      if path == "" then
-        -- Remove the ? at the end because it annoys
-        (Nav.replaceUrl key) <|
-          Url.Builder.custom Url.Builder.Relative [ url.path ] [] url.fragment
-      else
-        Cmd.none
-    Nothing ->
-      Cmd.none
+    Just path -> path == ""
+    Nothing -> False
+
+-- Remove the ? at the end because it annoys
+removeQuery : Url.Url -> Nav.Key -> Cmd msg
+removeQuery url key =
+  Url.Builder.custom Url.Builder.Relative [ url.path ] [] url.fragment
+    |> Nav.replaceUrl key
 
 type alias Model =
   { page : Pages.Page
@@ -180,8 +179,10 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
       , game = Pages.Game.init
       }
     , Cmd.batch
-      [ removeQueryIfNeeded url navKey
-      , cmd
+      [ if shouldRemoveQuery url then
+          removeQuery url navKey
+        else
+          cmd
       , Cmd.map BaseMsg headerCmd
       , Task.perform AdjustTimeZone Time.here
       , Utils.scrollIfNeeded DoNothing url.fragment
@@ -380,20 +381,23 @@ update msg model =
           Browser.External url ->
             (newModel, Nav.load url)
     ChangedUrl url ->
-      let
-        (newModel, cmd) =
-          case urlToPage model url of
-            SwitchPage pageType ->
-              ( { model | page = pageType }
-              , Utils.scrollIfNeeded DoNothing url.fragment
-              )
-            Command command ->
-              (model, command)
-            SwitchPageAndCommand pageType command ->
-              -- Hacky special case for creating a game
-              ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
-      in
-        (newModel, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
+      if shouldRemoveQuery url then
+        (model, removeQuery url model.key)
+      else
+        let
+          (newModel, cmd) =
+            case urlToPage model url of
+              SwitchPage pageType ->
+                ( { model | page = pageType }
+                , Utils.scrollIfNeeded DoNothing url.fragment
+                )
+              Command command ->
+                (model, command)
+              SwitchPageAndCommand pageType command ->
+                -- Hacky special case for creating a game
+                ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
+        in
+        (newModel, cmd)
     CloseConfirmLeave ->
       ({ model | askDiscardChanges = Nothing }, Cmd.none)
     AdjustTimeZone zone ->
