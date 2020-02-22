@@ -8,7 +8,7 @@ import Dict exposing (Dict)
 import Utils
 import Api
 
-urlRegex = Utils.makeRegex "\\bhttps?://[-A-Za-z0-9+@#/%?=~_|!:,.;&]*[-A-Za-z0-9#/=_]|@[a-z0-9_-]{3,20}\\b|![0-9a-f]{5}|\\*{1,2}|\\\\."
+urlRegex = Utils.makeRegex "\\bhttps?://[-A-Za-z0-9+@#/%?=~_|!:,.;&]*[-A-Za-z0-9#/=_]|@[a-z0-9_-]{3,20}(?=[^\\w-])|![0-9a-f]{5}|\\*{1,2}|\\\\."
 
 type alias FoldState msg =
   { lastIndex : Int
