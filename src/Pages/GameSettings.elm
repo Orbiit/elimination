@@ -12,7 +12,6 @@ import Task
 import Utils exposing (char, Char(..))
 import Utils.Input as Input exposing (myInputDefaults)
 import Utils.HumanTime as HumanTime
-import Utils.Request as Request
 import Api
 import Pages
 import NProgress
@@ -67,17 +66,17 @@ init =
 type Msg
   = Change Input Input.MyInputMsg
   | ResizeDesc (Result Dom.Error Dom.Viewport)
-  | InfoLoaded Api.GameID (Result Request.HttpError Api.GameSettingsInfo)
+  | InfoLoaded Api.GameID (Api.Response Api.GameSettingsInfo)
   | Save
-  | Saved (Result Request.HttpError Api.GameID)
+  | Saved (Api.Response Api.GameID)
   | ShowModal String
   | HideModal
   | Kick
-  | Kicked String (Result Request.HttpError ())
+  | Kicked String (Api.Response ())
   | Start
-  | Started (Result Request.HttpError ())
+  | Started (Api.Response ())
   | Shuffle
-  | Shuffled (Result Request.HttpError ())
+  | Shuffled (Api.Response ())
   | DoNothing
 
 resizeDesc : Cmd Msg

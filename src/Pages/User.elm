@@ -7,7 +7,6 @@ import Dict exposing (Dict)
 import Api
 import NProgress
 import Utils exposing (char, Char(..))
-import Utils.Request as Request
 import Utils.MarkupSimpleRegex as Markup
 import Pages
 
@@ -30,8 +29,8 @@ init =
   }
 
 type Msg
-  = InfoLoaded String (Result Request.HttpError Api.User)
-  | NamesLoaded (Result Request.HttpError (Dict Api.GameID String))
+  = InfoLoaded String (Api.Response Api.User)
+  | NamesLoaded (Api.Response (Dict Api.GameID String))
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =

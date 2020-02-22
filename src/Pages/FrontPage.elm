@@ -10,7 +10,6 @@ import Task
 import Api
 import Utils exposing (char, Char(..))
 import Utils.Input as Input exposing (myInputDefaults)
-import Utils.Request as Request
 import NProgress
 import Pages
 
@@ -40,13 +39,13 @@ init =
   }
 
 type Msg
-  = StatsLoaded (Result Request.HttpError Api.Stats)
-  | StatusesLoaded (Result Request.HttpError (List Api.Status))
+  = StatsLoaded (Api.Response Api.Stats)
+  | StatusesLoaded (Api.Response (List Api.Status))
   | ShowModal Api.GameID
   | HideModal
   | ChangeCode Input.MyInputMsg
   | Kill
-  | Killed (Result Request.HttpError ())
+  | Killed (Api.Response ())
   | ShowCode Api.GameID
   | DoNothing
 

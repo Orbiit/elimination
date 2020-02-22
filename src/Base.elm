@@ -14,7 +14,6 @@ import Api.Validate
 import Utils exposing (Char(..), char)
 import Utils.Input as Input exposing (myInputDefaults)
 import Utils.HumanTime as HumanTime
-import Utils.Request as Request
 
 type HeaderWindow
   = SignUpWindow
@@ -90,13 +89,13 @@ type Msg
   | Change Input Input.MyInputMsg
   | Login
   | SignUp
-  | NewSession AuthMethod String (Result Request.HttpError Api.SessionID)
+  | NewSession AuthMethod String (Api.Response Api.SessionID)
   | Refresh
-  | NotificationsLoaded (Result Request.HttpError Api.NotificationResult)
+  | NotificationsLoaded (Api.Response Api.NotificationResult)
   | LoadMore
-  | MoreNotificationsLoaded (Result Request.HttpError Api.NotificationResult)
+  | MoreNotificationsLoaded (Api.Response Api.NotificationResult)
   | MarkAsRead
-  | MarkedAsRead (Result Request.HttpError ())
+  | MarkedAsRead (Api.Response ())
   | DoNothing
 
 notifsAtATime : Int

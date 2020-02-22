@@ -10,7 +10,6 @@ import Task
 import Api
 import Api.Validate
 import Utils
-import Utils.Request as Request
 import Utils.Input as Input exposing (myInputDefaults)
 import Pages
 import NProgress
@@ -51,10 +50,10 @@ type Msg
   = Change Input Input.MyInputMsg
   | ResizeBio (Result Dom.Error Dom.Viewport)
   | Logout
-  | LoggedOut (Result Request.HttpError ())
-  | InfoLoaded (Result Request.HttpError Api.UserSettingsInfo)
+  | LoggedOut (Api.Response ())
+  | InfoLoaded (Api.Response Api.UserSettingsInfo)
   | Save
-  | Saved (Result Request.HttpError ())
+  | Saved (Api.Response ())
 
 resizeBio : Cmd Msg
 resizeBio =

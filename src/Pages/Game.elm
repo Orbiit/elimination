@@ -12,7 +12,6 @@ import Api
 import Utils exposing (char, Char(..))
 import Utils.Input as Input exposing (myInputDefaults)
 import Utils.HumanTime as HumanTime
-import Utils.Request as Request
 import Utils.MarkupSimpleRegex as Markup
 import Pages
 import NProgress
@@ -47,14 +46,14 @@ init =
   }
 
 type Msg
-  = InfoLoaded Api.GameID (Result Request.HttpError Api.Game)
-  | NamesLoaded (Result Request.HttpError (Dict Api.GameID String))
+  = InfoLoaded Api.GameID (Api.Response Api.Game)
+  | NamesLoaded (Api.Response (Dict Api.GameID String))
   | ChangePassword Input.MyInputMsg
   | ShowModal
   | HideModal
   | Join
   | Leave
-  | Done BtnAction (Result Request.HttpError String)
+  | Done BtnAction (Api.Response String)
   | DoNothing
 
 type BtnAction

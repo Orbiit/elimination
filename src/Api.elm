@@ -82,7 +82,8 @@ gameStateNameWithTime zone state time =
       "Ended on ")
     ++ HumanTime.display zone time
 
-type alias ResultMsg a msg = Result Request.HttpError a -> msg
+type alias Response a = Result Request.HttpError a
+type alias ResultMsg a msg = Response a -> msg
 
 get : GlobalModel m -> String -> ResultMsg a msg -> D.Decoder a -> Cmd msg
 get global path msg decoder =
