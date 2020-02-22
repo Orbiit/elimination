@@ -5,6 +5,7 @@ import Json.Encode as E
 import Http
 import Time
 import Url.Builder as Builder
+import Dict exposing (Dict)
 
 import Utils
 import Utils.Request as Request
@@ -206,11 +207,11 @@ getGameSettings global msg game =
       (D.field "state" gameStateParser)
 
 -- https://til.hashrocket.com/posts/jtgloksqxf-where-is-listzip-in-elm
-mapGameIDToName : List GameID -> List String -> D.Decoder (List (GameID, String))
+mapGameIDToName : List GameID -> List String -> D.Decoder (Dict GameID String)
 mapGameIDToName games names =
-  D.succeed (List.map2 Tuple.pair games names)
+  D.succeed (Dict.fromList (List.map2 Tuple.pair games names))
 
-getNames : GlobalModel m -> ResultMsg (List (GameID, String)) msg -> List GameID -> Cmd msg
+getNames : GlobalModel m -> ResultMsg (Dict GameID String) msg -> List GameID -> Cmd msg
 getNames global msg games =
   get
     global
@@ -220,7 +221,7 @@ getNames global msg games =
       , Builder.string "defaultGame" "Nonexistent game"
       ])
     msg <|
-      D.andThen (mapGameIDToName games) (D.list D.string)
+      D.andThen (mapGameIDToName games) (D.field "games" (D.list D.string))
 
 join : GlobalModel m -> ResultMsg String msg -> GameID -> String -> Cmd msg
 join global msg game password =

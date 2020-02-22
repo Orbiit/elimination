@@ -3,8 +3,10 @@ module Utils.MarkupSimpleRegex exposing (markup)
 import Html exposing (Html, a, text, em, strong)
 import Html.Attributes as A
 import Regex
+import Dict exposing (Dict)
 
 import Utils
+import Api
 
 urlRegex = Utils.makeRegex "\\bhttps?://[-A-Za-z0-9+@#/%?=~_|!:,.;&]*[-A-Za-z0-9#/=_]|@[a-z0-9_-]{3,20}\\b|![0-9a-f]{5}|\\*{1,2}|\\\\."
 
@@ -13,6 +15,8 @@ type alias FoldState msg =
   , htmls : List (Html msg)
   , bold : Bool
   , italics : Bool
+  , gameIDs : List Api.GameID
+  , gameNames : Maybe (Dict Api.GameID String)
   }
 
 format : FoldState msg -> List (Html msg) -> List (Html msg)
@@ -43,8 +47,24 @@ fold totalString match state =
         , let
             firstChar = String.left 1 match.match
           in
-            if firstChar == "@" || firstChar == "!" then
+            if firstChar == "@" then
               format state [ a [ A.class "link", A.href ("?" ++ match.match) ] [ text match.match ] ]
+            else if firstChar == "!" then
+              format state
+                [ a [ A.class "link", A.href ("?" ++ match.match) ]
+                  [ text <|
+                    case state.gameNames of
+                      Just names ->
+                        let
+                          maybeName = Dict.get (String.dropLeft 1 match.match) names
+                        in
+                        case maybeName of
+                          Just name -> name
+                          Nothing -> match.match
+                      Nothing ->
+                        match.match
+                  ]
+                ]
             else if firstChar == "*" then
               []
             else if firstChar == "\\" then
@@ -52,7 +72,17 @@ fold totalString match state =
             else
               format state [ Utils.extLink match.match match.match "link" ]
         ]
-    newState = { state | lastIndex = lastIndex, htmls = htmls }
+    newState =
+      { state
+      | lastIndex = lastIndex
+      , htmls = htmls
+      , gameIDs =
+        case (String.left 1 match.match, state.gameNames) of
+          ("!", Nothing) ->
+            String.dropLeft 1 match.match :: state.gameIDs
+          _ ->
+            state.gameIDs
+      }
   in
     if match.match == "*" then
       { newState | italics = not state.italics }
@@ -61,8 +91,13 @@ fold totalString match state =
     else
       newState
 
-markup : String -> List (Html msg)
-markup input =
+type alias MarkupOutput msg =
+  { html : List (Html msg)
+  , gameIDs : List Api.GameID
+  }
+
+markup : Maybe (Dict Api.GameID String) -> String -> MarkupOutput msg
+markup gameNames input =
   let
     finalState = (Regex.find urlRegex input)
       |> List.foldl (fold input)
@@ -70,10 +105,15 @@ markup input =
         , htmls = []
         , bold = False
         , italics = False
+        , gameIDs = []
+        , gameNames = gameNames
         }
   in
+  { html =
     finalState.htmls ++
-    if finalState.lastIndex == String.length input then
-      []
-    else
-      format finalState [ text (String.dropLeft finalState.lastIndex input) ]
+      if finalState.lastIndex == String.length input then
+        []
+      else
+        format finalState [ text (String.dropLeft finalState.lastIndex input) ]
+  , gameIDs = finalState.gameIDs
+  }

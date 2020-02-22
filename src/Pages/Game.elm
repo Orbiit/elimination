@@ -6,6 +6,7 @@ import Html.Events exposing (onClick, stopPropagationOn, onSubmit)
 import Json.Decode as D
 import Browser.Dom as Dom
 import Task
+import Dict exposing (Dict)
 
 import Api
 import Utils exposing (char, Char(..))
@@ -19,6 +20,7 @@ import NProgress
 type alias Model =
   { game : Api.GameID
   , info : Api.Game
+  , description : List (Html Msg)
   , password : String
   , modal : Bool
   , loading : Bool
@@ -37,6 +39,7 @@ init =
     , state = Api.WillStart
     , time = 0
     }
+  , description = []
   , password = ""
   , modal = False
   , loading = False
@@ -45,6 +48,7 @@ init =
 
 type Msg
   = InfoLoaded Api.GameID (Result Request.HttpError Api.Game)
+  | NamesLoaded (Result Request.HttpError (Dict Api.GameID String))
   | ChangePassword Input.MyInputMsg
   | ShowModal
   | HideModal
@@ -63,9 +67,27 @@ update msg global model =
     InfoLoaded gameID result ->
       case result of
         Ok game ->
-          ({ model | game = gameID, info = game }, NProgress.done (), Api.ChangePage Pages.Game)
+          let
+            description = Markup.markup Nothing game.description
+          in
+          ( { model | game = gameID, info = game, description = description.html }
+          , Cmd.batch
+            [ NProgress.done ()
+            , if List.isEmpty description.gameIDs then
+                Cmd.none
+              else
+                Api.getNames global NamesLoaded description.gameIDs
+            ]
+          , Api.ChangePage Pages.Game
+          )
         Err error ->
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
+    NamesLoaded result ->
+      case result of
+        Ok names ->
+          ({ model | description = (Markup.markup (Just names) model.info.description).html }, Cmd.none, Api.None)
+        Err _ ->
+          (model, Cmd.none, Api.None)
     ChangePassword { value } ->
       ({ model | password = value }, Cmd.none, Api.None)
     ShowModal ->
@@ -224,7 +246,7 @@ view global model =
           [ text model.info.creatorName ]
         ]
       , p [ A.class "profile-desc" ]
-        (Markup.markup model.info.description)
+        model.description
       , p [ A.class "profile-desc profile-stats" ]
         [ text (Api.gameStateNameWithTime global.zone model.info.state model.info.time
           ++ " " ++ char Middot ++ " "
