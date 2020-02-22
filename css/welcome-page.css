@@ -11,7 +11,7 @@
   justify-content: center;
   align-items: center;
   text-align: center;
-  height: calc(100vh - 50px);
+  min-height: calc(100vh - 250px);
   background-image: linear-gradient(transparent, var(--blood));
 }
 .website-title {
@@ -29,6 +29,12 @@
 }
 .welcome .link {
   color: #faa;
+}
+.stats-header {
+  font-size: 20px;
+  text-align: center;
+  font-weight: normal;
+  margin-bottom: 0;
 }
 .stats {
   display: flex;
