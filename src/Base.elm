@@ -103,7 +103,11 @@ notifsAtATime = 5
 
 updateNotifs : Api.GlobalModel m -> Cmd Msg
 updateNotifs global =
-  Api.notifications global NotificationsLoaded 0 notifsAtATime
+  case global.session of
+    Api.SignedIn _ ->
+      Api.notifications global NotificationsLoaded 0 notifsAtATime
+    Api.SignedOut ->
+      Cmd.none
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =
