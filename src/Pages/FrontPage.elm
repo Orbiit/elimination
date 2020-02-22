@@ -16,6 +16,7 @@ import Pages
 type alias Model =
   { stats : Api.Stats
   , statuses : List Api.Status
+  , other : List Api.OtherGame
   , modal : Maybe Api.GameID
   , code : String
   , killing : Bool
@@ -31,6 +32,7 @@ init =
     , games = 0
     }
   , statuses = []
+  , other = []
   , modal = Nothing
   , code = ""
   , killing = False
@@ -40,7 +42,7 @@ init =
 
 type Msg
   = StatsLoaded (Api.Response Api.Stats)
-  | StatusesLoaded (Api.Response (List Api.Status))
+  | StatusesLoaded (Api.Response Api.GameStatuses)
   | ShowModal Api.GameID
   | HideModal
   | ChangeCode Input.MyInputMsg
@@ -60,8 +62,8 @@ update msg global model =
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
     StatusesLoaded result ->
       case result of
-        Ok statuses ->
-          ({ model | statuses = statuses, showingCode = Nothing }
+        Ok { statuses, other } ->
+          ({ model | statuses = statuses, other = other, showingCode = Nothing }
           , NProgress.done ()
           , Api.ChangePage Pages.FrontPage
           )

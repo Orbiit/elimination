@@ -269,10 +269,30 @@ status : GlobalModel m -> ResultMsg Status msg -> GameID -> Cmd msg
 status global msg game =
   get global ("status?game=" ++ game) msg statusDecoder
 
-statuses : GlobalModel m -> ResultMsg (List Status) msg -> Cmd msg
+type alias OtherGame =
+  { game : GameID
+  , gameName : String
+  , state: GameState
+  }
+
+otherGameDecoder : D.Decoder OtherGame
+otherGameDecoder =
+  D.map3 OtherGame
+    (D.field "game" D.string)
+    (D.field "gameName" D.string)
+    (D.field "state" gameStateParser)
+
+type alias GameStatuses =
+  { statuses : List Status
+  , other : List OtherGame
+  }
+
+statuses : GlobalModel m -> ResultMsg GameStatuses msg -> Cmd msg
 statuses global msg =
   get global "statuses?all=true" msg <|
-    (D.field "statuses" (D.list statusDecoder))
+    D.map2 GameStatuses
+      (D.field "statuses" (D.list statusDecoder))
+      (D.field "others" (D.list otherGameDecoder))
 
 kill : GlobalModel m -> ResultMsg () msg -> GameID -> String -> Cmd msg
 kill global msg game code =
