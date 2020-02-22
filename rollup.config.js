@@ -4,6 +4,9 @@ import { terser } from 'rollup-plugin-terser'
 import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import processEnv from './rollup-plugin-process-env.js'
+import html from 'rollup-plugin-bundle-html'
+import css from 'rollup-plugin-css-porter'
+import path from 'path'
 
 const production = process.env.NODE_ENV === 'production'
 const dir = production ? '.' : './dist'
@@ -13,7 +16,7 @@ export default {
   output: {
     file: `${dir}/bundle.js`,
     format: 'iife',
-    // sourcemap: true
+    sourcemap: !production
   },
   plugins: [
     resolve({
@@ -27,9 +30,30 @@ export default {
         debug: !production
       }
     }),
+    html({
+      template: 'src/template.html',
+      dest: dir,
+      filename: 'index.html',
+      externals: [
+        { type: 'css', file: 'https://fonts.googleapis.com/css?family=Playfair+Display:400,700&display=swap' }
+      ],
+      // It otherwise looks for all JS/CSS files in the dest folder, which is rather
+      // undesirable
+      ignore: `^\\./(?!${production ? '' : 'dist/'}bundle\\.(js|css))`
+    }),
+    css({
+      raw: false,
+      minified: `${dir}/bundle.css`,
+      cleanCSSOptions: {
+        format: production ? undefined : 'beautify',
+        level: production ? 2 : 0,
+        // ??? This works?
+        rebaseTo: path.resolve(__dirname, production ? '..' : '../images')
+      }
+    }),
     processEnv(),
     process.env.ROLLUP_WATCH && serve({
-      contentBase: [''],
+      contentBase: production ? [''] : ['dist', 'images'],
       port: 8080
     }),
     production && terser({
