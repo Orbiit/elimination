@@ -49,3 +49,15 @@
   font-size: 14px;
   color: rgba(255, 255, 255, 0.5);
 }
+.delete-game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 30px 0;
+}
+.delete-game {
+  text-align: center;
+  font-size: 16px;
+  margin: 0;
+  margin-bottom: 20px;
+}

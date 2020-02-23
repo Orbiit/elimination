@@ -167,9 +167,9 @@ createGame : GlobalModel m -> ResultMsg GameID msg -> E.Value -> Cmd msg
 createGame global msg gameInfo =
   post global "create-game" msg gameInfo (D.field "game" D.string)
 
-deleteGame : GlobalModel m -> ResultMsg () msg -> E.Value -> Cmd msg
+deleteGame : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
 deleteGame global msg game =
-  post global "delete-game" msg (E.object []) (D.succeed ())
+  post global ("delete-game?game=" ++ game) msg (E.object []) (D.succeed ())
 
 setGameSettings : GlobalModel m -> ResultMsg GameID msg -> GameID -> E.Value -> Cmd msg
 setGameSettings global msg game changes =

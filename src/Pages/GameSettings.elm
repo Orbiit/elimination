@@ -41,6 +41,7 @@ type alias Model =
   , starting : Bool
   , shuffling : Bool
   , shuffled : Bool
+  , deleting : Bool
   }
 
 init : Model
@@ -61,6 +62,7 @@ init =
   , starting = False
   , shuffling = False
   , shuffled = False
+  , deleting = False
   }
 
 type Msg
@@ -77,6 +79,8 @@ type Msg
   | Started (Api.Response ())
   | Shuffle
   | Shuffled (Api.Response ())
+  | Delete
+  | Deleted (Api.Response ())
   | DoNothing
 
 resizeDesc : Cmd Msg
@@ -237,6 +241,21 @@ update msg global model =
           ({ model | shuffling = False, shuffled = True }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
           ({ model | shuffling = False, shuffled = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+    Delete ->
+      case model.game of
+        Just gameID ->
+          ( { model | deleting = True, problem = Nothing }
+          , Api.deleteGame global Deleted gameID
+          , Api.None
+          )
+        Nothing ->
+          (model, Cmd.none, Api.Redirect "?")
+    Deleted result ->
+      case result of
+        Ok _ ->
+          ({ model | deleting = False }, Cmd.none, Api.Redirect "?")
+        Err ((_, errorMsg) as error) ->
+          ({ model | deleting = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     DoNothing ->
       (model, Cmd.none, Api.None)
 
@@ -412,8 +431,7 @@ view { zone } model =
     , div [ A.class "members" ]
       ((h2 [ A.class "members-header" ]
         ([ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
-        , span [ A.class "flex" ]
-          []
+        , span [ A.class "flex" ] []
         ]
         ++ (if model.state == Api.Started then
           [ button
@@ -425,10 +443,19 @@ view { zone } model =
             [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ] ]
         else
           [])))
-      :: (model.players
-        |> List.sortBy .joined
-        |> List.reverse
-        |> List.map (renderPlayer model zone))
+      :: if List.isEmpty model.players then
+        [ div [ A.class "delete-game-wrapper" ]
+          [ p [ A.class "delete-game" ]
+            [ text "Accidentally created a game?" ]
+          , button [ A.class "button", A.classList [ ("loading", model.deleting) ], onClick Delete ]
+            [ text "Delete game" ]
+          ]
+        ]
+      else
+        model.players
+          |> List.sortBy .joined
+          |> List.reverse
+          |> List.map (renderPlayer model zone)
       )
     ]
   ]
