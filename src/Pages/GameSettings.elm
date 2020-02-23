@@ -12,7 +12,6 @@ import Task
 import Utils exposing (char, Char(..))
 import Utils.Input as Input exposing (myInputDefaults)
 import Utils.HumanTime as HumanTime
-import Utils.Request as Request
 import Api
 import Pages
 import NProgress
@@ -48,6 +47,7 @@ type alias Model =
   , starting : Bool
   , shuffling : Bool
   , shuffled : Bool
+  , deleting : Bool
   }
 
 init : Model
@@ -73,25 +73,28 @@ init =
   , starting = False
   , shuffling = False
   , shuffled = False
+  , deleting = False
   }
 
 type Msg
   = Change Input Input.MyInputMsg
   | ResizeDesc (Result Dom.Error Dom.Viewport)
   | ResizeAnnouncement (Result Dom.Error Dom.Viewport)
-  | InfoLoaded Api.GameID (Result Request.HttpError Api.GameSettingsInfo)
+  | InfoLoaded Api.GameID (Api.Response Api.GameSettingsInfo)
   | Save
-  | Saved (Result Request.HttpError Api.GameID)
+  | Saved (Api.Response Api.GameID)
   | ShowModal String
   | HideModal
   | Kick
-  | Kicked String (Result Request.HttpError ())
+  | Kicked String (Api.Response ())
   | Start
-  | Started (Result Request.HttpError ())
+  | Started (Api.Response ())
   | Shuffle
-  | Shuffled (Result Request.HttpError ())
+  | Shuffled (Api.Response ())
   | Announce
-  | Announced
+  | Announced (Api.Response ())
+  | Delete
+  | Deleted (Api.Response ())
   | DoNothing
 
 resizeDesc : Cmd Msg
@@ -270,7 +273,22 @@ update msg global model =
         Just gameID ->
           ( { model | announcing = True, announced = False, anno = Nothing })
         Nothing ->
-
+          (model, Cmd.none, Api.None)
+    Delete ->
+      case model.game of
+        Just gameID ->
+          ( { model | deleting = True, problem = Nothing }
+          , Api.deleteGame global Deleted gameID
+          , Api.None
+          )
+        Nothing ->
+          (model, Cmd.none, Api.Redirect "?")
+    Deleted result ->
+      case result of
+        Ok _ ->
+          ({ model | deleting = False }, Cmd.none, Api.Redirect "?")
+        Err ((_, errorMsg) as error) ->
+          ({ model | deleting = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     DoNothing ->
       (model, Cmd.none, Api.None)
 
@@ -375,7 +393,7 @@ view { zone } model =
         [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Name"
-          , sublabel = "Required."
+          , sublabel = [ text "Required." ]
           , placeholder = "The People's Elimination Game"
           , value = model.name.value
           , validate = \value ->
@@ -390,7 +408,7 @@ view { zone } model =
         , Input.myInput (Change PasswordInput)
           { myInputDefaults
           | labelText = "Passphrase to join"
-          , sublabel = "Share this passphrase to people who you want to join. Passphrases are case insensitive."
+          , sublabel = [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive." ]
           , placeholder = "hunter2"
           , value = model.password.value
           , validate = \value ->
@@ -405,7 +423,12 @@ view { zone } model =
         [ Input.myInput (Change DescInput)
           { myInputDefaults
           | labelText = "Description and rules"
-          , sublabel = "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made."
+          , sublabel =
+            [ text "List rules for elimination here, such as how they can be blocked, and when and where eliminations are allowed to be made. "
+            , a [ A.class "link", A.href "?about#formatting" ]
+              [ text "Basic formatting" ]
+            , text " is available."
+            ]
           , type_ = "textarea"
           , placeholder = "Please pick up the bowling balls from the front office by February 30th. Eliminations may only occur when the student is not carrying their bowling ball. Eliminations may not occur during Mr. Leasio's classes. Inappropriate behaviour will result in immediate disqualification. Targets will be shuffled every week. Good luck!"
           , value = model.desc.value
@@ -471,8 +494,7 @@ view { zone } model =
     , div [ A.class "members" ]
       ((h2 [ A.class "members-header" ]
         ([ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
-        , span [ A.class "flex" ]
-          []
+        , span [ A.class "flex" ] []
         ]
         ++ (if model.state == Api.Started then
           [ button
@@ -484,10 +506,19 @@ view { zone } model =
             [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ] ]
         else
           [])))
-      :: (model.players
-        |> List.sortBy .joined
-        |> List.reverse
-        |> List.map (renderPlayer model zone))
+      :: if List.isEmpty model.players then
+        [ div [ A.class "delete-game-wrapper" ]
+          [ p [ A.class "delete-game" ]
+            [ text "Accidentally created a game?" ]
+          , button [ A.class "button", A.classList [ ("loading", model.deleting) ], onClick Delete ]
+            [ text "Delete game" ]
+          ]
+        ]
+      else
+        model.players
+          |> List.sortBy .joined
+          |> List.reverse
+          |> List.map (renderPlayer model zone)
       )
     ]
   ]

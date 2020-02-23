@@ -3,6 +3,11 @@
   font-weight: normal;
   margin: 0;
 }
+.text h2 {
+  font-size: 24px;
+  font-weight: normal;
+  margin: 0;
+}
 .text p {
   font-size: 16px;
   line-height: 1.8;
@@ -15,4 +20,10 @@
 }
 .text .link {
   color: #faa;
+}
+.text blockquote {
+  border-left: 5px solid rgba(255, 255, 255, 0.1);
+  margin-left: 0;
+  padding: 0.1px 0;
+  padding-left: 35px;
 }

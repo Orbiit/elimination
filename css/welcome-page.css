@@ -7,15 +7,17 @@
 }
 .front-text {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
-  height: calc(100vh - 50px);
+  min-height: calc(100vh - 250px);
   background-image: linear-gradient(transparent, var(--blood));
 }
 .website-title {
   font-size: 64px;
   font-weight: normal;
+  margin: 0;
 }
 @media (max-width: 450px) {
   .website-title {
@@ -24,6 +26,15 @@
 }
 .welcome p {
   font-size: 16px;
+}
+.welcome .link {
+  color: #faa;
+}
+.stats-header {
+  font-size: 20px;
+  text-align: center;
+  font-weight: normal;
+  margin-bottom: 0;
 }
 .stats {
   display: flex;
@@ -41,4 +52,12 @@
 .stat-value {
   font-size: 48px;
   line-height: 1;
+}
+
+/* TEMP */
+.temp-btn {
+  font-size: 24px;
+  margin-top: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  background-image: linear-gradient(transparent, rgba(0, 0, 0, 0.25));
 }

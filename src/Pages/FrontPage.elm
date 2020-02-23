@@ -10,13 +10,13 @@ import Task
 import Api
 import Utils exposing (char, Char(..))
 import Utils.Input as Input exposing (myInputDefaults)
-import Utils.Request as Request
 import NProgress
 import Pages
 
 type alias Model =
   { stats : Api.Stats
   , statuses : List Api.Status
+  , other : List Api.OtherGame
   , modal : Maybe Api.GameID
   , code : String
   , killing : Bool
@@ -32,6 +32,7 @@ init =
     , games = 0
     }
   , statuses = []
+  , other = []
   , modal = Nothing
   , code = ""
   , killing = False
@@ -40,13 +41,13 @@ init =
   }
 
 type Msg
-  = StatsLoaded (Result Request.HttpError Api.Stats)
-  | StatusesLoaded (Result Request.HttpError (List Api.Status))
+  = StatsLoaded (Api.Response Api.Stats)
+  | StatusesLoaded (Api.Response Api.GameStatuses)
   | ShowModal Api.GameID
   | HideModal
   | ChangeCode Input.MyInputMsg
   | Kill
-  | Killed (Result Request.HttpError ())
+  | Killed (Api.Response ())
   | ShowCode Api.GameID
   | DoNothing
 
@@ -61,8 +62,8 @@ update msg global model =
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
     StatusesLoaded result ->
       case result of
-        Ok statuses ->
-          ({ model | statuses = statuses, showingCode = Nothing }
+        Ok { statuses, other } ->
+          ({ model | statuses = statuses, other = other, showingCode = Nothing }
           , NProgress.done ()
           , Api.ChangePage Pages.FrontPage
           )
@@ -106,6 +107,10 @@ update msg global model =
     DoNothing ->
       (model, Cmd.none, Api.None)
 
+clearStatus : Model -> Model
+clearStatus model =
+  { model | statuses = [] }
+
 renderStatus : Model -> Api.Status -> Html Msg
 renderStatus model status =
   article
@@ -118,8 +123,11 @@ renderStatus model status =
       in
         A.style "background-color" ("rgba(255, 0, 0, " ++ String.fromFloat alpha ++ ")")
     ]
-    [ a [ A.class "game-link link", A.href ("?!" ++ status.game) ]
-      [ text status.gameName ]
+    [ span [ A.class "leaderboard-link" ]
+      [ text "See leaderboard for "
+      , a [ A.class "game-link link", A.href ("?!" ++ status.game) ]
+        [ text status.gameName ]
+      ]
     , span [ A.class "flex" ]
       []
     , span [ A.class "target-label" ]
@@ -183,43 +191,103 @@ renderStatus model status =
             ]
             [ text status.code ]
       , text (" " ++ char MDash ++ " ")
-      , a [ A.class "link", A.href "?about#kill-codes" ]
+      , a [ A.class "link", A.href "?about#elimination-sequences" ]
         [ text "What is this for?" ]
       ]
     , span [ A.class "flex" ]
       []
     ]
 
+renderOther : Api.OtherGame -> Html Msg
+renderOther { game, gameName, state } =
+  a [ A.class "other-game", A.href ("?!" ++ game) ]
+    [ span [ A.class "other-game-name" ]
+      [ text gameName ]
+    , span
+      [ A.class "other-game-status"
+      , case state of
+          Api.WillStart ->
+            A.class "will-start"
+          Api.Started ->
+            A.class "started"
+          Api.Ended ->
+            A.class "ended"
+      ]
+      [ text (Api.gameStateName state) ]
+    ]
+
+otherGameSorter : Api.OtherGame -> Api.OtherGame -> Order
+otherGameSorter a b =
+  let
+    -- Ongoing games will be shown before awaiting player games
+    -- because they're more interesting to check
+    aVal =
+      case a.state of
+        Api.WillStart -> 1
+        Api.Started -> 0
+        Api.Ended -> 2
+    bVal =
+      case b.state of
+        Api.WillStart -> 1
+        Api.Started -> 0
+        Api.Ended -> 2
+  in
+    compare aVal bVal
+
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view global model =
   case global.session of
     Api.SignedIn _ ->
-      [ div [ A.class "main targets" ]
-        ((a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]
-          [ text "Create game" ])
-        :: if List.isEmpty model.statuses then
-          [ p [ A.class "no-statuses" ] [ text "You aren't in any active games." ] ]
-        else
-          List.map (renderStatus model) model.statuses)
+      [ div [ A.class "main targets" ] <|
+        List.concat
+          [ [ a [ A.class "button small-screen-create-game-btn", A.href "?!bbdd6" ]
+              [ text "Gunn Elimination 2020" ]
+            , a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]
+              [ text "Create game" ]
+            ]
+          , if List.isEmpty model.statuses then
+              [ p [ A.class "no-statuses" ] [ text "You aren't in any ongoing games (in which you're still alive)." ] ]
+            else
+              List.map (renderStatus model) model.statuses
+          ]
       ]
+      ++ if List.isEmpty model.other then
+        []
+      else
+        [ div [ A.class "other-games-wrapper" ]
+          [ h2 [ A.class "other-games-header" ]
+            [ text "Other games you've joined" ]
+          , div [ A.class "other-games" ]
+            (model.other
+              |> List.sortWith otherGameSorter
+              |> List.map renderOther)
+          ]
+        ]
     Api.SignedOut ->
       [ div [ A.class "main front-text" ]
         [ h1 [ A.class "website-title" ]
           [ text "Elimination" ]
+        , a [ A.class "button temp-btn", A.href "?!bbdd6" ]
+          [ text "Gunn Elimination 2020" ]
         ]
       , article [ A.class "main content welcome" ]
         [ p []
-          [ text "Elimination may still be a work in progress, but it's currently functionally complete and usable." ]
+          [ text "Elimination is a game involving hunting people down for words. "
+          , a [ A.class "link", A.href "?about" ]
+            [ text "Learn more." ]
+          ]
+        , h2 [ A.class "stats-header" ]
+          [ text "Site-wide statistics" ]
         , div [ A.class "stats" ]
           [ div [ A.class "stat" ]
             [ span [ A.class "stat-name" ]
-              [ text "Players eliminated" ]
+              [ text "Global elimination count" ]
             , span [ A.class "stat-value" ]
               [ text (String.fromInt model.stats.kills) ]
             ]
           , div [ A.class "stat" ]
             [ span [ A.class "stat-name" ]
-              [ text "Active games" ]
+              [ text "Ongoing games" ]
             , span [ A.class "stat-value" ]
               [ text (String.fromInt model.stats.active) ]
             ]

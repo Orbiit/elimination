@@ -5,9 +5,9 @@ import Html.Attributes as A
 import Html.Events as Events
 import Json.Decode as D
 
-type alias MyInputOptions =
+type alias MyInputOptions msg =
   { labelText : String
-  , sublabel : String
+  , sublabel : List (Html msg)
   , type_ : String
   , placeholder : String
   , value : String
@@ -18,10 +18,10 @@ type alias MyInputOptions =
   , id : Maybe String
   }
 
-myInputDefaults : MyInputOptions
+myInputDefaults : MyInputOptions msg
 myInputDefaults =
   { labelText = ""
-  , sublabel = ""
+  , sublabel = []
   , type_ = "text"
   , placeholder = ""
   , value = ""
@@ -43,7 +43,7 @@ makeMyInputMsg : (MyInputMsg -> msg) -> String -> (String -> Maybe String) -> Fl
 makeMyInputMsg msg value validate scrollWidth scrollHeight =
   msg (MyInputMsg value validate scrollWidth scrollHeight)
 
-myInput : (MyInputMsg -> msg) -> MyInputOptions -> Html.Html msg
+myInput : (MyInputMsg -> msg) -> MyInputOptions msg -> Html.Html msg
 myInput msg options =
   label
     [ A.class "input-wrapper"
@@ -102,7 +102,7 @@ myInput msg options =
           []
       )
     , span [ A.class "sublabel" ]
-      [ text options.sublabel ]
+      options.sublabel
     ]
 
 type alias InputState = { value : String, original : String, valid : Bool }

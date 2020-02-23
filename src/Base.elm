@@ -14,7 +14,6 @@ import Api.Validate
 import Utils exposing (Char(..), char)
 import Utils.Input as Input exposing (myInputDefaults)
 import Utils.HumanTime as HumanTime
-import Utils.Request as Request
 
 type HeaderWindow
   = SignUpWindow
@@ -90,13 +89,13 @@ type Msg
   | Change Input Input.MyInputMsg
   | Login
   | SignUp
-  | NewSession AuthMethod String (Result Request.HttpError Api.SessionID)
+  | NewSession AuthMethod String (Api.Response Api.SessionID)
   | Refresh
-  | NotificationsLoaded (Result Request.HttpError Api.NotificationResult)
+  | NotificationsLoaded (Api.Response Api.NotificationResult)
   | LoadMore
-  | MoreNotificationsLoaded (Result Request.HttpError Api.NotificationResult)
+  | MoreNotificationsLoaded (Api.Response Api.NotificationResult)
   | MarkAsRead
-  | MarkedAsRead (Result Request.HttpError ())
+  | MarkedAsRead (Api.Response ())
   | DoNothing
 
 notifsAtATime : Int
@@ -104,7 +103,11 @@ notifsAtATime = 5
 
 updateNotifs : Api.GlobalModel m -> Cmd Msg
 updateNotifs global =
-  Api.notifications global NotificationsLoaded 0 notifsAtATime
+  case global.session of
+    Api.SignedIn _ ->
+      Api.notifications global NotificationsLoaded 0 notifsAtATime
+    Api.SignedOut ->
+      Cmd.none
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =
@@ -259,12 +262,23 @@ renderNotification zone { time, read, message } =
     [ span [ A.class "notif-timestamp" ]
       [ text (HumanTime.display zone time) ]
     , case message of
-      Api.GameStarted gameID gameName ->
-        span [ A.class "notif-msg" ]
-          [ a [ A.class "link", A.href ("?!" ++ gameID) ]
-            [ text gameName ]
-          , text " has started! See the home page for your target."
-          ]
+      Api.GameStarted gameID gameName maybeTarget maybeTargetName ->
+        case (maybeTarget, maybeTargetName) of
+          (Just target, Just targetName) ->
+            span [ A.class "notif-msg" ]
+              [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+                [ text gameName ]
+              , text " has started! Your target is "
+              , a [ A.class "link", A.href ("?@" ++ target) ]
+                [ text targetName ]
+              , text "."
+              ]
+          _ ->
+            span [ A.class "notif-msg" ]
+              [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+                [ text gameName ]
+              , text " has started! See the home page for your target."
+              ]
       Api.GameEnded gameID gameName winner winnerName ->
         span [ A.class "notif-msg" ]
           [ a [ A.class "link", A.href ("?!" ++ gameID) ]
@@ -283,6 +297,25 @@ renderNotification zone { time, read, message } =
             [ text gameName ]
           , text "."
           ]
+      Api.KilledSelf gameID gameName maybeTarget maybeTargetName ->
+        case (maybeTarget, maybeTargetName) of
+          (Just target, Just targetName) ->
+            span [ A.class "notif-msg" ]
+              [ text "Your target has marked himself as eliminated in "
+              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+                [ text gameName ]
+              , text ", so your new target is "
+              , a [ A.class "link", A.href ("?@" ++ target) ]
+                [ text targetName ]
+              , text "."
+              ]
+          _ ->
+            span [ A.class "notif-msg" ]
+              [ text "Your target has marked himself as eliminated in "
+              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+                [ text gameName ]
+              , text ". Check the home page for your new target."
+              ]
       Api.Kicked gameID gameName reason ->
         span [ A.class "notif-msg" ]
           [ text "You were kicked from "
@@ -291,13 +324,35 @@ renderNotification zone { time, read, message } =
           , text
             (if reason == "" then " for unknown reasons." else " because \"" ++ reason ++ "\".")
           ]
-      Api.Shuffle gameID gameName ->
+      Api.TargetKicked gameID gameName target targetName ->
         span [ A.class "notif-msg" ]
-          [ text "The targets of everyone in "
+          [ text "Your target was kicked from "
           , a [ A.class "link", A.href ("?!" ++ gameID) ]
             [ text gameName ]
-          , text " has been shuffled. See the home page for your new target."
+          , text ", so your new target is "
+          , a [ A.class "link", A.href ("?@" ++ target) ]
+            [ text targetName ]
+          , text "."
           ]
+      Api.Shuffle gameID gameName maybeTarget maybeTargetName ->
+        case (maybeTarget, maybeTargetName) of
+          (Just target, Just targetName) ->
+            span [ A.class "notif-msg" ]
+              [ text "The targets of everyone who is still alive in "
+              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+                [ text gameName ]
+              , text " have been shuffled. Your new target is "
+              , a [ A.class "link", A.href ("?@" ++ target) ]
+                [ text targetName ]
+              , text "."
+              ]
+          _ ->
+            span [ A.class "notif-msg" ]
+              [ text "The targets of everyone who is still alive in "
+              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+                [ text gameName ]
+              , text " have been shuffled. See the home page for your new target."
+              ]
       Api.Announcement gameID gameName announcement ->
         span [ A.class "notif-msg" ]
           [ text "An announcement from "
@@ -331,8 +386,11 @@ makeHeader { session, zone } model frontPage =
     ++ case session of
       Api.SignedIn { username } ->
         (if frontPage then
-          [ a [ A.class "button create-game-btn", A.href "?create-game" ]
-            [ text "Create game" ] ]
+          [ a [ A.class "button create-game-btn", A.href "?!bbdd6" ]
+            [ text "Gunn Elimination 2020" ]
+          , a [ A.class "button create-game-btn", A.href "?create-game" ]
+            [ text "Create game" ]
+          ]
         else
           [])
         ++ [ headerWindow model "icon-btn header-btn notif-btn"
@@ -383,7 +441,7 @@ makeHeader { session, zone } model frontPage =
               [ button [ A.class "button load-more-btn", onClick LoadMore ]
                 [ text "Load more" ] ])
           ]
-        , a [ A.class "link username", A.href "?settings" ]
+        , a [ A.class "link username", A.href ("?@" ++ username) ]
           [ text username ]
         ]
       Api.SignedOut ->
@@ -438,7 +496,7 @@ makeHeader { session, zone } model frontPage =
             [ Input.myInput (Change SignUpUsername)
               { myInputDefaults
               | labelText = "Username"
-              , sublabel = Api.Validate.usernameLabel
+              , sublabel = [ text Api.Validate.usernameLabel ]
               , type_ = "text"
               , placeholder = "billygamer5"
               , name = "username"
@@ -454,7 +512,7 @@ makeHeader { session, zone } model frontPage =
             , Input.myInput (Change SignUpName)
               { myInputDefaults
               | labelText = "Full name"
-              , sublabel = Api.Validate.nameLabel
+              , sublabel = [ text Api.Validate.nameLabel ]
               , placeholder = "Billy Chelontuvier"
               , value = model.signUpName.value
               , name = "name"
@@ -468,7 +526,7 @@ makeHeader { session, zone } model frontPage =
             , Input.myInput (Change SignUpEmail)
               { myInputDefaults
               | labelText = "Email"
-              , sublabel = Api.Validate.emailLabel
+              , sublabel = [ text Api.Validate.emailLabel ]
               , type_ = "email"
               , placeholder = "billygamer5@example.com"
               , name = "email"
@@ -483,7 +541,7 @@ makeHeader { session, zone } model frontPage =
             , Input.myInput (Change SignUpPassword)
               { myInputDefaults
               | labelText = "Password"
-              , sublabel = Api.Validate.passwordLabel
+              , sublabel = [ text Api.Validate.passwordLabel ]
               , type_ = "password"
               , placeholder = "hunter2"
               , name = "password"
@@ -552,7 +610,7 @@ makeFooter : List (Html msg)
 makeFooter =
   [ footer [ A.class "footer" ]
     [ span []
-      [ text "Created by the creators of "
+      [ text "From the creators of "
       , Utils.extLink "UGWA" "https://gunn.app/" "link"
       , text "."
       ]

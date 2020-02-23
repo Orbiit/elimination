@@ -2,16 +2,18 @@ module Pages.User exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
+import Dict exposing (Dict)
 
 import Api
 import NProgress
 import Utils exposing (char, Char(..))
-import Utils.Request as Request
+import Utils.MarkupSimpleRegex as Markup
 import Pages
 
 type alias Model =
   { username : String
   , info : Api.User
+  , bio : List (Html Msg)
   }
 
 init : Model
@@ -23,10 +25,12 @@ init =
     , myGames = []
     , games = []
     }
+  , bio = []
   }
 
 type Msg
-  = InfoLoaded String (Result Request.HttpError Api.User)
+  = InfoLoaded String (Api.Response Api.User)
+  | NamesLoaded (Api.Response (Dict Api.GameID String))
 
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =
@@ -34,9 +38,27 @@ update msg global model =
     InfoLoaded username result ->
       case result of
         Ok user ->
-          ({ model | username = username, info = user }, NProgress.done (), Api.ChangePage Pages.User)
+          let
+            bio = Markup.markup Nothing user.bio
+          in
+          ( { model | username = username, info = user, bio = bio.html }
+          , Cmd.batch
+            [ NProgress.done ()
+            , if List.isEmpty bio.gameIDs then
+                Cmd.none
+              else
+                Api.getNames global NamesLoaded bio.gameIDs
+            ]
+          , Api.ChangePage Pages.User
+          )
         Err error ->
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
+    NamesLoaded result ->
+      case result of
+        Ok names ->
+          ({ model | bio = (Markup.markup (Just names) model.info.bio).html }, Cmd.none, Api.None)
+        Err _ ->
+          (model, Cmd.none, Api.None)
 
 renderMyGame : Api.GlobalModel m -> Api.UserMyGame -> Html Msg
 renderMyGame global game =
@@ -75,7 +97,7 @@ renderGame game =
         ++ " " ++ char Middot ++ " "
         ++ Api.gameStateName game.state
         ++ " " ++ char Middot ++ " "
-        ++ (if game.alive then "Alive" else "Eliminated")
+        ++ (if game.alive then (if game.state == Api.Ended then "Winner" else "Alive") else "Eliminated")
         ++ " " ++ char Middot ++ " "
         ++ String.fromInt game.kills
         ++ (if game.kills == 1 then
@@ -108,7 +130,7 @@ view global model =
       , span [ A.class "profile-subtitle" ]
         [ text ("@" ++ model.username) ]
       , p [ A.class "profile-desc" ]
-        [ text model.info.bio ]
+        model.bio
       , p [ A.class "profile-desc profile-stats" ]
         [ text ("Total eliminations: " ++ String.fromInt (List.sum (List.map .kills model.info.games))) ]
       ]

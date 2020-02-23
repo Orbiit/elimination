@@ -60,8 +60,14 @@ type RequestMethod
   = Post
   | Get
 
-request : RequestMethod -> String -> Maybe String ->
-  (Result HttpError a -> msg) -> Maybe E.Value -> D.Decoder a -> Cmd msg
+request :
+  RequestMethod
+  -> String
+  -> Maybe String
+  -> (Result HttpError a -> msg)
+  -> Maybe E.Value
+  -> D.Decoder a
+  -> Cmd msg
 request method url session msg body decoder =
   Http.request
     { method =

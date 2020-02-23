@@ -4,6 +4,8 @@ import Json.Decode as D
 import Json.Encode as E
 import Http
 import Time
+import Url.Builder as Builder
+import Dict exposing (Dict)
 
 import Utils
 import Utils.Request as Request
@@ -80,7 +82,8 @@ gameStateNameWithTime zone state time =
       "Ended on ")
     ++ HumanTime.display zone time
 
-type alias ResultMsg a msg = Result Request.HttpError a -> msg
+type alias Response a = Result Request.HttpError a
+type alias ResultMsg a msg = Response a -> msg
 
 get : GlobalModel m -> String -> ResultMsg a msg -> D.Decoder a -> Cmd msg
 get global path msg decoder =
@@ -164,6 +167,10 @@ createGame : GlobalModel m -> ResultMsg GameID msg -> E.Value -> Cmd msg
 createGame global msg gameInfo =
   post global "create-game" msg gameInfo (D.field "game" D.string)
 
+deleteGame : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
+deleteGame global msg game =
+  post global ("delete-game?game=" ++ game) msg (E.object []) (D.succeed ())
+
 setGameSettings : GlobalModel m -> ResultMsg GameID msg -> GameID -> E.Value -> Cmd msg
 setGameSettings global msg game changes =
   post global ("game-settings?game=" ++ game) msg changes (D.succeed game)
@@ -199,6 +206,23 @@ getGameSettings global msg game =
         (D.field "joined" D.int)
       )))
       (D.field "state" gameStateParser)
+
+-- https://til.hashrocket.com/posts/jtgloksqxf-where-is-listzip-in-elm
+mapGameIDToName : List GameID -> List String -> D.Decoder (Dict GameID String)
+mapGameIDToName games names =
+  D.succeed (Dict.fromList (List.map2 Tuple.pair games names))
+
+getNames : GlobalModel m -> ResultMsg (Dict GameID String) msg -> List GameID -> Cmd msg
+getNames global msg games =
+  get
+    global
+    (Builder.relative
+      [ "names" ]
+      [ Builder.string "games" (String.join "," games)
+      , Builder.string "defaultGame" "Nonexistent game"
+      ])
+    msg <|
+      D.andThen (mapGameIDToName games) (D.field "games" (D.list D.string))
 
 join : GlobalModel m -> ResultMsg String msg -> GameID -> String -> Cmd msg
 join global msg game password =
@@ -252,20 +276,48 @@ status : GlobalModel m -> ResultMsg Status msg -> GameID -> Cmd msg
 status global msg game =
   get global ("status?game=" ++ game) msg statusDecoder
 
-statuses : GlobalModel m -> ResultMsg (List Status) msg -> Cmd msg
+type alias OtherGame =
+  { game : GameID
+  , gameName : String
+  , state: GameState
+  }
+
+otherGameDecoder : D.Decoder OtherGame
+otherGameDecoder =
+  D.map3 OtherGame
+    (D.field "game" D.string)
+    (D.field "gameName" D.string)
+    (D.field "state" gameStateParser)
+
+type alias GameStatuses =
+  { statuses : List Status
+  , other : List OtherGame
+  }
+
+statuses : GlobalModel m -> ResultMsg GameStatuses msg -> Cmd msg
 statuses global msg =
-  get global "statuses" msg (D.list statusDecoder)
+  get global "statuses?all=true" msg <|
+    D.map2 GameStatuses
+      (D.field "statuses" (D.list statusDecoder))
+      (D.field "others" (D.list otherGameDecoder))
 
 kill : GlobalModel m -> ResultMsg () msg -> GameID -> String -> Cmd msg
 kill global msg game code =
   post global ("kill?game=" ++ game) msg (E.object [("code", E.string code)]) (D.succeed ())
 
+-- "Be sincere!"
+beHonest : GlobalModel m -> ResultMsg () msg -> GameID -> Cmd msg
+beHonest global msg game =
+  post global ("kill?self=true&game=" ++ game) msg (E.object []) (D.succeed ())
+
 type Notification
-  = GameStarted GameID String
+  = GameStarted GameID String (Maybe String) (Maybe String)
   | GameEnded GameID String String String
   | Killed GameID String String String
+  | KilledSelf GameID String (Maybe String) (Maybe String)
   | Kicked GameID String String
-  | Shuffle GameID String
+  | TargetKicked GameID String String String
+  | Shuffle GameID String (Maybe String) (Maybe String)
   | Announcement GameID String String
   | Unknown String
 
@@ -285,9 +337,11 @@ parseNotifType : String -> D.Decoder Notification
 parseNotifType notifType =
   case notifType of
     "game-started" ->
-      D.map2 GameStarted
+      D.map4 GameStarted
         (D.field "game" D.string)
         (D.field "gameName" D.string)
+        (D.maybe (D.field "target" D.string))
+        (D.maybe (D.field "targetName" D.string))
     "game-ended" ->
       D.map4 GameEnded
         (D.field "game" D.string)
@@ -300,15 +354,29 @@ parseNotifType notifType =
         (D.field "gameName" D.string)
         (D.field "by" D.string)
         (D.field "name" D.string)
+    "killed-self" ->
+      D.map4 KilledSelf
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+        (D.maybe (D.field "target" D.string))
+        (D.maybe (D.field "targetName" D.string))
     "kicked" ->
       D.map3 Kicked
         (D.field "game" D.string)
         (D.field "gameName" D.string)
         (D.field "reason" D.string)
-    "shuffle" ->
-      D.map2 Shuffle
+    "kicked-new-target" ->
+      D.map4 TargetKicked
         (D.field "game" D.string)
         (D.field "gameName" D.string)
+        (D.field "target" D.string)
+        (D.field "targetName" D.string)
+    "shuffle" ->
+      D.map4 Shuffle
+        (D.field "game" D.string)
+        (D.field "gameName" D.string)
+        (D.maybe (D.field "target" D.string))
+        (D.maybe (D.field "targetName" D.string))
     "announcement" ->
       D.map3 Announcement
         (D.field "game" D.string)
@@ -383,7 +451,6 @@ getUser global msg user =
         (D.field "alive" D.bool)
         (D.field "updated" D.int)
       )))
-
 
 type alias GamePlayer =
   { username : String

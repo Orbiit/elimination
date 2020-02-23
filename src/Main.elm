@@ -13,6 +13,7 @@ import Task
 
 import Base
 import Api
+import Utils
 import Utils.Request as Request
 import Pages
 import Pages.FrontPage
@@ -53,7 +54,14 @@ loadFrontPage global =
 urlToPage : Api.GlobalModel m -> Url.Url -> PageCmd
 urlToPage global url =
   case url.query of
-    Just path ->
+    Just query ->
+      let
+        path = case List.head (String.split "&" query) of
+          Just str ->
+            str
+          Nothing ->
+            ""
+      in
       if String.startsWith "@" path then
         let
           username = String.dropLeft 1 path
@@ -101,25 +109,25 @@ urlToPage global url =
               |> Cmd.map GameSettingsMsg
             , NProgress.start ()
             ]
-      else if path == "" then
+      -- = probably means there are trackers in the URL
+      else if path == "" || String.contains "=" path then
         loadFrontPage global
       else
         SwitchPage (Pages.Error (Request.StatusCode 404, "We don't have a page for this URL."))
     Nothing ->
       loadFrontPage global
 
-removeQueryIfNeeded : Url.Url -> Nav.Key -> Cmd Msg
-removeQueryIfNeeded url key =
+shouldRemoveQuery : Url.Url -> Bool
+shouldRemoveQuery url =
   case url.query of
-    Just path ->
-      if path == "" then
-        -- Remove the ? at the end because it annoys
-        (Nav.replaceUrl key) <|
-          Url.Builder.custom Url.Builder.Relative [ url.path ] [] url.fragment
-      else
-        Cmd.none
-    Nothing ->
-      Cmd.none
+    Just path -> path == ""
+    Nothing -> False
+
+-- Remove the ? at the end because it annoys
+removeQuery : Url.Url -> Nav.Key -> Cmd msg
+removeQuery url key =
+  Url.Builder.custom Url.Builder.Relative [ url.path ] [] url.fragment
+    |> Nav.replaceUrl key
 
 type alias Model =
   { page : Pages.Page
@@ -171,10 +179,13 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
       , game = Pages.Game.init
       }
     , Cmd.batch
-      [ removeQueryIfNeeded url navKey
-      , cmd
+      [ if shouldRemoveQuery url then
+          removeQuery url navKey
+        else
+          cmd
       , Cmd.map BaseMsg headerCmd
       , Task.perform AdjustTimeZone Time.here
+      , Utils.scrollIfNeeded DoNothing url.fragment
       ]
     )
 
@@ -310,7 +321,7 @@ doPageCmd pageCmd (model, cmd) =
           -- Clear notifications
           , header = Base.clearNotifs model.header
           -- Reset front page state to clear statuses
-          , frontPage = Pages.FrontPage.init
+          , frontPage = Pages.FrontPage.clearStatus model.frontPage
           }
       in
       ( newModel
@@ -370,18 +381,23 @@ update msg model =
           Browser.External url ->
             (newModel, Nav.load url)
     ChangedUrl url ->
-      let
-        (newModel, cmd) =
-          case urlToPage model url of
-            SwitchPage pageType ->
-              ({ model | page = pageType }, Cmd.none)
-            Command command ->
-              (model, command)
-            SwitchPageAndCommand pageType command ->
-              -- Hacky special case for creating a game
-              ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
-      in
-        (newModel, Cmd.batch [ removeQueryIfNeeded url model.key, cmd ])
+      if shouldRemoveQuery url then
+        (model, removeQuery url model.key)
+      else
+        let
+          (newModel, cmd) =
+            case urlToPage model url of
+              SwitchPage pageType ->
+                ( { model | page = pageType }
+                , Utils.scrollIfNeeded DoNothing url.fragment
+                )
+              Command command ->
+                (model, command)
+              SwitchPageAndCommand pageType command ->
+                -- Hacky special case for creating a game
+                ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
+        in
+        (newModel, cmd)
     CloseConfirmLeave ->
       ({ model | askDiscardChanges = Nothing }, Cmd.none)
     AdjustTimeZone zone ->

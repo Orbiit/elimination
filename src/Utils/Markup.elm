@@ -1,6 +1,6 @@
 module Utils.Markup exposing (markup)
 
-import Html exposing (..)
+import Html exposing (Html, a, text)
 import Html.Attributes as A
 import Parser exposing (..)
 import Char

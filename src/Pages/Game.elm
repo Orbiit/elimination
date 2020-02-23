@@ -6,18 +6,20 @@ import Html.Events exposing (onClick, stopPropagationOn, onSubmit)
 import Json.Decode as D
 import Browser.Dom as Dom
 import Task
+import Dict exposing (Dict)
 
 import Api
 import Utils exposing (char, Char(..))
 import Utils.Input as Input exposing (myInputDefaults)
 import Utils.HumanTime as HumanTime
-import Utils.Request as Request
+import Utils.MarkupSimpleRegex as Markup
 import Pages
 import NProgress
 
 type alias Model =
   { game : Api.GameID
   , info : Api.Game
+  , description : List (Html Msg)
   , password : String
   , modal : Bool
   , loading : Bool
@@ -36,6 +38,7 @@ init =
     , state = Api.WillStart
     , time = 0
     }
+  , description = []
   , password = ""
   , modal = False
   , loading = False
@@ -43,13 +46,14 @@ init =
   }
 
 type Msg
-  = InfoLoaded Api.GameID (Result Request.HttpError Api.Game)
+  = InfoLoaded Api.GameID (Api.Response Api.Game)
+  | NamesLoaded (Api.Response (Dict Api.GameID String))
   | ChangePassword Input.MyInputMsg
   | ShowModal
   | HideModal
   | Join
   | Leave
-  | Done BtnAction (Result Request.HttpError String)
+  | Done BtnAction (Api.Response String)
   | DoNothing
 
 type BtnAction
@@ -62,9 +66,27 @@ update msg global model =
     InfoLoaded gameID result ->
       case result of
         Ok game ->
-          ({ model | game = gameID, info = game }, NProgress.done (), Api.ChangePage Pages.Game)
+          let
+            description = Markup.markup Nothing game.description
+          in
+          ( { model | game = gameID, info = game, description = description.html }
+          , Cmd.batch
+            [ NProgress.done ()
+            , if List.isEmpty description.gameIDs then
+                Cmd.none
+              else
+                Api.getNames global NamesLoaded description.gameIDs
+            ]
+          , Api.ChangePage Pages.Game
+          )
         Err error ->
           (model, NProgress.done (), Api.ChangePage (Pages.Error error))
+    NamesLoaded result ->
+      case result of
+        Ok names ->
+          ({ model | description = (Markup.markup (Just names) model.info.description).html }, Cmd.none, Api.None)
+        Err _ ->
+          (model, Cmd.none, Api.None)
     ChangePassword { value } ->
       ({ model | password = value }, Cmd.none, Api.None)
     ShowModal ->
@@ -138,7 +160,7 @@ renderPlayer global ended player =
             "Eliminated on " ++ HumanTime.display global.zone time ++
               " by " ++ killerName
           _ ->
-            "Alive")
+            if ended then "Winner" else "Alive")
         ++ " " ++ char Middot ++ " "
         ++ String.fromInt player.kills
         ++ (if player.kills == 1 then
@@ -181,7 +203,12 @@ view global model =
                   [ text "Join" ])
               ]
           Api.SignedOut ->
-            []
+            if model.info.state == Api.WillStart then
+              [ button [ A.class "button join-btn", A.disabled True ]
+                [ text "You need to be signed in to join" ]
+              ]
+            else
+              []
         )
       , div [ A.class "modal-back", A.classList [ ("show", model.modal) ], onClick HideModal ]
         [ form
@@ -218,7 +245,7 @@ view global model =
           [ text model.info.creatorName ]
         ]
       , p [ A.class "profile-desc" ]
-        [ text model.info.description ]
+        model.description
       , p [ A.class "profile-desc profile-stats" ]
         [ text (Api.gameStateNameWithTime global.zone model.info.state model.info.time
           ++ " " ++ char Middot ++ " "
@@ -231,17 +258,25 @@ view global model =
     , div [ A.class "lists" ]
       [ section [ A.class "list" ]
         ((h2 []
-          [ text ("Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")") ])
+          [ text
+            (if model.info.state == Api.WillStart then
+              "Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")"
+            else
+              "Leaderboard by most eliminations"
+            ) ])
         :: (List.map (renderPlayer global (model.info.state == Api.Ended))
           (List.sortWith (\a -> \b ->
             case compare b.kills a.kills of
               EQ ->
-                if a.alive && not b.alive then
-                  LT
-                else if b.alive && not a.alive then
-                  GT
-                else
-                  EQ
+                case (a.killTime, b.killTime) of
+                  (Just aKillTime, Just bKillTime) ->
+                    compare bKillTime aKillTime
+                  (Nothing, Just _) ->
+                    LT
+                  (Just _, Nothing) ->
+                    GT
+                  (Nothing, Nothing) ->
+                    EQ
               _ as order ->
                 order
           ) model.info.players))

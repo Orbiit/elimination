@@ -1,5 +1,15 @@
 import Elm from './Main.elm'
 import NProgress from 'nprogress'
+import '../js/tab-key-focus.js'
+
+import '../css/nprogress.css'
+import '../css/main.css'
+import '../css/profile.css'
+import '../css/settings.css'
+import '../css/text-page.css'
+import '../css/welcome-page.css'
+import '../css/front-page.css'
+import '../css/errors.css'
 
 const SESSION_KEY = '[elimination] session'
 const USERNAME_KEY = '[elimination] username'

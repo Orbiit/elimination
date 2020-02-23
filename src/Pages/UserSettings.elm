@@ -10,7 +10,6 @@ import Task
 import Api
 import Api.Validate
 import Utils
-import Utils.Request as Request
 import Utils.Input as Input exposing (myInputDefaults)
 import Pages
 import NProgress
@@ -40,8 +39,8 @@ init =
   , email = Input.initInputState
   , bio = Input.initInputState
   , bioHeight = 0
-  , password = Input.updateValue Input.initInputState "" True
-  , oldPassword = Input.updateValue Input.initInputState "" True
+  , password = Input.inputState ""
+  , oldPassword = Input.inputState ""
   , loadingLogout = False
   , loading = False
   , problem = Nothing
@@ -51,10 +50,10 @@ type Msg
   = Change Input Input.MyInputMsg
   | ResizeBio (Result Dom.Error Dom.Viewport)
   | Logout
-  | LoggedOut (Result Request.HttpError ())
-  | InfoLoaded (Result Request.HttpError Api.UserSettingsInfo)
+  | LoggedOut (Api.Response ())
+  | InfoLoaded (Api.Response Api.UserSettingsInfo)
   | Save
-  | Saved (Result Request.HttpError ())
+  | Saved (Api.Response ())
 
 resizeBio : Cmd Msg
 resizeBio =
@@ -153,8 +152,8 @@ update msg global model =
             , name = Input.inputState model.name.value
             , email = Input.inputState model.email.value
             , bio = Input.inputState model.bio.value
-            , password = Input.initInputState
-            , oldPassword = Input.initInputState
+            , password = Input.inputState ""
+            , oldPassword = Input.inputState ""
             }
           , Cmd.none
           , Api.None
@@ -169,8 +168,8 @@ discardChanges model =
   , email = Input.initInputState
   , bio = Input.initInputState
   , bioHeight = 0
-  , password = Input.updateValue Input.initInputState "" True
-  , oldPassword = Input.updateValue Input.initInputState "" True
+  , password = Input.inputState ""
+  , oldPassword = Input.inputState ""
   }
 
 hasUnsavedChanges : Model -> Bool
@@ -210,7 +209,7 @@ view global model =
         [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Display name"
-          , sublabel = Api.Validate.nameLabel
+          , sublabel = [ text Api.Validate.nameLabel ]
           , placeholder = "Billy Chelontuvier"
           , value = model.name.value
           , validate = Api.Validate.nameOk
@@ -219,7 +218,7 @@ view global model =
         , Input.myInput (Change EmailInput)
           { myInputDefaults
           | labelText = "Email"
-          , sublabel = Api.Validate.emailLabel
+          , sublabel = [ text Api.Validate.emailLabel ]
           , type_ = "email"
           , placeholder = "billygamer5@example.com"
           , value = model.email.value
@@ -231,6 +230,11 @@ view global model =
         [ Input.myInput (Change BioInput)
           { myInputDefaults
           | labelText = "Bio"
+          , sublabel =
+            [ a [ A.class "link", A.href "?about#formatting" ]
+              [ text "Basic formatting" ]
+            , text " is available."
+            ]
           , type_ = "textarea"
           , placeholder = "Introduce yourself here"
           , value = model.bio.value
@@ -250,7 +254,7 @@ view global model =
         [ Input.myInput (Change PasswordInput)
           { myInputDefaults
           | labelText = "New password"
-          , sublabel = Api.Validate.passwordLabel
+          , sublabel = [ text Api.Validate.passwordLabel ]
           , type_ = "password"
           , placeholder = "hunter2"
           , value = model.password.value
