@@ -35,7 +35,7 @@ type alias Model =
   -- Page state
   , loading : Bool
   , problem : Maybe String
-  , announcement : String
+  , announcement : Input.InputState
   , announcementHeight : Float
   , announcing : Bool
   , announced : Bool
@@ -48,6 +48,7 @@ type alias Model =
   , shuffling : Bool
   , shuffled : Bool
   , deleting : Bool
+  , lowerProblem : Maybe String
   }
 
 init : Model
@@ -61,7 +62,7 @@ init =
   , state = Api.WillStart
   , loading = False
   , problem = Nothing
-  , announcement = ""
+  , announcement = Input.initInputState
   , announcementHeight = 0
   , announcing = False
   , announced = False
@@ -74,6 +75,7 @@ init =
   , shuffling = False
   , shuffled = False
   , deleting = False
+  , lowerProblem = Nothing
   }
 
 type Msg
@@ -125,7 +127,7 @@ update msg global model =
           ReasonInput ->
             { model | kickReason = value }
           AnnouncementInput ->
-            { model | announcement = value, announcementHeight = scrollHeight }
+            { model | announcement = Input.updateValue model.announcement value ok, announcementHeight = scrollHeight }
         , Cmd.none
         , Api.None
         )
@@ -256,7 +258,7 @@ update msg global model =
     Shuffle ->
       case model.game of
         Just gameID ->
-          ( { model | shuffling = True, shuffled = False, problem = Nothing }
+          ( { model | shuffling = True, shuffled = False, lowerProblem = Nothing }
           , Api.shuffle global Shuffled gameID
           , Api.None
           )
@@ -267,17 +269,27 @@ update msg global model =
         Ok _ ->
           ({ model | shuffling = False, shuffled = True }, Cmd.none, Api.None)
         Err ((_, errorMsg) as error) ->
-          ({ model | shuffling = False, shuffled = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+          ({ model | shuffling = False, shuffled = False, lowerProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     Announce ->
       case model.game of
         Just gameID ->
-          ( { model | announcing = True, announced = False, anno = Nothing })
+          ( { model | announcing = True, announced = False, announceProblem = Nothing }
+          -- TODO: Include dead?
+          , Api.announce global Announced gameID model.announcement.value False
+          , Api.None
+          )
         Nothing ->
           (model, Cmd.none, Api.None)
+    Announced result ->
+      case result of
+        Ok _ ->
+          ({ model | announcing = False, announced = True, announcement = Input.initInputState }, Cmd.none, Api.None)
+        Err ((_, errorMsg) as error) ->
+          ({ model | announcing = False, announceProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     Delete ->
       case model.game of
         Just gameID ->
-          ( { model | deleting = True, problem = Nothing }
+          ( { model | deleting = True, lowerProblem = Nothing }
           , Api.deleteGame global Deleted gameID
           , Api.None
           )
@@ -288,7 +300,7 @@ update msg global model =
         Ok _ ->
           ({ model | deleting = False }, Cmd.none, Api.Redirect "?")
         Err ((_, errorMsg) as error) ->
-          ({ model | deleting = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+          ({ model | deleting = False, lowerProblem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     DoNothing ->
       (model, Cmd.none, Api.None)
 
@@ -299,7 +311,7 @@ discardChanges model =
   , desc = Input.updateValue Input.initInputState "" True
   , descHeight = 0
   , password = Input.updateValue Input.initInputState "" True
-  , announcement = ""
+  , announcement = Input.initInputState
   , announcementHeight = 0
   }
 
@@ -470,9 +482,14 @@ view { zone } model =
           | labelText = "Send an announcement"
           , type_ = "textarea"
           , placeholder = "A reminder: we have always been at war with Eastasia."
-          , value = model.announcement
+          , value = model.announcement.value
+          , validate = \value ->
+            if String.length value > 2000 then
+              Just "Announcement can only be at most 2000 characters long."
+            else
+              Nothing
           , maxChars = Just 2000
-          , id = Just "game-desc"
+          , id = Just "game-announcement"
           , height = Just (String.fromFloat (model.announcementHeight + 6) ++ "px")
           }
         ]
@@ -485,40 +502,50 @@ view { zone } model =
         ]
         []
       ]
-      ++ case model.problem of
+      ++ case model.announceProblem of
         Just errorText ->
           [ span [ A.class "problematic-error" ]
             [ text errorText ] ]
         Nothing ->
           [])
-    , div [ A.class "members" ]
-      ((h2 [ A.class "members-header" ]
-        ([ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
-        , span [ A.class "flex" ] []
-        ]
-        ++ (if model.state == Api.Started then
-          [ button
-            [ A.class "button"
-            , A.classList [ ("loading", model.shuffling) ]
-            , A.disabled model.shuffling
-            , onClick Shuffle
-            ]
-            [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ] ]
-        else
-          [])))
-      :: if List.isEmpty model.players then
-        [ div [ A.class "delete-game-wrapper" ]
-          [ p [ A.class "delete-game" ]
-            [ text "Accidentally created a game?" ]
-          , button [ A.class "button", A.classList [ ("loading", model.deleting) ], onClick Delete ]
-            [ text "Delete game" ]
+    , div [ A.class "members" ] <|
+      List.concat
+        [ [ h2 [ A.class "members-header" ] <|
+            List.concat
+              [ [ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
+                , span [ A.class "flex" ] []
+                ]
+              , if model.state == Api.Started then
+                  [ button
+                    [ A.class "button"
+                    , A.classList [ ("loading", model.shuffling) ]
+                    , A.disabled model.shuffling
+                    , onClick Shuffle
+                    ]
+                    [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ] ]
+                else
+                  []
+              ]
           ]
+        , case model.lowerProblem of
+          Just errorText ->
+            [ span [ A.class "problematic-error" ]
+              [ text errorText ] ]
+          Nothing ->
+            []
+        , if List.isEmpty model.players then
+            [ div [ A.class "delete-game-wrapper" ]
+              [ p [ A.class "delete-game" ]
+                [ text "Accidentally created a game?" ]
+              , button [ A.class "button", A.classList [ ("loading", model.deleting) ], onClick Delete ]
+                [ text "Delete game" ]
+              ]
+            ]
+          else
+            model.players
+              |> List.sortBy .joined
+              |> List.reverse
+              |> List.map (renderPlayer model zone)
         ]
-      else
-        model.players
-          |> List.sortBy .joined
-          |> List.reverse
-          |> List.map (renderPlayer model zone)
-      )
     ]
   ]
