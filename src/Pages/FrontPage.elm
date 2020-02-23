@@ -198,21 +198,71 @@ renderStatus model status =
       []
     ]
 
+renderOther : Api.OtherGame -> Html Msg
+renderOther { game, gameName, state } =
+  a [ A.class "other-game", A.href ("?!" ++ game) ]
+    [ span [ A.class "other-game-name" ]
+      [ text gameName ]
+    , span
+      [ A.class "other-game-status"
+      , case state of
+          Api.WillStart ->
+            A.class "will-start"
+          Api.Started ->
+            A.class "started"
+          Api.Ended ->
+            A.class "ended"
+      ]
+      [ text (Api.gameStateName state) ]
+    ]
+
+otherGameSorter : Api.OtherGame -> Api.OtherGame -> Order
+otherGameSorter a b =
+  let
+    -- Ongoing games will be shown before awaiting player games
+    -- because they're more interesting to check
+    aVal =
+      case a.state of
+        Api.WillStart -> 1
+        Api.Started -> 0
+        Api.Ended -> 2
+    bVal =
+      case b.state of
+        Api.WillStart -> 1
+        Api.Started -> 0
+        Api.Ended -> 2
+  in
+    compare aVal bVal
+
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view global model =
   case global.session of
     Api.SignedIn _ ->
-      [ div [ A.class "main targets" ]
-        ([ a [ A.class "button small-screen-create-game-btn", A.href "?!bbdd6" ]
-          [ text "Gunn Elimination 2020" ]
-        , a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]
-          [ text "Create game" ]
-        ]
-        ++ if List.isEmpty model.statuses then
-          [ p [ A.class "no-statuses" ] [ text "You aren't in any ongoing games." ] ]
-        else
-          List.map (renderStatus model) model.statuses)
+      [ div [ A.class "main targets" ] <|
+        List.concat
+          [ [ a [ A.class "button small-screen-create-game-btn", A.href "?!bbdd6" ]
+              [ text "Gunn Elimination 2020" ]
+            , a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]
+              [ text "Create game" ]
+            ]
+          , if List.isEmpty model.statuses then
+              [ p [ A.class "no-statuses" ] [ text "You aren't in any ongoing games (in which you're still alive)." ] ]
+            else
+              List.map (renderStatus model) model.statuses
+          ]
       ]
+      ++ if List.isEmpty model.other then
+        []
+      else
+        [ div [ A.class "other-games-wrapper" ]
+          [ h2 [ A.class "other-games-header" ]
+            [ text "Other games you've joined" ]
+          , div [ A.class "other-games" ]
+            (model.other
+              |> List.sortWith otherGameSorter
+              |> List.map renderOther)
+          ]
+        ]
     Api.SignedOut ->
       [ div [ A.class "main front-text" ]
         [ h1 [ A.class "website-title" ]
