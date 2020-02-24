@@ -130,6 +130,8 @@ update msg global model =
                     , killer = Nothing
                     , killerName = Nothing
                     , kills = 0
+                    -- Max safe integer; this is so the user is on top
+                    , joined = 2 ^ 53 - 1
                     }
                     :: info.players
                   }, password = "" }
@@ -276,7 +278,7 @@ view global model =
                   (Just _, Nothing) ->
                     GT
                   (Nothing, Nothing) ->
-                    EQ
+                    compare b.joined a.joined
               _ as order ->
                 order
           ) model.info.players))

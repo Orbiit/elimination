@@ -453,6 +453,7 @@ type alias GamePlayer =
   , killer : Maybe String
   , killerName : Maybe String
   , kills : Int
+  , joined : Timestamp
   }
 
 type alias Game =
@@ -473,7 +474,7 @@ getGame global msg game =
       (D.field "creatorName" D.string)
       (D.field "name" D.string)
       (D.field "description" D.string)
-      (D.field "players" (D.list (D.map7 GamePlayer
+      (D.field "players" (D.list (D.map8 GamePlayer
         (D.field "username" D.string)
         (D.field "name" D.string)
         (D.field "alive" D.bool)
@@ -481,6 +482,7 @@ getGame global msg game =
         (D.field "killer" (D.nullable D.string))
         (D.field "killerName" (D.nullable D.string))
         (D.field "kills" D.int)
+        (D.field "joined" D.int)
       )))
       (D.field "state" gameStateParser)
       (D.field "time" D.int)
