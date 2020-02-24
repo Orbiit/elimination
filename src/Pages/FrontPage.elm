@@ -232,7 +232,11 @@ otherGameSorter a b =
         Api.Started -> 0
         Api.Ended -> 2
   in
-    compare aVal bVal
+  case compare aVal bVal of
+    EQ ->
+      compare b.time a.time
+    _ as order ->
+      order
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view global model =

@@ -272,15 +272,17 @@ status global msg game =
 type alias OtherGame =
   { game : GameID
   , gameName : String
-  , state: GameState
+  , state : GameState
+  , time : Timestamp
   }
 
 otherGameDecoder : D.Decoder OtherGame
 otherGameDecoder =
-  D.map3 OtherGame
+  D.map4 OtherGame
     (D.field "game" D.string)
     (D.field "gameName" D.string)
     (D.field "state" gameStateParser)
+    (D.field "time" D.int)
 
 type alias GameStatuses =
   { statuses : List Status
