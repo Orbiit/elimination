@@ -462,6 +462,12 @@ type alias GamePlayer =
   , kills : Int
   }
 
+type alias GameAnnouncement =
+  { message : String
+  , includedDead : Bool
+  , time : Timestamp
+  }
+
 type alias Game =
   { creator : String
   , creatorName : String
@@ -470,12 +476,13 @@ type alias Game =
   , players : List GamePlayer
   , state : GameState
   , time : Timestamp
+  , announcements : List GameAnnouncement
   }
 
 getGame : GlobalModel m -> ResultMsg Game msg -> GameID -> Cmd msg
 getGame global msg game =
   get global ("game?game=" ++ game) msg <|
-    D.map7 Game
+    D.map8 Game
       (D.field "creator" D.string)
       (D.field "creatorName" D.string)
       (D.field "name" D.string)
@@ -491,6 +498,11 @@ getGame global msg game =
       )))
       (D.field "state" gameStateParser)
       (D.field "time" D.int)
+      (D.field "announcements" (D.list (D.map3 GameAnnouncement
+        (D.field "message" D.string)
+        (D.field "includeDead" D.bool)
+        (D.field "time" D.int)
+      )))
 
 type alias Stats =
   { kills : Int

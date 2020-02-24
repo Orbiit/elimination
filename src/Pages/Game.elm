@@ -37,6 +37,7 @@ init =
     , players = []
     , state = Api.WillStart
     , time = 0
+    , announcements = []
     }
   , description = []
   , password = ""
