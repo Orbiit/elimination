@@ -175,7 +175,7 @@ renderStatus model status =
     , span [ A.class "flex" ]
       []
     , span [ A.class "kill-code" ]
-      [ text "Click to reveal your elimination sequence: "
+      [ text "Click to reveal and copy your elimination sequence:\n"
       , let
           showing =
             case model.showingCode of
@@ -185,12 +185,13 @@ renderStatus model status =
                 False
         in
           span
-            [ A.class "code"
+            [ A.class "code copy-btn"
             , A.classList [ ("revealed", showing) ]
+            , A.attribute "data-clipboard-text" status.code
             , onClick (if showing then DoNothing else ShowCode status.game)
             ]
             [ text status.code ]
-      , text (" " ++ char MDash ++ " ")
+      , text "\n"
       , a [ A.class "link", A.href "?about#elimination-sequences" ]
         [ text "What is this for?" ]
       ]
