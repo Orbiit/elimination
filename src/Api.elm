@@ -122,7 +122,7 @@ type alias UserInfo =
 createUser : GlobalModel m -> (String -> ResultMsg SessionID msg) -> UserInfo -> Cmd msg
 createUser global msg info =
   post global "create-user" (msg info.username) (E.object
-    [ ("username", E.string info.username)
+    [ ("username", E.string (String.toLower info.username))
     , ("name", E.string info.name)
     , ("password", E.string info.password)
     , ("email", E.string info.email)
@@ -132,7 +132,7 @@ createUser global msg info =
 login : GlobalModel m -> (String -> ResultMsg SessionID msg) -> String -> String -> Cmd msg
 login global msg username password =
   post global "login" (msg username) (E.object
-    [ ("username", E.string username)
+    [ ("username", E.string (String.toLower username))
     , ("password", E.string password)
     ])
     (D.field "session" D.string)

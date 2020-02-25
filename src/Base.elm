@@ -180,7 +180,7 @@ update msg global model =
             SignUpMethod ->
               { model | signUpLoading = False, signUpPassword = Input.initInputState, signUpPasswordAgain = Input.initInputState }
           , Cmd.none
-          , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
+          , Api.ChangeSession (Api.SignedIn { username = String.toLower username, session = newSession })
           )
         Err (_, error) ->
           ( case method of
