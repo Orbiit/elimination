@@ -369,7 +369,7 @@ view { zone } model =
             Nothing
         ])
     , form [ onSubmit Save ]
-      ([ div [ A.class "input-row" ]
+      ([ div [ A.class "input-row" ] <|
         [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Name"
@@ -385,32 +385,36 @@ view { zone } model =
               Nothing
           , maxChars = Just 100
           }
-        , Input.myInput (Change PasswordInput)
-          { myInputDefaults
-          | labelText = "Passphrase to join"
-          , sublabel =
-            [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive."
-            , label [ A.class "allow-join" ]
-              [ input
-                [ A.type_ "checkbox"
-                , A.class "checkbox"
-                , A.checked (Tuple.first model.joinable)
-                , onCheck ChangeJoinability
-                ]
-                []
-              , text " Allow people to join"
-              ]
-            ]
-          , placeholder = "hunter2"
-          , value = model.password.value
-          , validate = \value ->
-            if String.length value > 200 then
-              Just "The passphrase cannot be over 200 characters long."
-            else
-              Nothing
-          , maxChars = Just 200
-          }
         ]
+        ++ if model.state == Api.WillStart then
+          [ Input.myInput (Change PasswordInput)
+            { myInputDefaults
+            | labelText = "Passphrase to join"
+            , sublabel =
+              [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive."
+              , label [ A.class "allow-join" ]
+                [ input
+                  [ A.type_ "checkbox"
+                  , A.class "checkbox"
+                  , A.checked (Tuple.first model.joinable)
+                  , onCheck ChangeJoinability
+                  ]
+                  []
+                , text " Allow people to join"
+                ]
+              ]
+            , placeholder = "hunter2"
+            , value = model.password.value
+            , validate = \value ->
+              if String.length value > 200 then
+                Just "The passphrase cannot be over 200 characters long."
+              else
+                Nothing
+            , maxChars = Just 200
+            }
+          ]
+        else
+          []
       , div [ A.class "input-row" ]
         [ Input.myInput (Change DescInput)
           { myInputDefaults
