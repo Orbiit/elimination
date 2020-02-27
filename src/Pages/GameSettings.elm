@@ -2,7 +2,7 @@ module Pages.GameSettings exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
-import Html.Events exposing (onSubmit, stopPropagationOn, onClick)
+import Html.Events exposing (onSubmit, stopPropagationOn, onClick, onCheck)
 import Json.Decode as D
 import Json.Encode as E
 import Time
@@ -29,6 +29,7 @@ type alias Model =
   , desc : Input.InputState
   , descHeight : Float
   , password : Input.InputState
+  , joinable : (Bool, Bool)
   , players : List Api.GameSettingsPlayer
   , state : Api.GameState
   -- Page state
@@ -51,6 +52,7 @@ init =
   , desc = Input.updateValue Input.initInputState "" True
   , descHeight = 0
   , password = Input.updateValue Input.initInputState "" True
+  , joinable = (True, True)
   , players = []
   , state = Api.WillStart
   , loading = False
@@ -67,6 +69,7 @@ init =
 
 type Msg
   = Change Input Input.MyInputMsg
+  | ChangeJoinability Bool
   | ResizeDesc (Result Dom.Error Dom.Viewport)
   | InfoLoaded Api.GameID (Api.Response Api.GameSettingsInfo)
   | Save
@@ -110,6 +113,11 @@ update msg global model =
         , Cmd.none
         , Api.None
         )
+    ChangeJoinability joinable ->
+      ( { model | joinable = (joinable, Tuple.second model.joinable) }
+      , Cmd.none
+      , Api.None
+      )
     ResizeDesc result ->
       case result of
         Ok viewport ->
@@ -118,13 +126,14 @@ update msg global model =
           (model, Cmd.none, Api.None)
     InfoLoaded game result ->
       case result of
-        Ok { name, description, password, players, state } ->
+        Ok { name, description, password, joinDisabled, players, state } ->
           ( { model
             | game = Just game
             , name = Input.inputState name
             , desc = Input.inputState description
             , descHeight = 0
             , password = Input.inputState password
+            , joinable = (not joinDisabled, not joinDisabled)
             , players = players
             , state = state
             , shuffled = False
@@ -152,6 +161,10 @@ update msg global model =
                 Just ("password", E.string model.password.value)
               else
                 Nothing
+              , if Tuple.first model.joinable /= Tuple.second model.joinable then
+                Just ("joinDisabled", E.bool (not (Tuple.first model.joinable)))
+              else
+                Nothing
               ]
             )
           )
@@ -173,6 +186,7 @@ update msg global model =
             , name = Input.inputState model.name.value
             , desc = Input.inputState model.desc.value
             , password = Input.inputState model.password.value
+            , joinable = (Tuple.first model.joinable, Tuple.first model.joinable)
             }
           , Cmd.none
           , if model.game == Nothing then
@@ -327,7 +341,8 @@ hasUnsavedChanges : Model -> Bool
 hasUnsavedChanges model =
   model.name.value /= model.name.original ||
     model.desc.value /= model.desc.original ||
-    model.password.value /= model.password.original
+    model.password.value /= model.password.original ||
+    Tuple.first model.joinable /= Tuple.second model.joinable
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view { zone } model =
@@ -376,7 +391,13 @@ view { zone } model =
           , sublabel =
             [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive."
             , label [ A.class "allow-join" ]
-              [ input [ A.type_ "checkbox", A.class "checkbox" ] []
+              [ input
+                [ A.type_ "checkbox"
+                , A.class "checkbox"
+                , A.checked (Tuple.first model.joinable)
+                , onCheck ChangeJoinability
+                ]
+                []
               , text " Allow people to join"
               ]
             ]

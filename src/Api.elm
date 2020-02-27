@@ -187,6 +187,7 @@ type alias GameSettingsInfo =
   { name : String
   , description : String
   , password : String
+  , joinDisabled : Bool
   , players : List GameSettingsPlayer
   , state : GameState
   }
@@ -194,10 +195,11 @@ type alias GameSettingsInfo =
 getGameSettings : GlobalModel m -> ResultMsg GameSettingsInfo msg -> GameID -> Cmd msg
 getGameSettings global msg game =
   get global ("game-settings?game=" ++ game) msg <|
-    D.map5 GameSettingsInfo
+    D.map6 GameSettingsInfo
       (D.field "name" D.string)
       (D.field "description" D.string)
       (D.field "password" D.string)
+      (D.field "joinDisabled" D.bool)
       (D.field "players" (D.list (D.map5 GameSettingsPlayer
         (D.field "username" D.string)
         (D.field "name" D.string)
@@ -463,6 +465,7 @@ type alias Game =
   , creatorName : String
   , name : String
   , description : String
+  , joinDisabled : Bool
   , players : List GamePlayer
   , state : GameState
   , time : Timestamp
@@ -471,11 +474,12 @@ type alias Game =
 getGame : GlobalModel m -> ResultMsg Game msg -> GameID -> Cmd msg
 getGame global msg game =
   get global ("game?game=" ++ game) msg <|
-    D.map7 Game
+    D.map8 Game
       (D.field "creator" D.string)
       (D.field "creatorName" D.string)
       (D.field "name" D.string)
       (D.field "description" D.string)
+      (D.field "joinDisabled" D.bool)
       (D.field "players" (D.list (D.map8 GamePlayer
         (D.field "username" D.string)
         (D.field "name" D.string)

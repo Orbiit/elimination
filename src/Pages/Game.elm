@@ -34,6 +34,7 @@ init =
     , creatorName = ""
     , name = ""
     , description = ""
+    , joinDisabled = False
     , players = []
     , state = Api.WillStart
     , time = 0
@@ -200,6 +201,9 @@ view global model =
                   , onClick Leave
                   ]
                   [ text "Leave" ])
+              else if model.info.joinDisabled then
+                Just (button [ A.class "button join-btn", A.disabled True ]
+                  [ text "Joining has been disabled" ])
               else
                 Just (button [ A.class "button join-btn", onClick ShowModal ]
                   [ text "Join" ])
