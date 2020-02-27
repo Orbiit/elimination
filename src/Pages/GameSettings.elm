@@ -373,7 +373,13 @@ view { zone } model =
         , Input.myInput (Change PasswordInput)
           { myInputDefaults
           | labelText = "Passphrase to join"
-          , sublabel = [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive." ]
+          , sublabel =
+            [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive."
+            , label [ A.class "allow-join" ]
+              [ input [ A.type_ "checkbox", A.class "checkbox" ] []
+              , text " Allow people to join"
+              ]
+            ]
           , placeholder = "hunter2"
           , value = model.password.value
           , validate = \value ->
