@@ -5,6 +5,7 @@
   font-size: 36px;
   margin: 0;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 .settings h1 .button {
   margin-left: 10px;

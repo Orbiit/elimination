@@ -8,6 +8,7 @@
   font-size: 48px;
   margin: 0;
   word-break: break-word;
+  flex-wrap: wrap;
 }
 .settings-btn {
   margin-top: 15px;
