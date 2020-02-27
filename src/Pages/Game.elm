@@ -209,12 +209,16 @@ view global model =
                   [ text "Join" ])
               ]
           Api.SignedOut ->
-            if model.info.state == Api.WillStart then
+            if model.info.state /= Api.WillStart then
+              []
+            else if model.info.joinDisabled then
+              [ button [ A.class "button join-btn", A.disabled True ]
+                [ text "Joining has been disabled" ]
+              ]
+            else
               [ button [ A.class "button join-btn", A.disabled True ]
                 [ text "You need to be signed in to join" ]
               ]
-            else
-              []
         )
       , div [ A.class "modal-back", A.classList [ ("show", model.modal) ], onClick HideModal ]
         [ form
