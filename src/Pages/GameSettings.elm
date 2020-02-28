@@ -263,7 +263,7 @@ update msg global model =
           , Api.None
           )
         Nothing ->
-          (model, Cmd.none, Api.Redirect "?")
+          (discardChanges model, Cmd.none, Api.Redirect "?")
     Deleted result ->
       case result of
         Ok _ ->
@@ -350,7 +350,7 @@ view { zone } model =
     [ h1 []
       (Utils.filter
         [ Just (text "Game settings")
-        , Just (span [ A.class "flex" ] [])
+        , Just (span [ A.class "flex" ] [ text " " ])
         , if model.game /= Nothing && model.state == Api.WillStart then
           Just (button
             [ A.class "button"
@@ -411,6 +411,10 @@ view { zone } model =
               else
                 Nothing
             , maxChars = Just 200
+            , attributes =
+              [ A.attribute "autocapitalize" "none"
+              , A.attribute "autocorrect" "off"
+              ]
             }
           ]
         else
@@ -462,7 +466,7 @@ view { zone } model =
     , div [ A.class "members" ]
       ((h2 [ A.class "members-header" ]
         ([ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
-        , span [ A.class "flex" ] []
+        , span [ A.class "flex" ] [ text " " ]
         ]
         ++ (if model.state == Api.Started then
           [ button

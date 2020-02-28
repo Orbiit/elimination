@@ -381,7 +381,7 @@ makeHeader { session, zone } model frontPage =
     ] <|
     [ a [ A.href "?", A.class "site-name link" ]
       [ text "Elimination" ]
-    , span [ A.class "flex" ] []
+    , span [ A.class "flex" ] [ text " " ]
     ]
     ++ case session of
       Api.SignedIn { username } ->
@@ -402,8 +402,7 @@ makeHeader { session, zone } model frontPage =
           [ div [ A.class "header-window notifs" ]
             ((h2 [ A.class "notif-header" ]
               [ text "Notifications"
-              , span [ A.class "flex" ]
-                []
+              , span [ A.class "flex" ] [ text " " ]
               , button
                 [ A.class "button small-btn notif-action-btn"
                 , A.classList [ ("loading", model.markingAsRead) ]
@@ -459,6 +458,10 @@ makeHeader { session, zone } model frontPage =
                 else
                   Nothing
               , id = Just "login-input"
+              , attributes =
+                [ A.attribute "autocapitalize" "none"
+                , A.attribute "autocorrect" "off"
+                ]
               }
             , Input.myInput (Change LoginPassword)
               { myInputDefaults
@@ -508,6 +511,10 @@ makeHeader { session, zone } model frontPage =
                   Api.Validate.usernameOk value
               , maxChars = Just 20
               , id = Just "sign-up-input"
+              , attributes =
+                [ A.attribute "autocapitalize" "none"
+                , A.attribute "autocorrect" "off"
+                ]
               }
             , Input.myInput (Change SignUpName)
               { myInputDefaults
@@ -614,7 +621,7 @@ makeFooter =
       , Utils.extLink "UGWA" "https://gunn.app/" "link"
       , text "."
       ]
-    , span [ A.class "flex" ] []
+    , span [ A.class "flex" ] [ text " " ]
     , span []
       [ Utils.extLink "Github" "https://github.com/Orbiit/elimination" "link"
       , text (" " ++ char Middot ++ " ")

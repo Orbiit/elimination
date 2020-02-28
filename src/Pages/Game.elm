@@ -180,8 +180,7 @@ view global model =
       [ h1 [ A.class "profile-name" ]
         ([ a [ A.class "link", A.href ("?!" ++ model.game) ]
           [ text model.info.name ]
-        , span [ A.class "flex" ]
-          []
+        , span [ A.class "flex" ] [ text " " ]
         ]
         ++ case global.session of
           Api.SignedIn { username } ->
@@ -232,6 +231,10 @@ view global model =
             , placeholder = "hunter2"
             , value = model.password
             , id = Just "join-modal-input"
+            , attributes =
+              [ A.attribute "autocapitalize" "none"
+              , A.attribute "autocorrect" "off"
+              ]
             }
           , input
             [ A.class "button submit-btn"

@@ -115,8 +115,7 @@ view global model =
       [ h1 [ A.class "profile-name" ]
         ([ a [ A.class "link", A.href ("?@" ++ model.username) ]
           [ text model.info.name ]
-        , span [ A.class "flex" ]
-          []
+        , span [ A.class "flex" ] [ text " " ]
         ]
         ++ case global.session of
           Api.SignedIn { username } ->

@@ -183,9 +183,9 @@ view : Api.GlobalModel m -> Model -> List (Html Msg)
 view global model =
   [ div [ A.class "main content settings" ]
     [ h1 []
-      [ text "User settings"
-      , span [ A.class "flex" ]
-        []
+      [ span []
+        [ text "User settings" ]
+      , span [ A.class "flex" ] [ text " " ]
       , a
         [ A.class "button"
         , A.href <|

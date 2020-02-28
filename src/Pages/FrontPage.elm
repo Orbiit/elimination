@@ -128,8 +128,7 @@ renderStatus model status =
       , a [ A.class "game-link link", A.href ("?!" ++ status.game) ]
         [ text status.gameName ]
       ]
-    , span [ A.class "flex" ]
-      []
+    , span [ A.class "flex" ] [ text " " ]
     , span [ A.class "target-label" ]
       [ text "Your target is" ]
     , a [ A.class "target-name link", A.href ("?@" ++ status.target) ]
@@ -151,6 +150,7 @@ renderStatus model status =
                 , placeholder = "hunter2"
                 , value = model.code
                 , id = Just "kill-modal-input"
+                , attributes = [ A.attribute "autocapitalize" "none" ]
                 }
               , input
                 [ A.class "button submit-btn"
@@ -172,8 +172,7 @@ renderStatus model status =
           text ""
       _ ->
         text ""
-    , span [ A.class "flex" ]
-      []
+    , span [ A.class "flex" ] [ text " " ]
     , span [ A.class "kill-code" ]
       [ text "Click to reveal and copy your elimination sequence:\n"
       , let
@@ -195,8 +194,7 @@ renderStatus model status =
       , a [ A.class "link", A.href "?about#elimination-sequences" ]
         [ text "What is this for?" ]
       ]
-    , span [ A.class "flex" ]
-      []
+    , span [ A.class "flex" ] [ text " " ]
     ]
 
 renderOther : Api.OtherGame -> Html Msg

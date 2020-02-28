@@ -4,7 +4,7 @@
 .small-screen-create-game-btn {
   display: none;
 }
-@media (max-width: 670px) { /* TEMP: Return to 600px later */
+@media (max-width: 660px) { /* TEMP: Return to 600px later */
   .targets {
     flex-direction: column;
   }
@@ -40,6 +40,7 @@
 .target-label {
   font-size: 16px;
   color: rgba(255, 255, 255, 0.6);
+  width: 100%;
 }
 .target-name {
   font-size: 64px;
@@ -86,7 +87,8 @@
   border-top: 1px solid rgba(255, 0, 0, 0.2);
   overflow-x: auto;
   padding: 5px;
-  white-space: pre;
+  /* Safari treats "pre" kind of like "pre-wrap" */
+  white-space: nowrap;
 }
 .other-games-header {
   font-size: 12px;
@@ -102,6 +104,7 @@
   margin: 5px;
   padding: 10px;
   transition: background-color .2s;
+  white-space: pre;
 }
 .other-game:hover {
   background-color: rgba(255, 255, 255, 0.3);

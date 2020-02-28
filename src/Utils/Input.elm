@@ -16,6 +16,7 @@ type alias MyInputOptions msg =
   , maxChars : Maybe Int
   , height : Maybe String
   , id : Maybe String
+  , attributes : List (Html.Attribute msg)
   }
 
 myInputDefaults : MyInputOptions msg
@@ -30,6 +31,7 @@ myInputDefaults =
   , maxChars = Nothing
   , height = Nothing
   , id = Nothing
+  , attributes = []
   }
 
 type alias MyInputMsg =
@@ -78,7 +80,8 @@ myInput msg options =
             Nothing -> [])
           ++ (case options.id of
             Just id -> [ A.id id ]
-            Nothing -> []))
+            Nothing -> [])
+          ++ options.attributes)
         []
       ]
         ++ case options.maxChars of

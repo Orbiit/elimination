@@ -6,6 +6,9 @@
   margin: 0;
   margin-bottom: 10px;
   flex-wrap: wrap;
+  /* Unideal indeed, but it only becomes a problem on really small screens.
+  Intended to prevent weird wrapping on Safari. */
+  white-space: nowrap;
 }
 .settings h1 .button {
   margin-left: 10px;
