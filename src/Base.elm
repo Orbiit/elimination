@@ -586,13 +586,15 @@ makeHeader { session, zone } model frontPage =
                 model.signUpPasswordAgain.valid))
               ]
               []
+            , span [ A.class "problematic-error" ]
+              [ text (Maybe.withDefault "" model.signUpProblem) ]
+            , p [ A.class "sign-up-privacy" ]
+              [ text "Read our "
+              , a [ A.href "?privacy", A.class "link" ]
+                [ text "Privacy policy" ]
+              , text " to see what we do with these data."
+              ]
             ]
-            ++ case model.signUpProblem of
-              Just errorText ->
-                [ span [ A.class "problematic-error" ]
-                  [ text errorText ] ]
-              Nothing ->
-                []
           ]
         ]
   ]

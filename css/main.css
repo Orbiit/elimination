@@ -41,6 +41,7 @@ textarea {
   -webkit-appearance: none;
   border: none;
   border-radius: 0;
+  padding: 0;
   background: none;
   color: inherit;
   font: inherit;
@@ -163,6 +164,12 @@ a {
   box-sizing: border-box;
   max-width: 400px;
 }
+.sign-up-privacy {
+  font-size: 16px;
+}
+.sign-up-privacy .link {
+  color: #faa;
+}
 
 .notif-btn {
   position: relative;
@@ -234,7 +241,8 @@ a {
 
 .auth-btn {
   font-size: 16px;
-  margin-left: 10px;
+  margin-left: 5px;
+  padding: 5px 10px;
 }
 .auth-btn:hover {
   text-decoration: underline;

@@ -115,11 +115,9 @@
 .other-game-name {
   display: block;
   font-size: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 .other-game-status {
   font-size: 10px;
   text-transform: uppercase;
-  padding: 2px 5px;
-  background-color: var(--blood);
 }
