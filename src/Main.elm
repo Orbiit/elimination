@@ -129,6 +129,11 @@ removeQuery url key =
   Url.Builder.custom Url.Builder.Relative [ url.path ] [] url.fragment
     |> Nav.replaceUrl key
 
+type ConfirmDiscard
+  = Hidden
+  | LeaveTo Browser.UrlRequest
+  | SignOut
+
 type alias Model =
   { page : Pages.Page
   , url : Url
@@ -136,7 +141,7 @@ type alias Model =
   , zone : Time.Zone
   , session : Api.Session
   , host : String
-  , askDiscardChanges : Maybe Browser.UrlRequest
+  , askDiscardChanges : ConfirmDiscard
   , header : Base.Model
   , userSettings : Pages.UserSettings.Model
   , user : Pages.User.Model
@@ -172,7 +177,7 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
       , zone = Time.utc
       , session = session
       , host = host
-      , askDiscardChanges = Nothing
+      , askDiscardChanges = Hidden
       , header = header
       , userSettings = Pages.UserSettings.init
       , user = Pages.User.init
@@ -270,9 +275,11 @@ view model =
         |> List.map (Html.map BaseMsg)
       , content model
       , case model.askDiscardChanges of
-        Just request ->
+        LeaveTo request ->
           Base.makeConfirmLeave (ClickedLink False request) CloseConfirmLeave
-        Nothing ->
+        SignOut ->
+          Base.makeConfirmSignOut SigningOut CloseConfirmLeave
+        Hidden ->
           []
       , Base.makeFooter
       ]
@@ -292,6 +299,8 @@ type Msg
   | BeforeUnload ()
   | CheckNotifs Time.Posix
   | OnKeyDown String
+  | SigningOut
+  | SignedOut (Api.Response ())
   | DoNothing
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
@@ -348,38 +357,36 @@ pageOnSessionChange model =
 doPageCmd : Api.PageCmd -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 doPageCmd pageCmd (model, cmd) =
   case pageCmd of
-    Api.ChangeSession sessionType ->
-      if sessionType == model.session then
+    Api.SignIn sessionID username ->
+      let
+        newModel =
+          { model
+          | session = Api.SignedIn { session = sessionID, username = username}
+          -- Clear notifications
+          , header = Base.clearNotifs model.header
+          -- Reset front page state to clear statuses
+          , frontPage = Pages.FrontPage.clearStatus model.frontPage
+          }
+        (newModel2, cmdFromPage) = pageOnSessionChange newModel
+      in
+      ( newModel2
+      , Cmd.batch
+        [ saveSession (sessionID, username)
+        , cmdFromPage
+        , cmd
+        , Cmd.map BaseMsg (Base.updateNotifs newModel)
+        ]
+      )
+    Api.AttemptSignOut ->
+      if model.session == Api.SignedOut then
         (model, cmd)
+      else if unsavedChanges model then
+        ({ model | askDiscardChanges = SignOut }, cmd)
       else
         let
-          newModel =
-            { model
-            | session = sessionType
-            -- Clear notifications
-            , header = Base.clearNotifs model.header
-            -- Reset front page state to clear statuses
-            , frontPage = Pages.FrontPage.clearStatus model.frontPage
-            }
-          (newModel2, cmdFromPage) =
-            pageOnSessionChange newModel
+          (newModel, extraCmd) = update SigningOut model
         in
-        ( newModel2
-        , case sessionType of
-          Api.SignedIn { session, username } ->
-            Cmd.batch
-              [ saveSession (session, username)
-              , cmdFromPage
-              , cmd
-              , Cmd.map BaseMsg (Base.updateNotifs newModel)
-              ]
-          Api.SignedOut ->
-            Cmd.batch
-              [ logout ()
-              , cmdFromPage
-              , cmd
-              ]
-      )
+        (newModel, Cmd.batch [ extraCmd, cmd ])
     Api.ChangePage page ->
       ({ model | page = page }, cmd)
     Api.Redirect url ->
@@ -398,7 +405,7 @@ update msg model =
   case msg of
     ClickedLink checkChanges request ->
       if checkChanges && unsavedChanges model then
-        ( { model | askDiscardChanges = Just request }
+        ( { model | askDiscardChanges = LeaveTo request }
         , Task.attempt (\_ -> DoNothing) (Dom.focus "confirm-leave-btn")
         )
       else
@@ -407,7 +414,7 @@ update msg model =
             if checkChanges then
               model
             else
-              discardChanges { model | askDiscardChanges = Nothing }
+              discardChanges { model | askDiscardChanges = Hidden }
         in
         case request of
           Browser.Internal url ->
@@ -423,7 +430,7 @@ update msg model =
         in
         ({ newModel | url = url }, cmd)
     CloseConfirmLeave ->
-      ({ model | askDiscardChanges = Nothing }, Cmd.none)
+      ({ model | askDiscardChanges = Hidden }, Cmd.none)
     AdjustTimeZone zone ->
       ({ model | zone = zone }, Cmd.none)
     BaseMsg subMsg ->
@@ -470,7 +477,7 @@ update msg model =
             (game, _, _) = Pages.Game.update Pages.Game.HideModal model model.game
           in
           ( { model
-            | askDiscardChanges = Nothing
+            | askDiscardChanges = Hidden
             , header = header
             , frontPage = frontPage
             , gameSettings = gameSettings
@@ -480,6 +487,14 @@ update msg model =
           )
         _ ->
           (model, Cmd.none)
+    SigningOut ->
+      let
+        (newModel, cmd) = pageOnSessionChange <|
+          discardChanges { model | session = Api.SignedOut, askDiscardChanges = Hidden }
+      in
+      (newModel, Cmd.batch [ logout (), Api.logout model SignedOut, cmd ])
+    SignedOut _ ->
+      (model, Cmd.none)
     DoNothing ->
       (model, Cmd.none)
 

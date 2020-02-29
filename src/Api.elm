@@ -26,7 +26,8 @@ type alias GlobalModel m =
   }
 
 type PageCmd
-  = ChangeSession Session
+  = SignIn SessionID String
+  | AttemptSignOut
   | ChangePage Pages.Page
   | Redirect String
   | Batch (List PageCmd)
@@ -35,7 +36,7 @@ type PageCmd
 sessionCouldExpire : Request.HttpError -> PageCmd
 sessionCouldExpire (_, error) =
   if String.endsWith "(Invalid session)" error then
-    ChangeSession SignedOut
+    AttemptSignOut
   else
     None
 

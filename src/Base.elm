@@ -92,7 +92,6 @@ type Msg
   | SignUp
   | NewSession AuthMethod String (Api.Response Api.SessionID)
   | SignOut
-  | SignedOut (Api.Response ())
   | Refresh
   | NotificationsLoaded (Api.Response Api.NotificationResult)
   | LoadMore
@@ -184,7 +183,7 @@ update msg global model =
             SignUpMethod ->
               { model | signUpLoading = False, signUpPassword = Input.initInputState, signUpPasswordAgain = Input.initInputState }
           , Cmd.none
-          , Api.ChangeSession (Api.SignedIn { username = String.toLower username, session = newSession })
+          , Api.SignIn newSession (String.toLower username)
           )
         Err (_, error) ->
           ( case method of
@@ -196,9 +195,7 @@ update msg global model =
           , Api.None
           )
     SignOut ->
-      ( model, Api.logout global SignedOut, Api.ChangeSession Api.SignedOut)
-    SignedOut _ ->
-      ( model, Cmd.none, Api.None)
+      ( model, Cmd.none, Api.AttemptSignOut)
     Refresh ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
       , updateNotifs global
@@ -625,21 +622,32 @@ makeHeader { session, zone } model frontPage =
         ]
   ]
 
-makeConfirmLeave : msg -> msg -> List (Html msg)
-makeConfirmLeave onLeave onCancel =
+makeConfirm : msg -> String -> Html msg -> List (Html msg)
+makeConfirm onCancel confirmMsg okBtn =
   [ div [ A.class "modal-back show" ]
     [ div [ A.class "modal unsaved-changes" ]
       [ p [ A.class "confirm-msg" ]
-        [ text "You have unsaved changes. Are you sure you want to leave?" ]
+        [ text confirmMsg ]
       , div [ A.class "confirm-btn-wrapper" ]
-        [ button [ A.class "button", A.id "confirm-leave-btn", onClick onLeave ]
-          [ text "Leave" ]
+        [ okBtn
         , button [ A.class "button cancel-btn", onClick onCancel ]
           [ text "Cancel" ]
         ]
       ]
     ]
   ]
+
+makeConfirmLeave : msg -> msg -> List (Html msg)
+makeConfirmLeave onLeave onCancel =
+  button [ A.class "button", A.id "confirm-leave-btn", onClick onLeave ]
+    [ text "Leave" ]
+    |> makeConfirm onCancel "You have unsaved changes. Are you sure you want to leave?"
+
+makeConfirmSignOut : msg -> msg -> List (Html msg)
+makeConfirmSignOut onSignOut onCancel =
+  button [ A.class "button", A.id "confirm-leave-btn", onClick onSignOut ]
+    [ text "Sign out" ]
+    |> makeConfirm onCancel "You have unsaved changes. Are you sure you want to sign out?"
 
 makeFooter : List (Html msg)
 makeFooter =

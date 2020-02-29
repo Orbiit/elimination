@@ -50,7 +50,6 @@ type Msg
   = Change Input Input.MyInputMsg
   | ResizeBio (Result Dom.Error Dom.Viewport)
   | Logout
-  | LoggedOut (Api.Response ())
   | InfoLoaded (Api.Response Api.UserSettingsInfo)
   | Save
   | Saved (Api.Response ())
@@ -91,9 +90,7 @@ update msg global model =
         Err _ ->
           (model, Cmd.none, Api.None)
     Logout ->
-      ( { model | loadingLogout = True }, Api.logout global LoggedOut, Api.None)
-    LoggedOut _ ->
-      ( { model | loadingLogout = False }, Cmd.none, Api.ChangeSession Api.SignedOut)
+      (model, Cmd.none, Api.AttemptSignOut)
     InfoLoaded result ->
       case result of
         Ok { name, email, bio } ->
