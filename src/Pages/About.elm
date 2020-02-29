@@ -8,7 +8,7 @@ view : List (Html msg)
 view =
   [ div [ A.class "main content text" ]
     [ h1 []
-      [ text "About" ]
+      [ text "About and help" ]
     , p []
       [ text "If you have any questions or something isn't working, you can email "
       , a [ A.class "link", A.href "mailto:sy24484@pausd.us" ]

@@ -628,7 +628,7 @@ makeFooter =
       [ Utils.extLink "Github" "https://github.com/Orbiit/elimination" "link"
       , text (" " ++ char Middot ++ " ")
       , a [ A.href "?about", A.class "link" ]
-        [ text "About" ]
+        [ text "Help" ]
       , text (" " ++ char Middot ++ " ")
       , a [ A.href "?privacy", A.class "link" ]
         [ text "Privacy policy" ]
