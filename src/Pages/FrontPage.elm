@@ -21,7 +21,7 @@ type alias Model =
   , code : String
   , killing : Bool
   , problem : Maybe String
-  , showingCode : Maybe Api.GameID
+  , showingCode : List Api.GameID
   }
 
 init : Model
@@ -37,7 +37,7 @@ init =
   , code = ""
   , killing = False
   , problem = Nothing
-  , showingCode = Nothing
+  , showingCode = []
   }
 
 type Msg
@@ -63,7 +63,7 @@ update msg global model =
     StatusesLoaded result ->
       case result of
         Ok { statuses, other } ->
-          ({ model | statuses = statuses, other = other, showingCode = Nothing }
+          ({ model | statuses = statuses, other = other, showingCode = [] }
           , NProgress.done ()
           , Api.ChangePage Pages.FrontPage
           )
@@ -103,7 +103,15 @@ update msg global model =
         Err ((_, errorMsg) as error) ->
           ({ model | killing = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
     ShowCode game ->
-      ({ model | showingCode = Just game }, Cmd.none, Api.None)
+      ( { model
+        | showingCode =
+          if List.member game model.showingCode then
+            List.filter (\gameID -> game /= gameID) model.showingCode
+          else
+            game :: model.showingCode
+        }
+      , Cmd.none
+      , Api.None)
     DoNothing ->
       (model, Cmd.none, Api.None)
 
@@ -177,20 +185,15 @@ renderStatus model status =
       [ span [ A.class "kill-code-header" ]
         [ text "Your private code\n" ]
       , let
-          showing =
-            case model.showingCode of
-              Just game ->
-                game == status.game
-              Nothing ->
-                False
+          showing = List.member status.game model.showingCode
         in
-          span
-            [ A.class "code copy-btn"
-            , A.classList [ ("revealed", showing) ]
-            , A.attribute "data-clipboard-text" status.code
-            , onClick (if showing then DoNothing else ShowCode status.game)
-            ]
-            [ text status.code ]
+        span
+          [ A.class "code copy-btn"
+          , A.classList [ ("revealed", showing) ]
+          , A.attribute "data-clipboard-text" status.code
+          , onClick (ShowCode status.game)
+          ]
+          [ text status.code ]
       , span [ A.class "kill-code-subtitle" ]
         [ text "\nClick to reveal these words to give when you are eliminated. "
         , a [ A.class "link", A.href "?about#elimination-sequences" ]
