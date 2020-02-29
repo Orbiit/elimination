@@ -400,7 +400,7 @@ makeHeader { session, zone } model frontPage =
           , text ")" ]
           Notifications
           [ div [ A.class "header-window notifs" ]
-            ((h2 [ A.class "notif-header" ]
+            [ h2 [ A.class "notif-header" ]
               [ text "Notifications"
               , span [ A.class "flex" ] [ text " " ]
               , button
@@ -423,22 +423,23 @@ makeHeader { session, zone } model frontPage =
               --     []
               --   , text "Send notifications to my email"
               --   ]
-              ])
-            :: List.map (renderNotification zone) model.notifs.notifications
-            ++ (case model.notifsProblem of
+              ]
+            , div [] (List.map (renderNotification zone) model.notifs.notifications)
+            , case model.notifsProblem of
               Just errorText ->
-                [ span [ A.class "problematic-error" ]
-                  [ text errorText ] ]
+                span [ A.class "problematic-error" ]
+                  [ text errorText ]
               Nothing ->
-                [])
-            ++ if model.notifsLoading then
-              [ button [ A.class "button load-more-btn loading", A.disabled True ]
-                [ text "Loading" ] ]
+                text ""
+            , if model.notifsLoading then
+              button [ A.class "button load-more-btn loading", A.disabled True ]
+                [ text "Loading" ]
             else if model.notifs.end then
-              []
+              text ""
             else
-              [ button [ A.class "button load-more-btn", onClick LoadMore ]
-                [ text "Load more" ] ])
+              button [ A.class "button load-more-btn", onClick LoadMore ]
+                [ text "Load more" ]
+            ]
           ]
         , a [ A.class "link username", A.href ("?@" ++ username) ]
           [ text username ]
@@ -486,13 +487,13 @@ makeHeader { session, zone } model frontPage =
                 model.loginPassword.valid))
               ]
               []
-            ]
-            ++ case model.loginProblem of
+            , case model.loginProblem of
               Just errorText ->
-                [ span [ A.class "problematic-error" ]
-                  [ text errorText ] ]
+                span [ A.class "problematic-error" ]
+                  [ text errorText ]
               Nothing ->
-                []
+                text ""
+            ]
           ]
         , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow <|
           [ form [ A.class "header-window", onSubmit SignUp ] <|

@@ -475,19 +475,19 @@ view { zone } model =
           [])
     , div [ A.class "members" ]
       ((h2 [ A.class "members-header" ]
-        ([ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
+        [ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
         , span [ A.class "flex" ] [ text " " ]
-        ]
-        ++ (if model.state == Api.Started then
-          [ button
+        , if model.state == Api.Started then
+          button
             [ A.class "button"
             , A.classList [ ("loading", model.shuffling) ]
             , A.disabled model.shuffling
             , onClick Shuffle
             ]
-            [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ] ]
+            [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ]
         else
-          [])))
+          text ""
+        ])
       :: if List.isEmpty model.players then
         [ div [ A.class "delete-game-wrapper" ]
           [ p [ A.class "delete-game" ]

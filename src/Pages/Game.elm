@@ -157,19 +157,20 @@ renderPlayer global ended player =
     [ span [ A.class "item-name" ]
       [ text player.name ]
     , span [ A.class "item-info" ]
-      [ text
-        ((case (player.killTime, player.killer, player.killerName) of
+      [ text <| String.concat
+        [ case (player.killTime, player.killer, player.killerName) of
           (Just time, Just killer, Just killerName) ->
             "Eliminated on " ++ HumanTime.display global.zone time ++
               " by " ++ killerName
           _ ->
-            if ended then "Winner" else "Alive")
-        ++ " " ++ char Middot ++ " "
-        ++ String.fromInt player.kills
-        ++ (if player.kills == 1 then
+            if ended then "Winner" else "Alive"
+        , " " ++ char Middot ++ " "
+        , String.fromInt player.kills
+        , if player.kills == 1 then
           " elimination"
         else
-          " eliminations"))
+          " eliminations"
+        ]
       ]
     ]
 
@@ -184,29 +185,28 @@ view global model =
         ]
         ++ case global.session of
           Api.SignedIn { username } ->
-            Utils.filter
-              [ if username == model.info.creator then
-                Just (a [ A.class "icon-btn settings-btn", A.href ("?settings!" ++ model.game) ]
-                  [ text "Settings" ])
-              else
-                Nothing
-              , if model.info.state /= Api.WillStart then
-                Nothing
-              else if List.any (\player -> player.username == username) model.info.players then
-                Just (button
-                  [ A.class "button join-btn"
-                  , A.classList [ ("loading", model.loading) ]
-                  , A.disabled model.loading
-                  , onClick Leave
-                  ]
-                  [ text "Leave" ])
-              else if model.info.joinDisabled then
-                Just (button [ A.class "button join-btn", A.disabled True ]
-                  [ text "Joining has been disabled" ])
-              else
-                Just (button [ A.class "button join-btn", onClick ShowModal ]
-                  [ text "Join" ])
-              ]
+            [ if username == model.info.creator then
+              a [ A.class "icon-btn settings-btn", A.href ("?settings!" ++ model.game) ]
+                [ text "Settings" ]
+            else
+              text ""
+            , if model.info.state /= Api.WillStart then
+              text ""
+            else if List.any (\player -> player.username == username) model.info.players then
+              button
+                [ A.class "button join-btn"
+                , A.classList [ ("loading", model.loading) ]
+                , A.disabled model.loading
+                , onClick Leave
+                ]
+                [ text "Leave" ]
+            else if model.info.joinDisabled then
+              button [ A.class "button join-btn", A.disabled True ]
+                [ text "Joining has been disabled" ]
+            else
+              button [ A.class "button join-btn", onClick ShowModal ]
+                [ text "Join" ]
+            ]
           Api.SignedOut ->
             if model.info.state /= Api.WillStart then
               []
@@ -225,7 +225,7 @@ view global model =
           , stopPropagationOn "click" (D.succeed (DoNothing, True))
           , onSubmit Join
           ]
-          ([ Input.myInput ChangePassword
+          [ Input.myInput ChangePassword
             { myInputDefaults
             | labelText = "Passphrase"
             , placeholder = "hunter2"
@@ -244,13 +244,13 @@ view global model =
             , A.disabled model.loading
             ]
             []
-          ]
-          ++ case model.problem of
+          , case model.problem of
             Just errorText ->
-              [ span [ A.class "problematic-error" ]
-                [ text errorText ] ]
+              span [ A.class "problematic-error" ]
+                [ text errorText ]
             Nothing ->
-              [])
+              text ""
+          ]
         ]
       , span [ A.class "profile-subtitle" ]
         [ text "Created by "
@@ -275,8 +275,8 @@ view global model =
             (if model.info.state == Api.WillStart then
               "Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")"
             else
-              "Leaderboard by most eliminations"
-            ) ])
+              "Leaderboard by most eliminations")
+          ])
         :: (List.map (renderPlayer global (model.info.state == Api.Ended))
           (List.sortWith (\a -> \b ->
             case compare b.kills a.kills of

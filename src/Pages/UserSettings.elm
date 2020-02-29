@@ -205,7 +205,7 @@ view global model =
         [ text "Sign out" ]
       ]
     , form [ onSubmit Save ]
-      ([ div [ A.class "input-row" ]
+      [ div [ A.class "input-row" ]
         [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Display name"
@@ -289,12 +289,12 @@ view global model =
             , A.disabled <| model.loading || not changed || not valid
             ]
             []
-      ]
-      ++ case model.problem of
+      , case model.problem of
         Just errorText ->
-          [ span [ A.class "problematic-error" ]
-            [ text errorText ] ]
+          span [ A.class "problematic-error" ]
+            [ text errorText ]
         Nothing ->
-          [])
+          text ""
+      ]
     ]
   ]

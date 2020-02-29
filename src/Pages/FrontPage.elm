@@ -144,7 +144,7 @@ renderStatus model status =
               , stopPropagationOn "click" (D.succeed (DoNothing, True))
               , onSubmit Kill
               ]
-              ([ Input.myInput ChangeCode
+              [ Input.myInput ChangeCode
                 { myInputDefaults
                 | labelText = "Target's elimination sequence"
                 , placeholder = "hunter2"
@@ -160,13 +160,13 @@ renderStatus model status =
                 , A.disabled model.killing
                 ]
                 []
-              ]
-              ++ case model.problem of
+              , case model.problem of
                 Just errorText ->
-                  [ span [ A.class "problematic-error" ]
-                    [ text errorText ] ]
+                  span [ A.class "problematic-error" ]
+                    [ text errorText ]
                 Nothing ->
-                  [])
+                  text ""
+              ]
             ]
         else
           text ""
