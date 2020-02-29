@@ -27,6 +27,7 @@
 }
 .profile-subtitle .link {
   color: rgba(255, 255, 255, 0.8);
+  white-space: normal;
 }
 .profile-desc {
   font-size: 16px;

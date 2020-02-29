@@ -5,7 +5,7 @@ import Browser.Dom as Dom
 import Browser.Events as Events
 import Browser.Navigation as Nav
 import Html
-import Url
+import Url exposing (Url)
 import Url.Builder
 import Json.Decode as D
 import Time
@@ -51,7 +51,7 @@ loadFrontPage global =
           , NProgress.start ()
           ]
 
-urlToPage : Api.GlobalModel m -> Url.Url -> PageCmd
+urlToPage : Api.GlobalModel m -> Url -> PageCmd
 urlToPage global url =
   case url.query of
     Just query ->
@@ -117,20 +117,21 @@ urlToPage global url =
     Nothing ->
       loadFrontPage global
 
-shouldRemoveQuery : Url.Url -> Bool
+shouldRemoveQuery : Url -> Bool
 shouldRemoveQuery url =
   case url.query of
     Just path -> path == ""
     Nothing -> False
 
 -- Remove the ? at the end because it annoys
-removeQuery : Url.Url -> Nav.Key -> Cmd msg
+removeQuery : Url -> Nav.Key -> Cmd msg
 removeQuery url key =
   Url.Builder.custom Url.Builder.Relative [ url.path ] [] url.fragment
     |> Nav.replaceUrl key
 
 type alias Model =
   { page : Pages.Page
+  , url : Url
   , key : Nav.Key
   , zone : Time.Zone
   , session : Api.Session
@@ -144,7 +145,7 @@ type alias Model =
   , game : Pages.Game.Model
   }
 
-init : (String, Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
+init : (String, Maybe String, Maybe String) -> Url -> Nav.Key -> (Model, Cmd Msg)
 init (host, sessionMaybe, usernameMaybe) url navKey =
   let
     session =
@@ -166,6 +167,7 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
     (header, headerCmd) = Base.init semiGlobal
   in
     ( { page = page
+      , url = url
       , key = navKey
       , zone = Time.utc
       , session = session
@@ -278,7 +280,7 @@ view model =
 
 type Msg
   = ClickedLink Bool Browser.UrlRequest
-  | ChangedUrl Url.Url
+  | ChangedUrl Url
   | CloseConfirmLeave
   | AdjustTimeZone Time.Zone
   | BaseMsg Base.Msg
@@ -310,41 +312,73 @@ discardChanges model =
   , gameSettings = Pages.GameSettings.discardChanges model.gameSettings
   }
 
+updateFromUrl : Model -> Url -> (Model, Cmd Msg)
+updateFromUrl model url =
+  case urlToPage model url of
+    SwitchPage pageType ->
+      ( { model | page = pageType }
+      , Utils.scrollIfNeeded DoNothing url.fragment
+      )
+    Command command ->
+      (model, command)
+    SwitchPageAndCommand pageType command ->
+      -- Hacky special case for creating a game
+      ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
+
+pageOnSessionChange : Model -> (Model, Cmd Msg)
+pageOnSessionChange model =
+  case model.page of
+    Pages.FrontPage -> updateFromUrl model model.url
+    Pages.Error _ -> updateFromUrl model model.url
+    Pages.UserSettings ->
+      case model.session of
+        Api.SignedIn _ -> updateFromUrl model model.url
+        Api.SignedOut -> (model, Nav.pushUrl model.key "?")
+    Pages.GameSettings ->
+      case (model.session, model.gameSettings.game) of
+        (Api.SignedOut, Just gameID) ->
+          (model, Nav.pushUrl model.key ("?!" ++ gameID))
+        (Api.SignedOut, Nothing) ->
+          (model, Nav.pushUrl model.key "?")
+        (Api.SignedIn _, _) ->
+          updateFromUrl model model.url
+    _ ->
+      (model, Cmd.none)
+
 doPageCmd : Api.PageCmd -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 doPageCmd pageCmd (model, cmd) =
   case pageCmd of
     Api.ChangeSession sessionType ->
-      let
-        newModel =
-          { model
-          | session = sessionType
-          -- Clear notifications
-          , header = Base.clearNotifs model.header
-          -- Reset front page state to clear statuses
-          , frontPage = Pages.FrontPage.clearStatus model.frontPage
-          }
-      in
-      ( newModel
-      , case sessionType of
-        Api.SignedIn { session, username } ->
-          Cmd.batch
-            [ saveSession (session, username)
-            , case model.page of
-                Pages.Error _ ->
-                  Nav.pushUrl model.key "?"
-                Pages.FrontPage ->
-                  -- Force "reload" to refetch statuses
-                  Nav.replaceUrl model.key "?"
-                _ ->
-                  Cmd.none
-            , cmd
-            , Cmd.map BaseMsg (Base.updateNotifs newModel)
-            ]
-        Api.SignedOut ->
-          Cmd.batch
-            [ logout ()
-            , cmd
-            ]
+      if sessionType == model.session then
+        (model, cmd)
+      else
+        let
+          newModel =
+            { model
+            | session = sessionType
+            -- Clear notifications
+            , header = Base.clearNotifs model.header
+            -- Reset front page state to clear statuses
+            , frontPage = Pages.FrontPage.clearStatus model.frontPage
+            }
+          (newModel2, cmdFromPage) =
+            pageOnSessionChange newModel
+        in
+        ( newModel2
+        , case sessionType of
+          Api.SignedIn { session, username } ->
+            Cmd.batch
+              [ saveSession (session, username)
+              , cmdFromPage
+              , cmd
+              , Cmd.map BaseMsg (Base.updateNotifs newModel)
+              ]
+          Api.SignedOut ->
+            Cmd.batch
+              [ logout ()
+              , cmdFromPage
+              , cmd
+              ]
       )
     Api.ChangePage page ->
       ({ model | page = page }, cmd)
@@ -382,22 +416,12 @@ update msg model =
             (newModel, Nav.load url)
     ChangedUrl url ->
       if shouldRemoveQuery url then
-        (model, removeQuery url model.key)
+        ({ model | url = url }, removeQuery url model.key)
       else
         let
-          (newModel, cmd) =
-            case urlToPage model url of
-              SwitchPage pageType ->
-                ( { model | page = pageType }
-                , Utils.scrollIfNeeded DoNothing url.fragment
-                )
-              Command command ->
-                (model, command)
-              SwitchPageAndCommand pageType command ->
-                -- Hacky special case for creating a game
-                ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
+          (newModel, cmd) = updateFromUrl model url
         in
-        (newModel, cmd)
+        ({ newModel | url = url }, cmd)
     CloseConfirmLeave ->
       ({ model | askDiscardChanges = Nothing }, Cmd.none)
     AdjustTimeZone zone ->
