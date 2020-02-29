@@ -173,8 +173,9 @@ renderStatus model status =
       _ ->
         text ""
     , span [ A.class "flex" ] [ text " " ]
-    , span [ A.class "kill-code" ]
-      [ text "Click to reveal and copy your elimination sequence:\n"
+    , div [ A.class "kill-code" ]
+      [ span [ A.class "kill-code-header" ]
+        [ text "Your private code\n" ]
       , let
           showing =
             case model.showingCode of
@@ -190,9 +191,11 @@ renderStatus model status =
             , onClick (if showing then DoNothing else ShowCode status.game)
             ]
             [ text status.code ]
-      , text "\n"
-      , a [ A.class "link", A.href "?about#elimination-sequences" ]
-        [ text "What is this for?" ]
+      , span [ A.class "kill-code-subtitle" ]
+        [ text "\nClick to reveal these words to give when you are eliminated. "
+        , a [ A.class "link", A.href "?about#elimination-sequences" ]
+          [ text "Learn more." ]
+        ]
       ]
     , span [ A.class "flex" ] [ text " " ]
     ]

@@ -52,25 +52,40 @@
   white-space: normal;
 }
 .kill-code {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.kill-code-header {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.9);
 }
 .code {
   color: transparent;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.4);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
   cursor: pointer;
   font-weight: bold;
   word-break: break-word;
+  font-size: 24px;
+  margin: 10px 0;
 }
 .code:hover {
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.5);
 }
 .code.revealed {
   background-color: transparent;
   color: white;
+  text-shadow: none;
   cursor: auto;
 }
 .kill-code .link {
+  color: #a77;
+}
+.kill-code .link:hover {
   color: #faa;
 }
 .leaderboard-link {
