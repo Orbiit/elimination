@@ -225,6 +225,9 @@ a {
 .notif-msg {
   font-size: 16px;
 }
+.notif-name {
+  white-space: normal;
+}
 .notifs .link {
   color: #faa;
 }

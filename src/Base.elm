@@ -266,34 +266,34 @@ renderNotification zone { time, read, message } =
         case (maybeTarget, maybeTargetName) of
           (Just target, Just targetName) ->
             span [ A.class "notif-msg" ]
-              [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text " has started! Your target is "
-              , a [ A.class "link", A.href ("?@" ++ target) ]
+              , a [ A.class "link notif-name", A.href ("?@" ++ target) ]
                 [ text targetName ]
               , text "."
               ]
           _ ->
             span [ A.class "notif-msg" ]
-              [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text " has started! See the home page for your target."
               ]
       Api.GameEnded gameID gameName winner winnerName ->
         span [ A.class "notif-msg" ]
-          [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+          [ a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
             [ text gameName ]
           , text " has ended! "
-          , a [ A.class "link", A.href ("?@" ++ winner) ]
+          , a [ A.class "link notif-name", A.href ("?@" ++ winner) ]
             [ text winnerName ]
           , text " was the last one standing."
           ]
       Api.Killed gameID gameName killer killerName ->
         span [ A.class "notif-msg" ]
-          [ a [ A.class "link", A.href ("?@" ++ killer) ]
+          [ a [ A.class "link notif-name", A.href ("?@" ++ killer) ]
             [ text killerName ]
           , text " has just eliminated you in "
-          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+          , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
             [ text gameName ]
           , text "."
           ]
@@ -301,25 +301,25 @@ renderNotification zone { time, read, message } =
         case (maybeTarget, maybeTargetName) of
           (Just target, Just targetName) ->
             span [ A.class "notif-msg" ]
-              [ text "Your target has marked himself as eliminated in "
-              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ text "Your target has marked themself as eliminated in "
+              , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text ", so your new target is "
-              , a [ A.class "link", A.href ("?@" ++ target) ]
+              , a [ A.class "link notif-name", A.href ("?@" ++ target) ]
                 [ text targetName ]
               , text "."
               ]
           _ ->
             span [ A.class "notif-msg" ]
-              [ text "Your target has marked himself as eliminated in "
-              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ text "Your target has marked themself as eliminated in "
+              , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text ". Check the home page for your new target."
               ]
       Api.Kicked gameID gameName reason ->
         span [ A.class "notif-msg" ]
           [ text "You were kicked from "
-          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+          , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
             [ text gameName ]
           , text
             (if reason == "" then " for unknown reasons." else " because \"" ++ reason ++ "\".")
@@ -327,10 +327,10 @@ renderNotification zone { time, read, message } =
       Api.TargetKicked gameID gameName target targetName ->
         span [ A.class "notif-msg" ]
           [ text "Your target was kicked from "
-          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+          , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
             [ text gameName ]
           , text ", so your new target is "
-          , a [ A.class "link", A.href ("?@" ++ target) ]
+          , a [ A.class "link notif-name", A.href ("?@" ++ target) ]
             [ text targetName ]
           , text "."
           ]
@@ -339,22 +339,22 @@ renderNotification zone { time, read, message } =
           (Just target, Just targetName) ->
             span [ A.class "notif-msg" ]
               [ text "The targets of everyone who is still alive in "
-              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text " have been shuffled. Your new target is "
-              , a [ A.class "link", A.href ("?@" ++ target) ]
+              , a [ A.class "link notif-name", A.href ("?@" ++ target) ]
                 [ text targetName ]
               , text "."
               ]
           _ ->
             span [ A.class "notif-msg" ]
               [ text "The targets of everyone who is still alive in "
-              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text " have been shuffled. See the home page for your new target."
               ]
       Api.Announcement gameID gameName announcement ->
-        span [ A.class "notif-msg" ]
+        span [ A.class "notif-msg notif-name" ]
           [ text "An announcement from "
           , a [ A.class "link", A.href ("?!" ++ gameID) ]
             [ text gameName ]

@@ -49,6 +49,7 @@
   margin-bottom: 10px;
   line-height: 1;
   word-break: break-word;
+  white-space: normal;
 }
 .kill-code {
   font-size: 16px;
@@ -118,6 +119,7 @@
   display: block;
   font-size: 16px;
   margin-bottom: 5px;
+  white-space: nowrap;
 }
 .other-game-status {
   font-size: 10px;
