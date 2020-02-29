@@ -237,9 +237,33 @@ a {
   margin-top: 10px;
 }
 .username {
-  font-size: 16px;
-  margin-left: 10px;
   word-break: break-word;
+}
+.username-dropdown-arrow {
+  display: inline-block;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url('../images/material-arrow_drop_down.svg');
+  background-size: 24px;
+  width: 1em;
+  height: 1em;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.open .username-list {
+  width: auto;
+  padding: 5px;
+}
+.username-item {
+  font-size: 16px;
+  padding: 5px;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+.username-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .auth-btn {

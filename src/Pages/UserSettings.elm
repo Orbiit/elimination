@@ -93,13 +93,7 @@ update msg global model =
     Logout ->
       ( { model | loadingLogout = True }, Api.logout global LoggedOut, Api.None)
     LoggedOut _ ->
-      ( { model | loadingLogout = False }
-      , Cmd.none
-      , Api.Batch
-        [ Api.ChangeSession Api.SignedOut
-        , Api.Redirect "?"
-        ]
-      )
+      ( { model | loadingLogout = False }, Cmd.none, Api.ChangeSession Api.SignedOut)
     InfoLoaded result ->
       case result of
         Ok { name, email, bio } ->

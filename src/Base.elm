@@ -19,6 +19,7 @@ type HeaderWindow
   = SignUpWindow
   | LoginWindow
   | Notifications
+  | UserOptions
   | None
 
 type AuthMethod
@@ -90,6 +91,8 @@ type Msg
   | Login
   | SignUp
   | NewSession AuthMethod String (Api.Response Api.SessionID)
+  | SignOut
+  | SignedOut (Api.Response ())
   | Refresh
   | NotificationsLoaded (Api.Response Api.NotificationResult)
   | LoadMore
@@ -119,6 +122,7 @@ update msg global model =
           SignUpWindow -> "sign-up-input"
           LoginWindow -> "login-input"
           Notifications -> if model.notifs.unread == 0 then "refresh-btn" else "read-btn"
+          UserOptions -> "my-profile"
           None -> ""
       , Api.None
       )
@@ -191,6 +195,10 @@ update msg global model =
           , Cmd.none
           , Api.None
           )
+    SignOut ->
+      ( model, Api.logout global SignedOut, Api.ChangeSession Api.SignedOut)
+    SignedOut _ ->
+      ( model, Cmd.none, Api.None)
     Refresh ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
       , updateNotifs global
@@ -385,15 +393,17 @@ makeHeader { session, zone } model frontPage =
     ]
     ++ case session of
       Api.SignedIn { username } ->
-        (if frontPage then
-          [ a [ A.class "button create-game-btn", A.href "?!bbdd6" ]
+        [ if frontPage then
+          a [ A.class "button create-game-btn", A.href "?!bbdd6" ]
             [ text "Gunn Elimination 2020" ]
-          , a [ A.class "button create-game-btn", A.href "?create-game" ]
-            [ text "Create game" ]
-          ]
         else
-          [])
-        ++ [ headerWindow model "icon-btn header-btn notif-btn"
+          text ""
+        , if frontPage then
+          a [ A.class "button create-game-btn", A.href "?create-game" ]
+            [ text "Create game" ]
+        else
+          text ""
+        , headerWindow model "icon-btn header-btn notif-btn"
           [ text "Notifications ("
           , span [ A.classList [ ("show-unread", model.notifs.unread > 0) ] ]
             [ text (String.fromInt model.notifs.unread) ]
@@ -441,12 +451,27 @@ makeHeader { session, zone } model frontPage =
                 [ text "Load more" ]
             ]
           ]
-        , a [ A.class "link username", A.href ("?@" ++ username) ]
-          [ text username ]
+        , headerWindow model "header-btn auth-btn username-btn"
+          [ span [ A.class "username" ]
+            [ text username ]
+          , span [ A.class "username-dropdown-arrow" ] []
+          ]
+          UserOptions
+          [ div [ A.class "header-window username-list" ]
+            [ a [ A.class "username-item link", A.href ("?@" ++ username), A.id "my-profile", onClick Close ]
+              [ text "My profile" ]
+            , a [ A.class "username-item link", A.href "?settings", onClick Close ]
+              [ text "Account settings" ]
+            , div [ A.class "username-divider" ]
+              []
+            , button [ A.class "username-item link", onClick SignOut ]
+              [ text "Sign out" ]
+            ]
+          ]
         ]
       Api.SignedOut ->
-        [ headerWindow model "header-btn auth-btn" [ text "Log in" ] LoginWindow <|
-          [ form [ A.class "header-window", onSubmit Login ] <|
+        [ headerWindow model "header-btn auth-btn" [ text "Log in" ] LoginWindow
+          [ form [ A.class "header-window", onSubmit Login ]
             [ Input.myInput (Change LoginUsername)
               { myInputDefaults
               | labelText = "Username"
@@ -495,8 +520,8 @@ makeHeader { session, zone } model frontPage =
                 text ""
             ]
           ]
-        , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow <|
-          [ form [ A.class "header-window", onSubmit SignUp ] <|
+        , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow
+          [ form [ A.class "header-window", onSubmit SignUp ]
             [ Input.myInput (Change SignUpUsername)
               { myInputDefaults
               | labelText = "Username"
