@@ -368,6 +368,16 @@ view { zone } model =
           Nothing ->
             Nothing
         ])
+    , case (model.game, model.state) of
+        (Just gameID, Api.WillStart) ->
+          blockquote [ A.class "advertise-game-banner" ]
+            [ text "Have people join by sending them a link to "
+            , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ text ("https://orbiit.github.io/elimination/?!" ++ gameID) ]
+            , text " and giving them the passphrase."
+            ]
+        _ ->
+          text ""
     , form [ onSubmit Save ]
       ([ div [ A.class "input-row" ] <|
         [ Input.myInput (Change NameInput)
