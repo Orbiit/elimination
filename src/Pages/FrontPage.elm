@@ -237,6 +237,17 @@ otherGameSorter a b =
     _ as order ->
       order
 
+noStatuses : List Api.OtherGame -> String
+noStatuses others =
+  if List.isEmpty others then
+    "To join a game, follow the link to a game page and click the Join button."
+  else if List.any (\game -> game.state == Api.WillStart) others then
+    "When the game starts, you'll see your target and code here."
+  else if List.any (\game -> game.state == Api.Started) others then
+    "You were eliminated! You can spectate by clicking on the game below."
+  else
+    "You aren't in any ongoing games. See the final results of previous games by clicking on them below."
+
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view global model =
   case global.session of
@@ -249,7 +260,7 @@ view global model =
               [ text "Create game" ]
             ]
           , if List.isEmpty model.statuses then
-              [ p [ A.class "no-statuses" ] [ text "You aren't in any ongoing games (in which you're still alive)." ] ]
+              [ p [ A.class "no-statuses" ] [ text (noStatuses model.other) ] ]
             else
               List.map (renderStatus model) model.statuses
           ]
