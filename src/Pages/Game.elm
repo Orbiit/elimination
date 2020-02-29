@@ -116,34 +116,48 @@ update msg global model =
         Api.SignedOut ->
           (model, Cmd.none, Api.None)
     Done action result ->
-      case result of
-        Ok name ->
-          let
-            info = model.info
-            newModel =
-              case action of
-                Joining username ->
-                  { model | info = { info | players =
-                    { username = username
-                    , name = name
-                    , alive = True
-                    , killTime = Nothing
-                    , killer = Nothing
-                    , killerName = Nothing
-                    , kills = 0
-                    -- Max safe integer; this is so the user is on top
-                    , joined = 2 ^ 53 - 1
-                    }
-                    :: info.players
-                  }, password = "" }
-                Leaving username ->
-                  { model | info = { info | players =
-                    List.filter (\player -> player.username /= username) info.players
-                  } }
-          in
-            ({ newModel | modal = False, loading = False }, Cmd.none, Api.None)
-        Err ((_, errorMsg) as error) ->
+      let
+        info = model.info
+      in
+      case (result, action) of
+        (Ok name, Joining username) ->
+          ( { model
+            | info =
+              { info
+              | players =
+                { username = username
+                , name = name
+                , alive = True
+                , killTime = Nothing
+                , killer = Nothing
+                , killerName = Nothing
+                , kills = 0
+                -- Max safe integer; this is so the user is on top
+                , joined = 2 ^ 53 - 1
+                }
+                :: info.players
+              }
+            , password = ""
+            , modal = False
+            , loading = False
+            }
+          , Cmd.none
+          , Api.None
+          )
+        (Err ((_, errorMsg) as error), Joining _) ->
           ({ model | loading = False, problem = Just errorMsg }, Cmd.none, Api.sessionCouldExpire error)
+        (_, Leaving username) ->
+          ( { model
+            | info =
+              { info
+              | players =
+                List.filter (\player -> player.username /= username) info.players
+              }
+            , loading = False
+            }
+          , Cmd.none
+          , Api.None
+          )
     DoNothing ->
       (model, Cmd.none, Api.None)
 
