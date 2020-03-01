@@ -335,32 +335,39 @@ discardChanges model =
 
 renderPlayer : Model -> Time.Zone -> Api.GameSettingsPlayer -> Html Msg
 renderPlayer model zone player =
-  div [ A.class "member-item" ]
-    ([ div [ A.class "member" ]
+  div
+    [ A.class "member-item"
+    , A.classList [ ("member-dead", not player.alive) ]
+    ]
+    [ div [ A.class "member" ]
       [ a [ A.class "link member-link", A.href ("?@" ++ player.username) ]
         [ text player.name ]
       , span [ A.class "member-info" ]
-        [ text ("Joined " ++ HumanTime.display zone player.joined ++ " "
-          ++ char Middot ++ " " ++ String.fromInt player.kills
-          ++ (if player.kills == 1 then " elimination" else " eliminations"))
+        [ text <| String.concat
+          [ "Joined " ++ HumanTime.display zone player.joined
+          , " " ++ char Middot ++ " "
+          , String.fromInt player.kills
+          , if player.kills == 1 then " elimination" else " eliminations"
+          , " " ++ char Middot ++ " "
+          , if player.alive then "Alive" else "Eliminated"
+          ]
         ]
       ]
-    ]
-    ++ if model.state == Api.Ended then
-      []
+    , if model.state == Api.Ended then
+      text ""
     else
-      [ button [ A.class "button kick-btn", onClick (ShowModal player.username) ]
-        [ text "Kick" ] ]
-    ++ case model.modal of
+      button [ A.class "button kick-btn", onClick (ShowModal player.username) ]
+        [ text "Kick" ]
+    , case model.modal of
       Just username ->
         if username == player.username then
-          [ div [ A.class "modal-back show", onClick HideModal ]
+          div [ A.class "modal-back show", onClick HideModal ]
             [ form
               [ A.class "modal kick-modal"
               , stopPropagationOn "click" (D.succeed (DoNothing, True))
               , onSubmit Kick
               ]
-              ([ Input.myInput (Change ReasonInput)
+              [ Input.myInput (Change ReasonInput)
                 { myInputDefaults
                 | labelText = "Kick reason (optional)"
                 , placeholder = "Undesirable."
@@ -375,18 +382,19 @@ renderPlayer model zone player =
                 , A.disabled model.kicking
                 ]
                 []
-              ]
-              ++ case model.kickProblem of
+              , case model.kickProblem of
                 Just errorText ->
-                  [ span [ A.class "problematic-error" ]
-                    [ text errorText ] ]
+                  span [ A.class "problematic-error" ]
+                    [ text errorText ]
                 Nothing ->
-                  [])
-            ] ]
+                  text ""
+              ]
+            ]
         else
-          []
+          text ""
       Nothing ->
-        [])
+        text ""
+    ]
 
 hasUnsavedChanges : Model -> Bool
 hasUnsavedChanges model =

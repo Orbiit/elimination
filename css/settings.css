@@ -58,6 +58,9 @@
 .member {
   flex: auto;
 }
+.member-dead .member {
+  opacity: 0.5;
+}
 .member-link {
   font-size: 16px;
   color: #faa;
