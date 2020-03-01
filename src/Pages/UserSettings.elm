@@ -50,7 +50,6 @@ type Msg
   = Change Input Input.MyInputMsg
   | ResizeBio (Result Dom.Error Dom.Viewport)
   | Logout
-  | LoggedOut (Api.Response ())
   | InfoLoaded (Api.Response Api.UserSettingsInfo)
   | Save
   | Saved (Api.Response ())
@@ -91,15 +90,7 @@ update msg global model =
         Err _ ->
           (model, Cmd.none, Api.None)
     Logout ->
-      ( { model | loadingLogout = True }, Api.logout global LoggedOut, Api.None)
-    LoggedOut _ ->
-      ( { model | loadingLogout = False }
-      , Cmd.none
-      , Api.Batch
-        [ Api.ChangeSession Api.SignedOut
-        , Api.Redirect "?"
-        ]
-      )
+      (model, Cmd.none, Api.AttemptSignOut)
     InfoLoaded result ->
       case result of
         Ok { name, email, bio } ->
@@ -183,9 +174,9 @@ view : Api.GlobalModel m -> Model -> List (Html Msg)
 view global model =
   [ div [ A.class "main content settings" ]
     [ h1 []
-      [ text "User settings"
-      , span [ A.class "flex" ]
-        []
+      [ span []
+        [ text "User settings" ]
+      , span [ A.class "flex" ] [ text " " ]
       , a
         [ A.class "button"
         , A.href <|
@@ -205,7 +196,7 @@ view global model =
         [ text "Sign out" ]
       ]
     , form [ onSubmit Save ]
-      ([ div [ A.class "input-row" ]
+      [ div [ A.class "input-row" ]
         [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Display name"
@@ -289,12 +280,12 @@ view global model =
             , A.disabled <| model.loading || not changed || not valid
             ]
             []
-      ]
-      ++ case model.problem of
+      , case model.problem of
         Just errorText ->
-          [ span [ A.class "problematic-error" ]
-            [ text errorText ] ]
+          span [ A.class "problematic-error" ]
+            [ text errorText ]
         Nothing ->
-          [])
+          text ""
+      ]
     ]
   ]

@@ -2,7 +2,7 @@ module Pages.GameSettings exposing (..)
 
 import Html exposing (..)
 import Html.Attributes as A
-import Html.Events exposing (onSubmit, stopPropagationOn, onClick)
+import Html.Events exposing (onSubmit, stopPropagationOn, onClick, onCheck)
 import Json.Decode as D
 import Json.Encode as E
 import Time
@@ -30,6 +30,7 @@ type alias Model =
   , desc : Input.InputState
   , descHeight : Float
   , password : Input.InputState
+  , joinable : (Bool, Bool)
   , players : List Api.GameSettingsPlayer
   , state : Api.GameState
   -- Page state
@@ -58,6 +59,7 @@ init =
   , desc = Input.updateValue Input.initInputState "" True
   , descHeight = 0
   , password = Input.updateValue Input.initInputState "" True
+  , joinable = (True, True)
   , players = []
   , state = Api.WillStart
   , loading = False
@@ -80,6 +82,7 @@ init =
 
 type Msg
   = Change Input Input.MyInputMsg
+  | ChangeJoinability Bool
   | ResizeDesc (Result Dom.Error Dom.Viewport)
   | ResizeAnnouncement (Result Dom.Error Dom.Viewport)
   | InfoLoaded Api.GameID (Api.Response Api.GameSettingsInfo)
@@ -111,11 +114,7 @@ update msg global model =
   case msg of
     Change input { validate, value, scrollHeight } ->
       let
-        ok = case validate value of
-          Just _ ->
-            False
-          Nothing ->
-            True
+        ok = validate value == Nothing
       in
         ( case input of
           NameInput ->
@@ -131,6 +130,11 @@ update msg global model =
         , Cmd.none
         , Api.None
         )
+    ChangeJoinability joinable ->
+      ( { model | joinable = (joinable, Tuple.second model.joinable) }
+      , Cmd.none
+      , Api.None
+      )
     ResizeDesc result ->
       case result of
         Ok viewport ->
@@ -145,13 +149,14 @@ update msg global model =
           (model, Cmd.none, Api.None)
     InfoLoaded game result ->
       case result of
-        Ok { name, description, password, players, state } ->
+        Ok { name, description, password, joinDisabled, players, state } ->
           ( { model
             | game = Just game
             , name = Input.inputState name
             , desc = Input.inputState description
             , descHeight = 0
             , password = Input.inputState password
+            , joinable = (not joinDisabled, not joinDisabled)
             , players = players
             , state = state
             , announcement = Input.initInputState
@@ -181,6 +186,10 @@ update msg global model =
                 Just ("password", E.string model.password.value)
               else
                 Nothing
+              , if Tuple.first model.joinable /= Tuple.second model.joinable then
+                Just ("joinDisabled", E.bool (not (Tuple.first model.joinable)))
+              else
+                Nothing
               ]
             )
           )
@@ -202,6 +211,7 @@ update msg global model =
             , name = Input.inputState model.name.value
             , desc = Input.inputState model.desc.value
             , password = Input.inputState model.password.value
+            , joinable = (Tuple.first model.joinable, Tuple.first model.joinable)
             }
           , Cmd.none
           , if model.game == Nothing then
@@ -294,7 +304,7 @@ update msg global model =
           , Api.None
           )
         Nothing ->
-          (model, Cmd.none, Api.Redirect "?")
+          (discardChanges model, Cmd.none, Api.Redirect "?")
     Deleted result ->
       case result of
         Ok _ ->
@@ -374,7 +384,8 @@ hasUnsavedChanges : Model -> Bool
 hasUnsavedChanges model =
   model.name.value /= model.name.original ||
     model.desc.value /= model.desc.original ||
-    model.password.value /= model.password.original
+    model.password.value /= model.password.original ||
+    Tuple.first model.joinable /= Tuple.second model.joinable
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view { zone } model =
@@ -382,7 +393,7 @@ view { zone } model =
     [ h1 []
       (Utils.filter
         [ Just (text "Game settings")
-        , Just (span [ A.class "flex" ] [])
+        , Just (span [ A.class "flex" ] [ text " " ])
         , if model.game /= Nothing && model.state == Api.WillStart then
           Just (button
             [ A.class "button"
@@ -400,8 +411,18 @@ view { zone } model =
           Nothing ->
             Nothing
         ])
+    , case (model.game, model.state) of
+        (Just gameID, Api.WillStart) ->
+          blockquote [ A.class "advertise-game-banner" ]
+            [ text "Have people join by sending them a link to "
+            , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ text ("https://orbiit.github.io/elimination/?!" ++ gameID) ]
+            , text " and giving them the passphrase."
+            ]
+        _ ->
+          text ""
     , form [ onSubmit Save ]
-      ([ div [ A.class "input-row" ]
+      [ div [ A.class "input-row" ]
         [ Input.myInput (Change NameInput)
           { myInputDefaults
           | labelText = "Name"
@@ -417,19 +438,38 @@ view { zone } model =
               Nothing
           , maxChars = Just 100
           }
-        , Input.myInput (Change PasswordInput)
-          { myInputDefaults
-          | labelText = "Passphrase to join"
-          , sublabel = [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive." ]
-          , placeholder = "hunter2"
-          , value = model.password.value
-          , validate = \value ->
-            if String.length value > 200 then
-              Just "The passphrase cannot be over 200 characters long."
-            else
-              Nothing
-          , maxChars = Just 200
-          }
+        , if model.state == Api.WillStart then
+          Input.myInput (Change PasswordInput)
+            { myInputDefaults
+            | labelText = "Passphrase to join"
+            , sublabel =
+              [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive."
+              , label [ A.class "allow-join" ]
+                [ input
+                  [ A.type_ "checkbox"
+                  , A.class "checkbox"
+                  , A.checked (Tuple.first model.joinable)
+                  , onCheck ChangeJoinability
+                  ]
+                  []
+                , text " Allow people to join"
+                ]
+              ]
+            , placeholder = "hunter2"
+            , value = model.password.value
+            , validate = \value ->
+              if String.length value > 200 then
+                Just "The passphrase cannot be over 200 characters long."
+              else
+                Nothing
+            , maxChars = Just 200
+            , attributes =
+              [ A.attribute "autocapitalize" "none"
+              , A.attribute "autocorrect" "off"
+              ]
+            }
+        else
+          text ""
         ]
       , div [ A.class "input-row" ]
         [ Input.myInput (Change DescInput)
@@ -468,13 +508,13 @@ view { zone } model =
             , A.disabled <| model.loading || not changed || not valid
             ]
             []
-      ]
-      ++ case model.problem of
+      , case model.problem of
         Just errorText ->
-          [ span [ A.class "problematic-error" ]
-            [ text errorText ] ]
+          span [ A.class "problematic-error" ]
+            [ text errorText ]
         Nothing ->
-          [])
+          text ""
+      ]
     , div [] <|
       if model.game == Nothing || model.state == Api.Ended then
         []
@@ -518,43 +558,39 @@ view { zone } model =
             ]
         ]
     , div [ A.class "members" ] <|
-      List.concat
-        [ [ h2 [ A.class "members-header" ] <|
-            List.concat
-              [ [ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
-                , span [ A.class "flex" ] []
-                ]
-              , if model.state == Api.Started then
-                  [ button
-                    [ A.class "button"
-                    , A.classList [ ("loading", model.shuffling) ]
-                    , A.disabled model.shuffling
-                    , onClick Shuffle
-                    ]
-                    [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ] ]
-                else
-                  []
-              ]
-          ]
-        , case model.lowerProblem of
-          Just errorText ->
-            [ span [ A.class "problematic-error" ]
-              [ text errorText ] ]
-          Nothing ->
-            []
-        , if List.isEmpty model.players then
-            [ div [ A.class "delete-game-wrapper" ]
-              [ p [ A.class "delete-game" ]
-                [ text "Accidentally created a game?" ]
-              , button [ A.class "button", A.classList [ ("loading", model.deleting) ], onClick Delete ]
-                [ text "Delete game" ]
-              ]
+      [ h2 [ A.class "members-header" ]
+        [ text ("Participants (" ++ String.fromInt (List.length model.players) ++ ")")
+        , span [ A.class "flex" ] [ text " " ]
+        , if model.state == Api.Started then
+          button
+            [ A.class "button"
+            , A.classList [ ("loading", model.shuffling) ]
+            , A.disabled model.shuffling
+            , onClick Shuffle
             ]
-          else
-            model.players
-              |> List.sortBy .joined
-              |> List.reverse
-              |> List.map (renderPlayer model zone)
+            [ text (if model.shuffled then "Targets shuffled" else "Shuffle targets") ]
+        else
+          text ""
         ]
+      , case model.lowerProblem of
+        Just errorText ->
+          span [ A.class "problematic-error" ]
+            [ text errorText ]
+        Nothing ->
+          text ""
+      ]
+      ++ if List.isEmpty model.players then
+        [ div [ A.class "delete-game-wrapper" ]
+          [ p [ A.class "delete-game" ]
+            [ text "Accidentally created a game?" ]
+          , button [ A.class "button", A.classList [ ("loading", model.deleting) ], onClick Delete ]
+            [ text "Delete game" ]
+          ]
+        ]
+      else
+        model.players
+          |> List.sortBy .joined
+          |> List.reverse
+          |> List.map (renderPlayer model zone)
     ]
   ]

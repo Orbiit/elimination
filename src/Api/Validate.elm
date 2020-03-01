@@ -5,7 +5,7 @@ import Email
 
 import Utils
 
-username = Utils.makeRegex "^[a-z0-9_-]{3,20}$"
+username = Utils.makeRegex "^[a-zA-Z0-9_-]{3,20}$"
 
 usernameLabel = "Only letters, digits, underscores, and hyphens are allowed. This cannot be changed later."
 

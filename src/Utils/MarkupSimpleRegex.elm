@@ -51,7 +51,7 @@ fold totalString match state =
               format state [ a [ A.class "link", A.href ("?" ++ match.match) ] [ text match.match ] ]
             else if firstChar == "!" then
               format state
-                [ a [ A.class "link", A.href ("?" ++ match.match) ]
+                [ a [ A.class "link profile-game-name", A.href ("?" ++ match.match) ]
                   [ text <|
                     case state.gameNames of
                       Just names ->

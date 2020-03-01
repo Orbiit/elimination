@@ -2,9 +2,10 @@
   --blood: #8a0303;
 }
 
-html,
-body {
-  height: 100%;
+html {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 body {
   font-family: 'Playfair Display', serif;
@@ -15,6 +16,7 @@ body {
   display: flex;
   flex-direction: column;
   white-space: pre-wrap;
+  flex: auto;
 }
 
 :focus {
@@ -38,6 +40,8 @@ select,
 textarea {
   -webkit-appearance: none;
   border: none;
+  border-radius: 0;
+  padding: 0;
   background: none;
   color: inherit;
   font: inherit;
@@ -45,6 +49,10 @@ textarea {
 button,
 input[type=submit] {
   cursor: pointer;
+}
+::placeholder,
+::-webkit-input-placeholder {
+  color: rgba(255, 255, 255, 0.3);
 }
 .button {
   display: inline-block;
@@ -125,6 +133,7 @@ a {
   align-items: center;
   padding: 10px 15px;
   border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+  flex: none;
 }
 .site-name {
   margin: 0;
@@ -154,6 +163,12 @@ a {
   width: 100%;
   box-sizing: border-box;
   max-width: 400px;
+}
+.sign-up-privacy {
+  font-size: 16px;
+}
+.sign-up-privacy .link {
+  color: #faa;
 }
 
 .notif-btn {
@@ -210,6 +225,9 @@ a {
 .notif-msg {
   font-size: 16px;
 }
+.notif-name {
+  white-space: normal;
+}
 .notifs .link {
   color: #faa;
 }
@@ -219,14 +237,39 @@ a {
   margin-top: 10px;
 }
 .username {
-  font-size: 16px;
-  margin-left: 10px;
   word-break: break-word;
+}
+.username-dropdown-arrow {
+  display: inline-block;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url('../images/material-arrow_drop_down.svg');
+  background-size: 24px;
+  width: 1em;
+  height: 1em;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+.open .username-list {
+  width: auto;
+  padding: 5px;
+}
+.username-item {
+  font-size: 16px;
+  padding: 5px;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+.username-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .auth-btn {
   font-size: 16px;
-  margin-left: 10px;
+  margin-left: 5px;
+  padding: 5px 10px;
 }
 .auth-btn:hover {
   text-decoration: underline;
@@ -359,11 +402,8 @@ a {
   font-size: 14px;
   padding: 10px;
   border-top: 1px solid rgba(255, 0, 0, 0.2);
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
 }
 .footer .link {
-  color: #a77;
-}
-.footer .link:hover {
   color: #faa;
 }

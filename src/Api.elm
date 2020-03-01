@@ -26,7 +26,8 @@ type alias GlobalModel m =
   }
 
 type PageCmd
-  = ChangeSession Session
+  = SignIn SessionID String
+  | AttemptSignOut
   | ChangePage Pages.Page
   | Redirect String
   | Batch (List PageCmd)
@@ -35,7 +36,7 @@ type PageCmd
 sessionCouldExpire : Request.HttpError -> PageCmd
 sessionCouldExpire (_, error) =
   if String.endsWith "(Invalid session)" error then
-    ChangeSession SignedOut
+    AttemptSignOut
   else
     None
 
@@ -122,7 +123,7 @@ type alias UserInfo =
 createUser : GlobalModel m -> (String -> ResultMsg SessionID msg) -> UserInfo -> Cmd msg
 createUser global msg info =
   post global "create-user" (msg info.username) (E.object
-    [ ("username", E.string info.username)
+    [ ("username", E.string (String.toLower info.username))
     , ("name", E.string info.name)
     , ("password", E.string info.password)
     , ("email", E.string info.email)
@@ -132,7 +133,7 @@ createUser global msg info =
 login : GlobalModel m -> (String -> ResultMsg SessionID msg) -> String -> String -> Cmd msg
 login global msg username password =
   post global "login" (msg username) (E.object
-    [ ("username", E.string username)
+    [ ("username", E.string (String.toLower username))
     , ("password", E.string password)
     ])
     (D.field "session" D.string)
@@ -161,6 +162,21 @@ setSettings : GlobalModel m -> ResultMsg () msg -> E.Value -> Cmd msg
 setSettings global msg changes =
   post global "user-settings" msg changes (D.succeed ())
 
+makeReset : GlobalModel m -> ResultMsg String msg -> String -> Cmd msg
+makeReset global msg username =
+  post global "user-settings" msg (E.object [ ("username", E.string username) ])
+    (D.field "make-reset" D.string)
+
+resetPassword : GlobalModel m -> ResultMsg (String, String) msg -> String -> String -> Cmd msg
+resetPassword global msg id password =
+  post global "reset-password" msg (E.object
+    [ ("id", E.string id)
+    , ("password", E.string password)
+    ]) <|
+    D.map2 Tuple.pair
+      (D.field "session" D.string)
+      (D.field "username" D.string)
+
 type alias GameID = String
 
 createGame : GlobalModel m -> ResultMsg GameID msg -> E.Value -> Cmd msg
@@ -187,6 +203,7 @@ type alias GameSettingsInfo =
   { name : String
   , description : String
   , password : String
+  , joinDisabled : Bool
   , players : List GameSettingsPlayer
   , state : GameState
   }
@@ -194,10 +211,11 @@ type alias GameSettingsInfo =
 getGameSettings : GlobalModel m -> ResultMsg GameSettingsInfo msg -> GameID -> Cmd msg
 getGameSettings global msg game =
   get global ("game-settings?game=" ++ game) msg <|
-    D.map5 GameSettingsInfo
+    D.map6 GameSettingsInfo
       (D.field "name" D.string)
       (D.field "description" D.string)
       (D.field "password" D.string)
+      (D.field "joinDisabled" D.bool)
       (D.field "players" (D.list (D.map5 GameSettingsPlayer
         (D.field "username" D.string)
         (D.field "name" D.string)
@@ -279,15 +297,17 @@ status global msg game =
 type alias OtherGame =
   { game : GameID
   , gameName : String
-  , state: GameState
+  , state : GameState
+  , time : Timestamp
   }
 
 otherGameDecoder : D.Decoder OtherGame
 otherGameDecoder =
-  D.map3 OtherGame
+  D.map4 OtherGame
     (D.field "game" D.string)
     (D.field "gameName" D.string)
     (D.field "state" gameStateParser)
+    (D.field "time" D.int)
 
 type alias GameStatuses =
   { statuses : List Status
@@ -460,6 +480,7 @@ type alias GamePlayer =
   , killer : Maybe String
   , killerName : Maybe String
   , kills : Int
+  , joined : Timestamp
   }
 
 type alias GameAnnouncement =
@@ -469,10 +490,10 @@ type alias GameAnnouncement =
   }
 
 type alias Game =
-  { creator : String
-  , creatorName : String
+  { creator : (String, String)
   , name : String
   , description : String
+  , joinDisabled : Bool
   , players : List GamePlayer
   , state : GameState
   , time : Timestamp
@@ -483,11 +504,14 @@ getGame : GlobalModel m -> ResultMsg Game msg -> GameID -> Cmd msg
 getGame global msg game =
   get global ("game?game=" ++ game) msg <|
     D.map8 Game
-      (D.field "creator" D.string)
-      (D.field "creatorName" D.string)
+      (D.map2 Tuple.pair
+        (D.field "creator" D.string)
+        (D.field "creatorName" D.string)
+      )
       (D.field "name" D.string)
       (D.field "description" D.string)
-      (D.field "players" (D.list (D.map7 GamePlayer
+      (D.field "joinDisabled" D.bool)
+      (D.field "players" (D.list (D.map8 GamePlayer
         (D.field "username" D.string)
         (D.field "name" D.string)
         (D.field "alive" D.bool)
@@ -495,6 +519,7 @@ getGame global msg game =
         (D.field "killer" (D.nullable D.string))
         (D.field "killerName" (D.nullable D.string))
         (D.field "kills" D.int)
+        (D.field "joined" D.int)
       )))
       (D.field "state" gameStateParser)
       (D.field "time" D.int)

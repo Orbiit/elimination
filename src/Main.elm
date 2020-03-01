@@ -5,7 +5,7 @@ import Browser.Dom as Dom
 import Browser.Events as Events
 import Browser.Navigation as Nav
 import Html
-import Url
+import Url exposing (Url)
 import Url.Builder
 import Json.Decode as D
 import Time
@@ -24,6 +24,7 @@ import Pages.User
 import Pages.Game
 import Pages.UserSettings
 import Pages.GameSettings
+import Pages.ResetPassword
 import Pages.Loading
 import Pages.Error
 import NProgress
@@ -51,7 +52,7 @@ loadFrontPage global =
           , NProgress.start ()
           ]
 
-urlToPage : Api.GlobalModel m -> Url.Url -> PageCmd
+urlToPage : Api.GlobalModel m -> Url -> PageCmd
 urlToPage global url =
   case url.query of
     Just query ->
@@ -109,7 +110,9 @@ urlToPage global url =
               |> Cmd.map GameSettingsMsg
             , NProgress.start ()
             ]
-      -- = probably means there are trackers in the URL
+      else if String.startsWith "reset-" path then
+        SwitchPage (Pages.ResetPassword (String.dropLeft (String.length "reset-") path))
+      -- `=` probably means there are trackers in the URL
       else if path == "" || String.contains "=" path then
         loadFrontPage global
       else
@@ -117,34 +120,41 @@ urlToPage global url =
     Nothing ->
       loadFrontPage global
 
-shouldRemoveQuery : Url.Url -> Bool
+shouldRemoveQuery : Url -> Bool
 shouldRemoveQuery url =
   case url.query of
     Just path -> path == ""
     Nothing -> False
 
 -- Remove the ? at the end because it annoys
-removeQuery : Url.Url -> Nav.Key -> Cmd msg
+removeQuery : Url -> Nav.Key -> Cmd msg
 removeQuery url key =
   Url.Builder.custom Url.Builder.Relative [ url.path ] [] url.fragment
     |> Nav.replaceUrl key
 
+type ConfirmDiscard
+  = Hidden
+  | LeaveTo Browser.UrlRequest
+  | SignOut
+
 type alias Model =
   { page : Pages.Page
+  , url : Url
   , key : Nav.Key
   , zone : Time.Zone
   , session : Api.Session
   , host : String
-  , askDiscardChanges : Maybe Browser.UrlRequest
+  , askDiscardChanges : ConfirmDiscard
   , header : Base.Model
   , userSettings : Pages.UserSettings.Model
   , user : Pages.User.Model
   , frontPage : Pages.FrontPage.Model
   , gameSettings : Pages.GameSettings.Model
   , game : Pages.Game.Model
+  , resetPassword : Pages.ResetPassword.Model
   }
 
-init : (String, Maybe String, Maybe String) -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
+init : (String, Maybe String, Maybe String) -> Url -> Nav.Key -> (Model, Cmd Msg)
 init (host, sessionMaybe, usernameMaybe) url navKey =
   let
     session =
@@ -166,17 +176,19 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
     (header, headerCmd) = Base.init semiGlobal
   in
     ( { page = page
+      , url = url
       , key = navKey
       , zone = Time.utc
       , session = session
       , host = host
-      , askDiscardChanges = Nothing
+      , askDiscardChanges = Hidden
       , header = header
       , userSettings = Pages.UserSettings.init
       , user = Pages.User.init
       , frontPage = Pages.FrontPage.init
       , gameSettings = Pages.GameSettings.init
       , game = Pages.Game.init
+      , resetPassword = Pages.ResetPassword.init
       }
     , Cmd.batch
       [ if shouldRemoveQuery url then
@@ -208,6 +220,8 @@ title model =
       "Settings"
     Pages.GameSettings ->
       if model.gameSettings.game == Nothing then "Create a game" else "Game settings"
+    Pages.ResetPassword _ ->
+      "Reset password"
     Pages.Error (status, _) ->
       case status of
         Request.ErrorStatusText text ->
@@ -241,6 +255,9 @@ content model =
     Pages.GameSettings ->
       Pages.GameSettings.view model model.gameSettings
         |> List.map (Html.map GameSettingsMsg)
+    Pages.ResetPassword id ->
+      Pages.ResetPassword.view model model.resetPassword
+        |> List.map (Html.map (ResetPasswordMsg id))
     Pages.Error error ->
       Pages.Error.view error
     Pages.Loading ->
@@ -268,9 +285,11 @@ view model =
         |> List.map (Html.map BaseMsg)
       , content model
       , case model.askDiscardChanges of
-        Just request ->
+        LeaveTo request ->
           Base.makeConfirmLeave (ClickedLink False request) CloseConfirmLeave
-        Nothing ->
+        SignOut ->
+          Base.makeConfirmSignOut SigningOut CloseConfirmLeave
+        Hidden ->
           []
       , Base.makeFooter
       ]
@@ -278,7 +297,7 @@ view model =
 
 type Msg
   = ClickedLink Bool Browser.UrlRequest
-  | ChangedUrl Url.Url
+  | ChangedUrl Url
   | CloseConfirmLeave
   | AdjustTimeZone Time.Zone
   | BaseMsg Base.Msg
@@ -287,9 +306,12 @@ type Msg
   | FrontPageMsg Pages.FrontPage.Msg
   | GameSettingsMsg Pages.GameSettings.Msg
   | GameMsg Pages.Game.Msg
+  | ResetPasswordMsg String Pages.ResetPassword.Msg
   | BeforeUnload ()
   | CheckNotifs Time.Posix
   | OnKeyDown String
+  | SigningOut
+  | SignedOut (Api.Response ())
   | DoNothing
 
 port saveSession : (Api.SessionID, String) -> Cmd msg
@@ -310,42 +332,72 @@ discardChanges model =
   , gameSettings = Pages.GameSettings.discardChanges model.gameSettings
   }
 
+updateFromUrl : Model -> Url -> (Model, Cmd Msg)
+updateFromUrl model url =
+  case urlToPage model url of
+    SwitchPage pageType ->
+      ( { model | page = pageType }
+      , Utils.scrollIfNeeded DoNothing url.fragment
+      )
+    Command command ->
+      (model, command)
+    SwitchPageAndCommand pageType command ->
+      -- Hacky special case for creating a game
+      ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
+
+pageOnSessionChange : Model -> (Model, Cmd Msg)
+pageOnSessionChange model =
+  case model.page of
+    Pages.FrontPage -> updateFromUrl model model.url
+    Pages.Error _ -> updateFromUrl model model.url
+    Pages.UserSettings ->
+      case model.session of
+        Api.SignedIn _ -> updateFromUrl model model.url
+        Api.SignedOut -> (model, Nav.pushUrl model.key "?")
+    Pages.GameSettings ->
+      case (model.session, model.gameSettings.game) of
+        (Api.SignedOut, Just gameID) ->
+          (model, Nav.pushUrl model.key ("?!" ++ gameID))
+        (Api.SignedOut, Nothing) ->
+          (model, Nav.pushUrl model.key "?")
+        (Api.SignedIn _, _) ->
+          updateFromUrl model model.url
+    _ ->
+      (model, Cmd.none)
+
 doPageCmd : Api.PageCmd -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 doPageCmd pageCmd (model, cmd) =
   case pageCmd of
-    Api.ChangeSession sessionType ->
+    Api.SignIn sessionID username ->
       let
         newModel =
           { model
-          | session = sessionType
+          | session = Api.SignedIn { session = sessionID, username = username}
           -- Clear notifications
           , header = Base.clearNotifs model.header
           -- Reset front page state to clear statuses
           , frontPage = Pages.FrontPage.clearStatus model.frontPage
           }
+        (newModel2, cmdFromPage) = pageOnSessionChange newModel
       in
-      ( newModel
-      , case sessionType of
-        Api.SignedIn { session, username } ->
-          Cmd.batch
-            [ saveSession (session, username)
-            , case model.page of
-                Pages.Error _ ->
-                  Nav.pushUrl model.key "?"
-                Pages.FrontPage ->
-                  -- Force "reload" to refetch statuses
-                  Nav.replaceUrl model.key "?"
-                _ ->
-                  Cmd.none
-            , cmd
-            , Cmd.map BaseMsg (Base.updateNotifs newModel)
-            ]
-        Api.SignedOut ->
-          Cmd.batch
-            [ logout ()
-            , cmd
-            ]
+      ( newModel2
+      , Cmd.batch
+        [ saveSession (sessionID, username)
+        , cmdFromPage
+        , cmd
+        , Cmd.map BaseMsg (Base.updateNotifs newModel)
+        ]
       )
+    Api.AttemptSignOut ->
+      if model.session == Api.SignedOut then
+        (model, cmd)
+      else if unsavedChanges model then
+        ({ model | askDiscardChanges = SignOut }, cmd)
+      else
+        let
+          (newModel, extraCmd) = update SigningOut model
+        in
+        (newModel, Cmd.batch [ extraCmd, cmd ])
     Api.ChangePage page ->
       ({ model | page = page }, cmd)
     Api.Redirect url ->
@@ -364,7 +416,7 @@ update msg model =
   case msg of
     ClickedLink checkChanges request ->
       if checkChanges && unsavedChanges model then
-        ( { model | askDiscardChanges = Just request }
+        ( { model | askDiscardChanges = LeaveTo request }
         , Task.attempt (\_ -> DoNothing) (Dom.focus "confirm-leave-btn")
         )
       else
@@ -373,7 +425,7 @@ update msg model =
             if checkChanges then
               model
             else
-              discardChanges { model | askDiscardChanges = Nothing }
+              discardChanges { model | askDiscardChanges = Hidden }
         in
         case request of
           Browser.Internal url ->
@@ -382,56 +434,51 @@ update msg model =
             (newModel, Nav.load url)
     ChangedUrl url ->
       if shouldRemoveQuery url then
-        (model, removeQuery url model.key)
+        ({ model | url = url }, removeQuery url model.key)
       else
         let
-          (newModel, cmd) =
-            case urlToPage model url of
-              SwitchPage pageType ->
-                ( { model | page = pageType }
-                , Utils.scrollIfNeeded DoNothing url.fragment
-                )
-              Command command ->
-                (model, command)
-              SwitchPageAndCommand pageType command ->
-                -- Hacky special case for creating a game
-                ({ model | page = pageType, gameSettings = Pages.GameSettings.init }, command)
+          (newModel, cmd) = updateFromUrl model url
         in
-        (newModel, cmd)
+        ({ newModel | url = url }, cmd)
     CloseConfirmLeave ->
-      ({ model | askDiscardChanges = Nothing }, Cmd.none)
+      ({ model | askDiscardChanges = Hidden }, Cmd.none)
     AdjustTimeZone zone ->
       ({ model | zone = zone }, Cmd.none)
     BaseMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Base.update subMsg model model.header
       in
-        doPageCmd pageCmd ({ model | header = subModel }, Cmd.map BaseMsg subCmd)
+      doPageCmd pageCmd ({ model | header = subModel }, Cmd.map BaseMsg subCmd)
     UserSettingsMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.UserSettings.update subMsg model model.userSettings
       in
-        doPageCmd pageCmd ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg subCmd)
+      doPageCmd pageCmd ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg subCmd)
     UserMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.User.update subMsg model model.user
       in
-        doPageCmd pageCmd ({ model | user = subModel }, Cmd.map UserMsg subCmd)
+      doPageCmd pageCmd ({ model | user = subModel }, Cmd.map UserMsg subCmd)
     FrontPageMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.FrontPage.update subMsg model model.frontPage
       in
-        doPageCmd pageCmd ({ model | frontPage = subModel }, Cmd.map FrontPageMsg subCmd)
+      doPageCmd pageCmd ({ model | frontPage = subModel }, Cmd.map FrontPageMsg subCmd)
     GameSettingsMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.GameSettings.update subMsg model model.gameSettings
       in
-        doPageCmd pageCmd ({ model | gameSettings = subModel }, Cmd.map GameSettingsMsg subCmd)
+      doPageCmd pageCmd ({ model | gameSettings = subModel }, Cmd.map GameSettingsMsg subCmd)
     GameMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.Game.update subMsg model model.game
       in
-        doPageCmd pageCmd ({ model | game = subModel }, Cmd.map GameMsg subCmd)
+      doPageCmd pageCmd ({ model | game = subModel }, Cmd.map GameMsg subCmd)
+    ResetPasswordMsg id subMsg ->
+      let
+        (subModel, subCmd, pageCmd) = Pages.ResetPassword.update subMsg model model.resetPassword id
+      in
+      doPageCmd pageCmd ({ model | resetPassword = subModel }, Cmd.map (ResetPasswordMsg id) subCmd)
     BeforeUnload _ ->
       (model, if unsavedChanges model then preventUnload () else Cmd.none)
     CheckNotifs _ ->
@@ -446,7 +493,7 @@ update msg model =
             (game, _, _) = Pages.Game.update Pages.Game.HideModal model model.game
           in
           ( { model
-            | askDiscardChanges = Nothing
+            | askDiscardChanges = Hidden
             , header = header
             , frontPage = frontPage
             , gameSettings = gameSettings
@@ -456,6 +503,14 @@ update msg model =
           )
         _ ->
           (model, Cmd.none)
+    SigningOut ->
+      let
+        (newModel, cmd) = pageOnSessionChange <|
+          discardChanges { model | session = Api.SignedOut, askDiscardChanges = Hidden }
+      in
+      (newModel, Cmd.batch [ logout (), Api.logout model SignedOut, cmd ])
+    SignedOut _ ->
+      (model, Cmd.none)
     DoNothing ->
       (model, Cmd.none)
 

@@ -19,6 +19,7 @@ type HeaderWindow
   = SignUpWindow
   | LoginWindow
   | Notifications
+  | UserOptions
   | None
 
 type AuthMethod
@@ -90,6 +91,7 @@ type Msg
   | Login
   | SignUp
   | NewSession AuthMethod String (Api.Response Api.SessionID)
+  | SignOut
   | Refresh
   | NotificationsLoaded (Api.Response Api.NotificationResult)
   | LoadMore
@@ -119,6 +121,7 @@ update msg global model =
           SignUpWindow -> "sign-up-input"
           LoginWindow -> "login-input"
           Notifications -> if model.notifs.unread == 0 then "refresh-btn" else "read-btn"
+          UserOptions -> "my-profile"
           None -> ""
       , Api.None
       )
@@ -180,7 +183,7 @@ update msg global model =
             SignUpMethod ->
               { model | signUpLoading = False, signUpPassword = Input.initInputState, signUpPasswordAgain = Input.initInputState }
           , Cmd.none
-          , Api.ChangeSession (Api.SignedIn { username = username, session = newSession })
+          , Api.SignIn newSession (String.toLower username)
           )
         Err (_, error) ->
           ( case method of
@@ -191,6 +194,8 @@ update msg global model =
           , Cmd.none
           , Api.None
           )
+    SignOut ->
+      ( model, Cmd.none, Api.AttemptSignOut)
     Refresh ->
       ( { model | notifsLoading = True, notifsProblem = Nothing }
       , updateNotifs global
@@ -266,34 +271,34 @@ renderNotification zone { time, read, message } =
         case (maybeTarget, maybeTargetName) of
           (Just target, Just targetName) ->
             span [ A.class "notif-msg" ]
-              [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text " has started! Your target is "
-              , a [ A.class "link", A.href ("?@" ++ target) ]
+              , a [ A.class "link notif-name", A.href ("?@" ++ target) ]
                 [ text targetName ]
               , text "."
               ]
           _ ->
             span [ A.class "notif-msg" ]
-              [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text " has started! See the home page for your target."
               ]
       Api.GameEnded gameID gameName winner winnerName ->
         span [ A.class "notif-msg" ]
-          [ a [ A.class "link", A.href ("?!" ++ gameID) ]
+          [ a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
             [ text gameName ]
           , text " has ended! "
-          , a [ A.class "link", A.href ("?@" ++ winner) ]
+          , a [ A.class "link notif-name", A.href ("?@" ++ winner) ]
             [ text winnerName ]
           , text " was the last one standing."
           ]
       Api.Killed gameID gameName killer killerName ->
         span [ A.class "notif-msg" ]
-          [ a [ A.class "link", A.href ("?@" ++ killer) ]
+          [ a [ A.class "link notif-name", A.href ("?@" ++ killer) ]
             [ text killerName ]
           , text " has just eliminated you in "
-          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+          , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
             [ text gameName ]
           , text "."
           ]
@@ -301,25 +306,25 @@ renderNotification zone { time, read, message } =
         case (maybeTarget, maybeTargetName) of
           (Just target, Just targetName) ->
             span [ A.class "notif-msg" ]
-              [ text "Your target has marked himself as eliminated in "
-              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ text "Your target has marked themself as eliminated in "
+              , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text ", so your new target is "
-              , a [ A.class "link", A.href ("?@" ++ target) ]
+              , a [ A.class "link notif-name", A.href ("?@" ++ target) ]
                 [ text targetName ]
               , text "."
               ]
           _ ->
             span [ A.class "notif-msg" ]
-              [ text "Your target has marked himself as eliminated in "
-              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              [ text "Your target has marked themself as eliminated in "
+              , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text ". Check the home page for your new target."
               ]
       Api.Kicked gameID gameName reason ->
         span [ A.class "notif-msg" ]
           [ text "You were kicked from "
-          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+          , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
             [ text gameName ]
           , text
             (if reason == "" then " for unknown reasons." else " because \"" ++ reason ++ "\".")
@@ -327,10 +332,10 @@ renderNotification zone { time, read, message } =
       Api.TargetKicked gameID gameName target targetName ->
         span [ A.class "notif-msg" ]
           [ text "Your target was kicked from "
-          , a [ A.class "link", A.href ("?!" ++ gameID) ]
+          , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
             [ text gameName ]
           , text ", so your new target is "
-          , a [ A.class "link", A.href ("?@" ++ target) ]
+          , a [ A.class "link notif-name", A.href ("?@" ++ target) ]
             [ text targetName ]
           , text "."
           ]
@@ -339,22 +344,22 @@ renderNotification zone { time, read, message } =
           (Just target, Just targetName) ->
             span [ A.class "notif-msg" ]
               [ text "The targets of everyone who is still alive in "
-              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text " have been shuffled. Your new target is "
-              , a [ A.class "link", A.href ("?@" ++ target) ]
+              , a [ A.class "link notif-name", A.href ("?@" ++ target) ]
                 [ text targetName ]
               , text "."
               ]
           _ ->
             span [ A.class "notif-msg" ]
               [ text "The targets of everyone who is still alive in "
-              , a [ A.class "link", A.href ("?!" ++ gameID) ]
+              , a [ A.class "link notif-name", A.href ("?!" ++ gameID) ]
                 [ text gameName ]
               , text " have been shuffled. See the home page for your new target."
               ]
       Api.Announcement gameID gameName announcement ->
-        span [ A.class "notif-msg" ]
+        span [ A.class "notif-msg notif-name" ]
           [ text "An announcement from "
           , a [ A.class "link", A.href ("?!" ++ gameID) ]
             [ text gameName ]
@@ -381,29 +386,30 @@ makeHeader { session, zone } model frontPage =
     ] <|
     [ a [ A.href "?", A.class "site-name link" ]
       [ text "Elimination" ]
-    , span [ A.class "flex" ] []
+    , span [ A.class "flex" ] [ text " " ]
     ]
     ++ case session of
       Api.SignedIn { username } ->
-        (if frontPage then
-          [ a [ A.class "button create-game-btn", A.href "?!bbdd6" ]
+        [ if frontPage then
+          a [ A.class "button create-game-btn", A.href "?!bbdd6" ]
             [ text "Gunn Elimination 2020" ]
-          , a [ A.class "button create-game-btn", A.href "?create-game" ]
-            [ text "Create game" ]
-          ]
         else
-          [])
-        ++ [ headerWindow model "icon-btn header-btn notif-btn"
+          text ""
+        , if frontPage then
+          a [ A.class "button create-game-btn", A.href "?create-game" ]
+            [ text "Create game" ]
+        else
+          text ""
+        , headerWindow model "icon-btn header-btn notif-btn"
           [ text "Notifications ("
           , span [ A.classList [ ("show-unread", model.notifs.unread > 0) ] ]
             [ text (String.fromInt model.notifs.unread) ]
           , text ")" ]
           Notifications
           [ div [ A.class "header-window notifs" ]
-            ((h2 [ A.class "notif-header" ]
+            [ h2 [ A.class "notif-header" ]
               [ text "Notifications"
-              , span [ A.class "flex" ]
-                []
+              , span [ A.class "flex" ] [ text " " ]
               , button
                 [ A.class "button small-btn notif-action-btn"
                 , A.classList [ ("loading", model.markingAsRead) ]
@@ -424,29 +430,45 @@ makeHeader { session, zone } model frontPage =
               --     []
               --   , text "Send notifications to my email"
               --   ]
-              ])
-            :: List.map (renderNotification zone) model.notifs.notifications
-            ++ (case model.notifsProblem of
+              ]
+            , div [] (List.map (renderNotification zone) model.notifs.notifications)
+            , case model.notifsProblem of
               Just errorText ->
-                [ span [ A.class "problematic-error" ]
-                  [ text errorText ] ]
+                span [ A.class "problematic-error" ]
+                  [ text errorText ]
               Nothing ->
-                [])
-            ++ if model.notifsLoading then
-              [ button [ A.class "button load-more-btn loading", A.disabled True ]
-                [ text "Loading" ] ]
+                text ""
+            , if model.notifsLoading then
+              button [ A.class "button load-more-btn loading", A.disabled True ]
+                [ text "Loading" ]
             else if model.notifs.end then
-              []
+              text ""
             else
-              [ button [ A.class "button load-more-btn", onClick LoadMore ]
-                [ text "Load more" ] ])
+              button [ A.class "button load-more-btn", onClick LoadMore ]
+                [ text "Load more" ]
+            ]
           ]
-        , a [ A.class "link username", A.href ("?@" ++ username) ]
-          [ text username ]
+        , headerWindow model "header-btn auth-btn username-btn"
+          [ span [ A.class "username" ]
+            [ text username ]
+          , span [ A.class "username-dropdown-arrow" ] []
+          ]
+          UserOptions
+          [ div [ A.class "header-window username-list" ]
+            [ a [ A.class "username-item link", A.href ("?@" ++ username), A.id "my-profile", onClick Close ]
+              [ text "My profile" ]
+            , a [ A.class "username-item link", A.href "?settings", onClick Close ]
+              [ text "Account settings" ]
+            , div [ A.class "username-divider" ]
+              []
+            , button [ A.class "username-item link", onClick SignOut ]
+              [ text "Sign out" ]
+            ]
+          ]
         ]
       Api.SignedOut ->
-        [ headerWindow model "header-btn auth-btn" [ text "Log in" ] LoginWindow <|
-          [ form [ A.class "header-window", onSubmit Login ] <|
+        [ headerWindow model "header-btn auth-btn" [ text "Log in" ] LoginWindow
+          [ form [ A.class "header-window", onSubmit Login ]
             [ Input.myInput (Change LoginUsername)
               { myInputDefaults
               | labelText = "Username"
@@ -459,6 +481,10 @@ makeHeader { session, zone } model frontPage =
                 else
                   Nothing
               , id = Just "login-input"
+              , attributes =
+                [ A.attribute "autocapitalize" "none"
+                , A.attribute "autocorrect" "off"
+                ]
               }
             , Input.myInput (Change LoginPassword)
               { myInputDefaults
@@ -483,16 +509,16 @@ makeHeader { session, zone } model frontPage =
                 model.loginPassword.valid))
               ]
               []
-            ]
-            ++ case model.loginProblem of
+            , case model.loginProblem of
               Just errorText ->
-                [ span [ A.class "problematic-error" ]
-                  [ text errorText ] ]
+                span [ A.class "problematic-error" ]
+                  [ text errorText ]
               Nothing ->
-                []
+                text ""
+            ]
           ]
-        , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow <|
-          [ form [ A.class "header-window", onSubmit SignUp ] <|
+        , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow
+          [ form [ A.class "header-window", onSubmit SignUp ]
             [ Input.myInput (Change SignUpUsername)
               { myInputDefaults
               | labelText = "Username"
@@ -508,6 +534,10 @@ makeHeader { session, zone } model frontPage =
                   Api.Validate.usernameOk value
               , maxChars = Just 20
               , id = Just "sign-up-input"
+              , attributes =
+                [ A.attribute "autocapitalize" "none"
+                , A.attribute "autocorrect" "off"
+                ]
               }
             , Input.myInput (Change SignUpName)
               { myInputDefaults
@@ -579,32 +609,45 @@ makeHeader { session, zone } model frontPage =
                 model.signUpPasswordAgain.valid))
               ]
               []
+            , span [ A.class "problematic-error" ]
+              [ text (Maybe.withDefault "" model.signUpProblem) ]
+            , p [ A.class "sign-up-privacy" ]
+              [ text "Read our "
+              , a [ A.href "?privacy", A.class "link" ]
+                [ text "Privacy policy" ]
+              , text " to see what we do with these data."
+              ]
             ]
-            ++ case model.signUpProblem of
-              Just errorText ->
-                [ span [ A.class "problematic-error" ]
-                  [ text errorText ] ]
-              Nothing ->
-                []
           ]
         ]
   ]
 
-makeConfirmLeave : msg -> msg -> List (Html msg)
-makeConfirmLeave onLeave onCancel =
+makeConfirm : msg -> String -> Html msg -> List (Html msg)
+makeConfirm onCancel confirmMsg okBtn =
   [ div [ A.class "modal-back show" ]
     [ div [ A.class "modal unsaved-changes" ]
       [ p [ A.class "confirm-msg" ]
-        [ text "You have unsaved changes. Are you sure you want to leave?" ]
+        [ text confirmMsg ]
       , div [ A.class "confirm-btn-wrapper" ]
-        [ button [ A.class "button", A.id "confirm-leave-btn", onClick onLeave ]
-          [ text "Leave" ]
+        [ okBtn
         , button [ A.class "button cancel-btn", onClick onCancel ]
           [ text "Cancel" ]
         ]
       ]
     ]
   ]
+
+makeConfirmLeave : msg -> msg -> List (Html msg)
+makeConfirmLeave onLeave onCancel =
+  button [ A.class "button", A.id "confirm-leave-btn", onClick onLeave ]
+    [ text "Leave" ]
+    |> makeConfirm onCancel "You have unsaved changes. Are you sure you want to leave?"
+
+makeConfirmSignOut : msg -> msg -> List (Html msg)
+makeConfirmSignOut onSignOut onCancel =
+  button [ A.class "button", A.id "confirm-leave-btn", onClick onSignOut ]
+    [ text "Sign out" ]
+    |> makeConfirm onCancel "You have unsaved changes. Are you sure you want to sign out?"
 
 makeFooter : List (Html msg)
 makeFooter =
@@ -614,12 +657,12 @@ makeFooter =
       , Utils.extLink "UGWA" "https://gunn.app/" "link"
       , text "."
       ]
-    , span [ A.class "flex" ] []
+    , span [ A.class "flex" ] [ text " " ]
     , span []
       [ Utils.extLink "Github" "https://github.com/Orbiit/elimination" "link"
       , text (" " ++ char Middot ++ " ")
       , a [ A.href "?about", A.class "link" ]
-        [ text "About" ]
+        [ text "Help" ]
       , text (" " ++ char Middot ++ " ")
       , a [ A.href "?privacy", A.class "link" ]
         [ text "Privacy policy" ]

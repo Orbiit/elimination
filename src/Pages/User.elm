@@ -88,23 +88,26 @@ renderGame game =
     [ span [ A.class "item-name" ]
       [ text game.name ]
     , span [ A.class "item-info" ]
-      [ text
-        (String.fromInt game.players
-        ++ (if game.players == 1 then
+      [ text <| String.concat
+        [ String.fromInt game.players
+        , if game.players == 1 then
           " participant"
         else
-          " participants")
-        ++ " " ++ char Middot ++ " "
-        ++ Api.gameStateName game.state
-        ++ " " ++ char Middot ++ " "
-        ++ (if game.alive then (if game.state == Api.Ended then "Winner" else "Alive") else "Eliminated")
-        ++ " " ++ char Middot ++ " "
-        ++ String.fromInt game.kills
-        ++ (if game.kills == 1 then
+          " participants"
+        , " " ++ char Middot ++ " "
+        , Api.gameStateName game.state
+        , " " ++ char Middot ++ " "
+        , if game.alive then
+          if game.state == Api.Ended then "Winner" else "Alive"
+        else
+          "Eliminated"
+        , " " ++ char Middot ++ " "
+        , String.fromInt game.kills
+        , if game.kills == 1 then
           " elimination"
         else
           " eliminations"
-        ))
+        ]
       ]
     ]
 
@@ -113,20 +116,19 @@ view global model =
   [ article [ A.class "main content profile" ]
     [ div [ A.class "profile-info" ]
       [ h1 [ A.class "profile-name" ]
-        ([ a [ A.class "link", A.href ("?@" ++ model.username) ]
+        [ a [ A.class "link", A.href ("?@" ++ model.username) ]
           [ text model.info.name ]
-        , span [ A.class "flex" ]
-          []
-        ]
-        ++ case global.session of
+        , span [ A.class "flex" ] [ text " " ]
+        , case global.session of
           Api.SignedIn { username } ->
             if username == model.username then
-              [ a [ A.class "icon-btn settings-btn", A.href "?settings" ]
-                [ text "Settings" ] ]
+              a [ A.class "icon-btn settings-btn", A.href "?settings" ]
+                [ text "Settings" ]
             else
-              []
+              text ""
           Api.SignedOut ->
-            [])
+            text ""
+        ]
       , span [ A.class "profile-subtitle" ]
         [ text ("@" ++ model.username) ]
       , p [ A.class "profile-desc" ]
@@ -135,25 +137,24 @@ view global model =
         [ text ("Total eliminations: " ++ String.fromInt (List.sum (List.map .kills model.info.games))) ]
       ]
     , div [ A.class "lists" ]
-      (Utils.filter
-        [ if List.isEmpty model.info.myGames then
-          Nothing
-        else
-          Just (section [ A.class "list" ]
-            ((h2 [] [ text ("Games I created (" ++ String.fromInt (List.length model.info.myGames) ++ ")") ]) ::
-              (model.info.myGames
-                |> List.sortBy .time
-                |> List.reverse
-                |> List.map (renderMyGame global))))
-        , if List.isEmpty model.info.games then
-          Nothing
-        else
-          Just (section [ A.class "list" ]
-            ((h2 [] [ text ("Games in which I participate (" ++ String.fromInt (List.length model.info.games) ++ ")") ]) ::
-              (model.info.games
-                |> List.sortBy .updated
-                |> List.reverse
-                |> List.map renderGame)))
-        ])
+      [ if List.isEmpty model.info.myGames then
+        text ""
+      else
+        section [ A.class "list" ]
+          ((h2 [] [ text ("Games I created (" ++ String.fromInt (List.length model.info.myGames) ++ ")") ]) ::
+            (model.info.myGames
+              |> List.sortBy .time
+              |> List.reverse
+              |> List.map (renderMyGame global)))
+      , if List.isEmpty model.info.games then
+        text ""
+      else
+        section [ A.class "list" ]
+          ((h2 [] [ text ("Games in which I participate (" ++ String.fromInt (List.length model.info.games) ++ ")") ]) ::
+            (model.info.games
+              |> List.sortBy .updated
+              |> List.reverse
+              |> List.map renderGame))
+      ]
     ]
   ]

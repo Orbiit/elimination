@@ -4,7 +4,7 @@
 .small-screen-create-game-btn {
   display: none;
 }
-@media (max-width: 670px) { /* TEMP: Return to 600px later */
+@media (max-width: 660px) { /* TEMP: Return to 600px later */
   .targets {
     flex-direction: column;
   }
@@ -19,8 +19,10 @@
   font-size: 16px;
   width: 100%;
   text-align: center;
-  align-self: center;
   color: rgba(255, 255, 255, 0.5);
+  margin: auto 0;
+  box-sizing: border-box;
+  padding: 20px;
 }
 .targets {
   display: flex;
@@ -40,33 +42,50 @@
 .target-label {
   font-size: 16px;
   color: rgba(255, 255, 255, 0.6);
+  width: 100%;
 }
 .target-name {
   font-size: 64px;
   margin-bottom: 10px;
   line-height: 1;
   word-break: break-word;
+  white-space: normal;
 }
 .kill-code {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.kill-code-header {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.9);
 }
 .code {
   color: transparent;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.4);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
   cursor: pointer;
   font-weight: bold;
   word-break: break-word;
+  font-size: 24px;
+  margin: 10px 0;
 }
 .code:hover {
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.5);
 }
 .code.revealed {
   background-color: transparent;
   color: white;
+  text-shadow: none;
   cursor: auto;
 }
 .kill-code .link {
+  color: #a77;
+}
+.kill-code .link:hover {
   color: #faa;
 }
 .leaderboard-link {
@@ -86,7 +105,8 @@
   border-top: 1px solid rgba(255, 0, 0, 0.2);
   overflow-x: auto;
   padding: 5px;
-  white-space: pre;
+  /* Safari treats "pre" kind of like "pre-wrap" */
+  white-space: nowrap;
 }
 .other-games-header {
   font-size: 12px;
@@ -102,6 +122,7 @@
   margin: 5px;
   padding: 10px;
   transition: background-color .2s;
+  white-space: pre;
 }
 .other-game:hover {
   background-color: rgba(255, 255, 255, 0.3);
@@ -112,11 +133,10 @@
 .other-game-name {
   display: block;
   font-size: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
+  white-space: nowrap;
 }
 .other-game-status {
   font-size: 10px;
   text-transform: uppercase;
-  padding: 2px 5px;
-  background-color: var(--blood);
 }

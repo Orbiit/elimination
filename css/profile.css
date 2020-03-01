@@ -8,6 +8,8 @@
   font-size: 48px;
   margin: 0;
   word-break: break-word;
+  flex-wrap: wrap;
+  white-space: normal;
 }
 .settings-btn {
   margin-top: 15px;
@@ -25,6 +27,7 @@
 }
 .profile-subtitle .link {
   color: rgba(255, 255, 255, 0.8);
+  white-space: normal;
 }
 .profile-desc {
   font-size: 16px;
@@ -34,6 +37,9 @@
 }
 .profile-desc .link {
   color: #faa;
+}
+.profile-desc .profile-game-name {
+  white-space: normal;
 }
 .profile-stats {
   text-align: center;
@@ -68,6 +74,7 @@
   font-size: 16px;
   display: block;
   word-break: break-word;
+  white-space: normal;
 }
 .item:hover .item-name {
   text-decoration: underline;

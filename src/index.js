@@ -1,5 +1,6 @@
 import Elm from './Main.elm'
 import NProgress from 'nprogress'
+// import ClipboardJS from 'clipboard'
 import '../js/tab-key-focus.js'
 
 import '../css/nprogress.css'
@@ -50,3 +51,5 @@ app.ports.start.subscribe(() => {
 app.ports.done.subscribe(() => {
   NProgress.done()
 })
+
+// const clipboard = new ClipboardJS('.copy-btn')
