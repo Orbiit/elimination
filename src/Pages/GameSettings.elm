@@ -95,11 +95,7 @@ update msg global model =
   case msg of
     Change input { validate, value, scrollHeight } ->
       let
-        ok = case validate value of
-          Just _ ->
-            False
-          Nothing ->
-            True
+        ok = validate value == Nothing
       in
         ( case input of
           NameInput ->

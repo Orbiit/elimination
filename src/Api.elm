@@ -162,6 +162,21 @@ setSettings : GlobalModel m -> ResultMsg () msg -> E.Value -> Cmd msg
 setSettings global msg changes =
   post global "user-settings" msg changes (D.succeed ())
 
+makeReset : GlobalModel m -> ResultMsg String msg -> String -> Cmd msg
+makeReset global msg username =
+  post global "user-settings" msg (E.object [ ("username", E.string username) ])
+    (D.field "make-reset" D.string)
+
+resetPassword : GlobalModel m -> ResultMsg (String, String) msg -> String -> String -> Cmd msg
+resetPassword global msg id password =
+  post global "reset-password" msg (E.object
+    [ ("id", E.string id)
+    , ("password", E.string password)
+    ]) <|
+    D.map2 Tuple.pair
+      (D.field "session" D.string)
+      (D.field "username" D.string)
+
 type alias GameID = String
 
 createGame : GlobalModel m -> ResultMsg GameID msg -> E.Value -> Cmd msg

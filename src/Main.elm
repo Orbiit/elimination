@@ -24,6 +24,7 @@ import Pages.User
 import Pages.Game
 import Pages.UserSettings
 import Pages.GameSettings
+import Pages.ResetPassword
 import Pages.Loading
 import Pages.Error
 import NProgress
@@ -109,7 +110,9 @@ urlToPage global url =
               |> Cmd.map GameSettingsMsg
             , NProgress.start ()
             ]
-      -- = probably means there are trackers in the URL
+      else if String.startsWith "reset-" path then
+        SwitchPage (Pages.ResetPassword (String.dropLeft (String.length "reset-") path))
+      -- `=` probably means there are trackers in the URL
       else if path == "" || String.contains "=" path then
         loadFrontPage global
       else
@@ -148,6 +151,7 @@ type alias Model =
   , frontPage : Pages.FrontPage.Model
   , gameSettings : Pages.GameSettings.Model
   , game : Pages.Game.Model
+  , resetPassword : Pages.ResetPassword.Model
   }
 
 init : (String, Maybe String, Maybe String) -> Url -> Nav.Key -> (Model, Cmd Msg)
@@ -184,6 +188,7 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
       , frontPage = Pages.FrontPage.init
       , gameSettings = Pages.GameSettings.init
       , game = Pages.Game.init
+      , resetPassword = Pages.ResetPassword.init
       }
     , Cmd.batch
       [ if shouldRemoveQuery url then
@@ -215,6 +220,8 @@ title model =
       "Settings"
     Pages.GameSettings ->
       if model.gameSettings.game == Nothing then "Create a game" else "Game settings"
+    Pages.ResetPassword _ ->
+      "Reset password"
     Pages.Error (status, _) ->
       case status of
         Request.ErrorStatusText text ->
@@ -248,6 +255,9 @@ content model =
     Pages.GameSettings ->
       Pages.GameSettings.view model model.gameSettings
         |> List.map (Html.map GameSettingsMsg)
+    Pages.ResetPassword id ->
+      Pages.ResetPassword.view model model.resetPassword
+        |> List.map (Html.map (ResetPasswordMsg id))
     Pages.Error error ->
       Pages.Error.view error
     Pages.Loading ->
@@ -296,6 +306,7 @@ type Msg
   | FrontPageMsg Pages.FrontPage.Msg
   | GameSettingsMsg Pages.GameSettings.Msg
   | GameMsg Pages.Game.Msg
+  | ResetPasswordMsg String Pages.ResetPassword.Msg
   | BeforeUnload ()
   | CheckNotifs Time.Posix
   | OnKeyDown String
@@ -437,32 +448,37 @@ update msg model =
       let
         (subModel, subCmd, pageCmd) = Base.update subMsg model model.header
       in
-        doPageCmd pageCmd ({ model | header = subModel }, Cmd.map BaseMsg subCmd)
+      doPageCmd pageCmd ({ model | header = subModel }, Cmd.map BaseMsg subCmd)
     UserSettingsMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.UserSettings.update subMsg model model.userSettings
       in
-        doPageCmd pageCmd ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg subCmd)
+      doPageCmd pageCmd ({ model | userSettings = subModel }, Cmd.map UserSettingsMsg subCmd)
     UserMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.User.update subMsg model model.user
       in
-        doPageCmd pageCmd ({ model | user = subModel }, Cmd.map UserMsg subCmd)
+      doPageCmd pageCmd ({ model | user = subModel }, Cmd.map UserMsg subCmd)
     FrontPageMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.FrontPage.update subMsg model model.frontPage
       in
-        doPageCmd pageCmd ({ model | frontPage = subModel }, Cmd.map FrontPageMsg subCmd)
+      doPageCmd pageCmd ({ model | frontPage = subModel }, Cmd.map FrontPageMsg subCmd)
     GameSettingsMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.GameSettings.update subMsg model model.gameSettings
       in
-        doPageCmd pageCmd ({ model | gameSettings = subModel }, Cmd.map GameSettingsMsg subCmd)
+      doPageCmd pageCmd ({ model | gameSettings = subModel }, Cmd.map GameSettingsMsg subCmd)
     GameMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Pages.Game.update subMsg model model.game
       in
-        doPageCmd pageCmd ({ model | game = subModel }, Cmd.map GameMsg subCmd)
+      doPageCmd pageCmd ({ model | game = subModel }, Cmd.map GameMsg subCmd)
+    ResetPasswordMsg id subMsg ->
+      let
+        (subModel, subCmd, pageCmd) = Pages.ResetPassword.update subMsg model model.resetPassword id
+      in
+      doPageCmd pageCmd ({ model | resetPassword = subModel }, Cmd.map (ResetPasswordMsg id) subCmd)
     BeforeUnload _ ->
       (model, if unsavedChanges model then preventUnload () else Cmd.none)
     CheckNotifs _ ->

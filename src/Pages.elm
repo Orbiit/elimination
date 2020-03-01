@@ -11,5 +11,6 @@ type Page
   | Game
   | UserSettings
   | GameSettings
+  | ResetPassword String
   | Loading
   | Error Request.HttpError
