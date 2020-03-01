@@ -166,6 +166,8 @@ update msg global model =
             , state = state
             , announcement = Input.initInputState
             , announcementHeight = 0
+            , includeDead = False
+            , announced = False
             , shuffled = False
             }
           , Cmd.batch [ NProgress.done (), resizeDesc ]
@@ -289,7 +291,8 @@ update msg global model =
       case model.game of
         Just gameID ->
           ( { model | announcing = True, announced = False, announceProblem = Nothing }
-          , Api.announce global Announced gameID model.announcement.value model.includeDead
+          , Api.announce global Announced gameID model.announcement.value
+            (model.state == Api.WillStart || model.includeDead)
           , Api.None
           )
         Nothing ->
@@ -529,17 +532,20 @@ view { zone } model =
             { myInputDefaults
             | labelText = "Send an announcement"
             , sublabel =
-              [ label [ A.class "checkbox-label" ]
-                [ input
-                  [ A.type_ "checkbox"
-                  , A.class "checkbox"
-                  , A.checked model.includeDead
-                  , onCheck ChangeIncludeDead
+              if model.state == Api.Started then
+                [ label [ A.class "checkbox-label" ]
+                  [ input
+                    [ A.type_ "checkbox"
+                    , A.class "checkbox"
+                    , A.checked model.includeDead
+                    , onCheck ChangeIncludeDead
+                    ]
+                    []
+                  , text " Also send to eliminated players"
                   ]
-                  []
-                , text " Also send to eliminated players"
                 ]
-              ]
+              else
+                []
             , type_ = "textarea"
             , placeholder = "A reminder: we have always been at war with Eastasia."
             , value = model.announcement.value
