@@ -38,6 +38,7 @@ type alias Model =
   , problem : Maybe String
   , announcement : Input.InputState
   , announcementHeight : Float
+  , includeDead : Bool
   , announcing : Bool
   , announced : Bool
   , announceProblem : Maybe String
@@ -66,6 +67,7 @@ init =
   , problem = Nothing
   , announcement = Input.initInputState
   , announcementHeight = 0
+  , includeDead = False
   , announcing = False
   , announced = False
   , announceProblem = Nothing
@@ -83,6 +85,7 @@ init =
 type Msg
   = Change Input Input.MyInputMsg
   | ChangeJoinability Bool
+  | ChangeIncludeDead Bool
   | ResizeDesc (Result Dom.Error Dom.Viewport)
   | ResizeAnnouncement (Result Dom.Error Dom.Viewport)
   | InfoLoaded Api.GameID (Api.Response Api.GameSettingsInfo)
@@ -135,6 +138,8 @@ update msg global model =
       , Cmd.none
       , Api.None
       )
+    ChangeIncludeDead includeDead ->
+      ({ model | includeDead = includeDead }, Cmd.none, Api.None)
     ResizeDesc result ->
       case result of
         Ok viewport ->
@@ -284,8 +289,7 @@ update msg global model =
       case model.game of
         Just gameID ->
           ( { model | announcing = True, announced = False, announceProblem = Nothing }
-          -- TODO: Be able to specify whether to include dead
-          , Api.announce global Announced gameID model.announcement.value True
+          , Api.announce global Announced gameID model.announcement.value model.includeDead
           , Api.None
           )
         Nothing ->
@@ -323,6 +327,7 @@ discardChanges model =
   , password = Input.updateValue Input.initInputState "" True
   , announcement = Input.initInputState
   , announcementHeight = 0
+  , includeDead = False
   }
 
 renderPlayer : Model -> Time.Zone -> Api.GameSettingsPlayer -> Html Msg
@@ -444,7 +449,7 @@ view { zone } model =
             | labelText = "Passphrase to join"
             , sublabel =
               [ text "Share this passphrase to people who you want to join. Passphrases are case insensitive."
-              , label [ A.class "allow-join" ]
+              , label [ A.class "checkbox-label" ]
                 [ input
                   [ A.type_ "checkbox"
                   , A.class "checkbox"
@@ -515,47 +520,55 @@ view { zone } model =
         Nothing ->
           text ""
       ]
-    , div [] <|
-      if model.game == Nothing || model.state == Api.Ended then
-        []
-      else
-        [ form [ onSubmit Announce ] <|
-          List.concat
-            [ [ div [ A.class "input-row" ]
-                [ Input.myInput (Change AnnouncementInput)
-                  { myInputDefaults
-                  | labelText = "Send an announcement"
-                  , type_ = "textarea"
-                  , placeholder = "A reminder: we have always been at war with Eastasia."
-                  , value = model.announcement.value
-                  , validate = \value ->
-                    if String.length value > 2000 then
-                      Just "Announcement can only be at most 2000 characters long."
-                    else if String.isEmpty value then
-                      Just ""
-                    else
-                      Nothing
-                  , maxChars = Just 2000
-                  , id = Just "game-announcement"
-                  , height = Just (String.fromFloat (model.announcementHeight + 6) ++ "px")
-                  }
+    , if model.game == Nothing || model.state == Api.Ended then
+      text ""
+    else
+      form [ onSubmit Announce ]
+        [ div [ A.class "input-row" ]
+          [ Input.myInput (Change AnnouncementInput)
+            { myInputDefaults
+            | labelText = "Send an announcement"
+            , sublabel =
+              [ label [ A.class "checkbox-label" ]
+                [ input
+                  [ A.type_ "checkbox"
+                  , A.class "checkbox"
+                  , A.checked model.includeDead
+                  , onCheck ChangeIncludeDead
+                  ]
+                  []
+                , text " Also send to eliminated players"
                 ]
-              , input
-                [ A.class "button submit-btn"
-                , A.classList [ ("loading", model.announcing) ]
-                , A.type_ "submit"
-                , A.value (if model.announcing then "Sending" else if model.announced then "Sent" else "Send")
-                , A.disabled <| model.announcing || not model.announcement.valid
-                ]
-                []
               ]
-            , case model.announceProblem of
-              Just errorText ->
-                [ span [ A.class "problematic-error" ]
-                  [ text errorText ] ]
-              Nothing ->
-                []
-            ]
+            , type_ = "textarea"
+            , placeholder = "A reminder: we have always been at war with Eastasia."
+            , value = model.announcement.value
+            , validate = \value ->
+              if String.length value > 2000 then
+                Just "Announcement can only be at most 2000 characters long."
+              else if String.isEmpty value then
+                Just ""
+              else
+                Nothing
+            , maxChars = Just 2000
+            , id = Just "game-announcement"
+            , height = Just (String.fromFloat (model.announcementHeight + 6) ++ "px")
+            }
+          ]
+        , input
+          [ A.class "button submit-btn"
+          , A.classList [ ("loading", model.announcing) ]
+          , A.type_ "submit"
+          , A.value (if model.announcing then "Sending" else if model.announced then "Sent" else "Send")
+          , A.disabled <| model.announcing || not model.announcement.valid
+          ]
+          []
+        , case model.announceProblem of
+          Just errorText ->
+            span [ A.class "problematic-error" ]
+              [ text errorText ]
+          Nothing ->
+            text ""
         ]
     , div [ A.class "members" ] <|
       [ h2 [ A.class "members-header" ]

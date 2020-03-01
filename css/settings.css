@@ -23,7 +23,7 @@
 #game-desc {
   overflow: hidden;
 }
-.allow-join {
+.checkbox-label {
   color: rgba(255, 255, 255, 0.8);
   display: block;
   margin-top: 10px;
