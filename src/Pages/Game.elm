@@ -188,6 +188,23 @@ renderPlayer global ended player =
       ]
     ]
 
+renderAnnouncement : Api.GlobalModel m -> Api.GameAnnouncement -> Html Msg
+renderAnnouncement global announcement =
+  div [ A.class "item" ]
+    [ div [ A.class "announcement" ]
+      [ text announcement.message ]
+    , span [ A.class "item-info" ]
+      [ text <| String.concat
+        [ HumanTime.display global.zone announcement.time
+        , " " ++ char Middot ++ " "
+        , if announcement.includedDead then
+          "To all players"
+        else
+          "To alive players only"
+        ]
+      ]
+    ]
+
 view : Api.GlobalModel m -> Model -> List (Html Msg)
 view global model =
   [ article [ A.class "main content profile" ]
@@ -286,16 +303,25 @@ view global model =
         ) ]
       ]
     , div [ A.class "lists" ]
-      [ section [ A.class "list" ]
-        ((h2 []
+      [ if List.isEmpty model.info.announcements then
+        text ""
+      else
+        section [ A.class "list" ] <|
+          (h2 [] [ text "Announcements" ])
+          :: (model.info.announcements
+            |> List.sortBy .time
+            |> List.reverse
+            |> List.map (renderAnnouncement global))
+      , section [ A.class "list" ] <|
+        (h2 []
           [ text
             (if model.info.state == Api.WillStart then
               "Participants (" ++ (String.fromInt (List.length model.info.players)) ++ ")"
             else
               "Leaderboard by most eliminations")
           ])
-        :: (List.map (renderPlayer global (model.info.state == Api.Ended))
-          (List.sortWith (\a -> \b ->
+        :: (model.info.players
+          |> List.sortWith (\a -> \b ->
             case compare b.kills a.kills of
               EQ ->
                 case (a.killTime, b.killTime) of
@@ -309,8 +335,8 @@ view global model =
                     compare b.joined a.joined
               _ as order ->
                 order
-          ) model.info.players))
-        )
+          )
+          |> List.map (renderPlayer global (model.info.state == Api.Ended)))
       ]
     ]
   ]

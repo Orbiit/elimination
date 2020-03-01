@@ -83,3 +83,7 @@
   color: rgba(255, 255, 255, 0.7);
   font-size: 16px;
 }
+.announcement {
+  font-size: 16px;
+  word-break: break-word;
+}
