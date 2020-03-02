@@ -509,12 +509,16 @@ makeHeader { session, zone } model frontPage =
                 model.loginPassword.valid))
               ]
               []
-            , case model.loginProblem of
-              Just errorText ->
-                span [ A.class "problematic-error" ]
-                  [ text errorText ]
-              Nothing ->
-                text ""
+            , span [ A.class "problematic-error" ]
+              [ text (Maybe.withDefault "" model.loginProblem) ]
+            , p [ A.class "auth-note" ]
+              [ text "If you forgot your password, message "
+              , Utils.extLink "Ovinus Real" "https://www.facebook.com/ovinus.real" "link"
+              , text " or email "
+              , a [ A.href "mailto:sy24484@pausd.us", A.class "link" ]
+                [ text "mailto:sy24484@pausd.us" ]
+              , text " for a password reset link."
+              ]
             ]
           ]
         , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow
@@ -611,7 +615,7 @@ makeHeader { session, zone } model frontPage =
               []
             , span [ A.class "problematic-error" ]
               [ text (Maybe.withDefault "" model.signUpProblem) ]
-            , p [ A.class "sign-up-privacy" ]
+            , p [ A.class "auth-note" ]
               [ text "Read our "
               , a [ A.href "?privacy", A.class "link" ]
                 [ text "Privacy policy" ]

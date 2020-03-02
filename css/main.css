@@ -164,10 +164,12 @@ a {
   box-sizing: border-box;
   max-width: 400px;
 }
-.sign-up-privacy {
+.auth-note {
   font-size: 16px;
+  margin: 0;
+  margin-top: 10px;
 }
-.sign-up-privacy .link {
+.auth-note .link {
   color: #faa;
 }
 
@@ -351,7 +353,6 @@ a {
 .submit-btn {
   display: block;
   margin: 0 auto;
-  margin-top: 20px;
 }
 .error .problem,
 .problematic-error {
