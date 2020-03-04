@@ -39,6 +39,7 @@ type alias Model =
   { open : HeaderWindow
   , loginUsername : Input.InputState
   , loginPassword : Input.InputState
+  , loginPage : Bool
   , signUpUsername : Input.InputState
   , signUpName : Input.InputState
   , signUpEmail : Input.InputState
@@ -59,6 +60,7 @@ init semiGlobal =
   ( { open = None
     , loginUsername = Input.initInputState
     , loginPassword = Input.initInputState
+    , loginPage = True
     , signUpUsername = Input.initInputState
     , signUpName = Input.initInputState
     , signUpEmail = Input.initInputState
@@ -87,10 +89,13 @@ clearNotifs model =
 type Msg
   = Open HeaderWindow
   | Close
+  | ToggleLoginTab
   | Change Input Input.MyInputMsg
   | Login
   | SignUp
   | NewSession AuthMethod String (Api.Response Api.SessionID)
+  | Forgot
+  | Forgotten (Api.Response ())
   | SignOut
   | Refresh
   | NotificationsLoaded (Api.Response Api.NotificationResult)
@@ -127,6 +132,8 @@ update msg global model =
       )
     Close ->
       ({ model | open = None }, Cmd.none, Api.None)
+    ToggleLoginTab ->
+      ({ model | loginPage = not model.loginPage }, Cmd.none, Api.None)
     Change input { validate, value } ->
       let
         valid = case validate value of
@@ -194,6 +201,17 @@ update msg global model =
           , Cmd.none
           , Api.None
           )
+    Forgot ->
+      ( { model | loginLoading = True, loginProblem = Nothing }
+      , Api.forgotPassword global Forgotten model.loginUsername.value
+      , Api.None
+      )
+    Forgotten result ->
+      case result of
+        Ok _ ->
+          ({ model | loginLoading = False }, Cmd.none, Api.None)
+        Err (_, error) ->
+          ({ model | loginLoading = False, loginProblem = Just error }, Cmd.none, Api.None)
     SignOut ->
       ( model, Cmd.none, Api.AttemptSignOut)
     Refresh ->
@@ -370,6 +388,211 @@ renderNotification zone { time, read, message } =
           [ text ("(Indistinct \"" ++ msgType ++ "\" message)") ]
     ]
 
+loginWindow : Model -> Html Msg
+loginWindow model =
+  div [ A.class "header-window" ]
+    [ form [ onSubmit Login ]
+      [ Input.myInput (Change LoginUsername)
+        { myInputDefaults
+        | labelText = "Username"
+        , placeholder = "billygamer5"
+        , name = "username"
+        , value = model.loginUsername.value
+        , validate = \value ->
+          if String.isEmpty value then
+            Just ""
+          else
+            Nothing
+        , id = Just "login-input"
+        , attributes =
+          [ A.attribute "autocapitalize" "none"
+          , A.attribute "autocorrect" "off"
+          ]
+        }
+      , Input.myInput (Change LoginPassword)
+        { myInputDefaults
+        | labelText = "Password"
+        , type_ = "password"
+        , placeholder = "hunter2"
+        , name = "password"
+        , value = model.loginPassword.value
+        , validate = \value ->
+          if String.isEmpty value then
+            Just ""
+          else
+            Nothing
+        }
+      , input
+        [ A.class "button submit-btn"
+        , A.classList [ ("loading", model.loginLoading) ]
+        , A.type_ "submit"
+        , A.value "Log in"
+        , A.disabled (model.loginLoading || not
+          (model.loginUsername.valid &&
+          model.loginPassword.valid))
+        ]
+        []
+      ]
+    , span [ A.class "problematic-error" ]
+      [ text (Maybe.withDefault "" model.loginProblem) ]
+    , p [ A.class "auth-note" ]
+      [ button [ A.class "link", onClick ToggleLoginTab ]
+        [ text "Forgot your password?" ]
+      ]
+    ]
+
+forgotPasswordWindow : Model -> Html Msg
+forgotPasswordWindow model =
+  div [ A.class "header-window" ]
+    [ p [ A.class "auth-note" ]
+      [ button [ A.class "link", onClick ToggleLoginTab ]
+        [ text "Back" ]
+      ]
+    , p [ A.class "auth-note" ]
+      [ text "We'll send instructions for resetting your password to the email with which you signed up."
+      ]
+    , form [ onSubmit Forgot ]
+      [ Input.myInput (Change LoginUsername)
+        { myInputDefaults
+        | labelText = "Username"
+        , placeholder = "billygamer5"
+        , name = "username"
+        , value = model.loginUsername.value
+        , validate = \value ->
+          if String.isEmpty value then
+            Just ""
+          else
+            Nothing
+        , id = Just "login-input"
+        , attributes =
+          [ A.attribute "autocapitalize" "none"
+          , A.attribute "autocorrect" "off"
+          ]
+        }
+      , input
+        [ A.class "button submit-btn"
+        , A.classList [ ("loading", model.loginLoading) ]
+        , A.type_ "submit"
+        , A.value "Send"
+        , A.disabled (model.loginLoading || not model.loginUsername.valid)
+        ]
+        []
+      ]
+    , span [ A.class "problematic-error" ]
+      [ text (Maybe.withDefault "" model.loginProblem) ]
+    , p [ A.class "auth-note" ]
+      [ text "If receiving the email doesn't work, check your spam folder, then message "
+      , Utils.extLink "Ovinus Real" "https://www.facebook.com/ovinus.real" "link"
+      , text " or email "
+      , a [ A.href "mailto:sy24484@pausd.us", A.class "link" ]
+        [ text "mailto:sy24484@pausd.us" ]
+      , text " for a password reset link."
+      ]
+    ]
+
+signUpWindow : Model -> Html Msg
+signUpWindow model =
+  form [ A.class "header-window", onSubmit SignUp ]
+    [ Input.myInput (Change SignUpUsername)
+      { myInputDefaults
+      | labelText = "Username"
+      , sublabel = [ text Api.Validate.usernameLabel ]
+      , type_ = "text"
+      , placeholder = "billygamer5"
+      , name = "username"
+      , value = model.signUpUsername.value
+      , validate = \value ->
+        if String.isEmpty value then
+          Just ""
+        else
+          Api.Validate.usernameOk value
+      , maxChars = Just 20
+      , id = Just "sign-up-input"
+      , attributes =
+        [ A.attribute "autocapitalize" "none"
+        , A.attribute "autocorrect" "off"
+        ]
+      }
+    , Input.myInput (Change SignUpName)
+      { myInputDefaults
+      | labelText = "Full name"
+      , sublabel = [ text Api.Validate.nameLabel ]
+      , placeholder = "Billy Chelontuvier"
+      , value = model.signUpName.value
+      , name = "name"
+      , validate = \value ->
+        if String.isEmpty value then
+          Just ""
+        else
+          Api.Validate.nameOk value
+      , maxChars = Just 50
+      }
+    , Input.myInput (Change SignUpEmail)
+      { myInputDefaults
+      | labelText = "Email"
+      , sublabel = [ text Api.Validate.emailLabel ]
+      , type_ = "email"
+      , placeholder = "billygamer5@example.com"
+      , name = "email"
+      , value = model.signUpEmail.value
+      , validate = \value ->
+        if String.isEmpty value then
+          Just ""
+        else
+          Api.Validate.emailOk value
+      , maxChars = Just 320
+      }
+    , Input.myInput (Change SignUpPassword)
+      { myInputDefaults
+      | labelText = "Password"
+      , sublabel = [ text Api.Validate.passwordLabel ]
+      , type_ = "password"
+      , placeholder = "hunter2"
+      , name = "password"
+      , value = model.signUpPassword.value
+      , validate = \value ->
+        if String.isEmpty value then
+          Just ""
+        else
+          Api.Validate.passwordOk value
+      , maxChars = Just 200
+      }
+    , Input.myInput (Change SignUpPasswordAgain)
+      { myInputDefaults
+      | labelText = "Password again"
+      , type_ = "password"
+      , placeholder = "hunter2"
+      , name = "password"
+      , value = model.signUpPasswordAgain.value
+      , validate = \value ->
+        if value /= model.signUpPassword.value then
+          Just "Passwords do not match!"
+        else
+          Nothing
+      }
+    , input
+      [ A.class "button submit-btn"
+      , A.classList [ ("loading", model.signUpLoading) ]
+      , A.type_ "submit"
+      , A.value "Sign up"
+      , A.disabled (model.signUpLoading || not
+        (model.signUpUsername.valid &&
+        model.signUpName.valid &&
+        model.signUpEmail.valid &&
+        model.signUpPassword.valid &&
+        model.signUpPasswordAgain.valid))
+      ]
+      []
+    , span [ A.class "problematic-error" ]
+      [ text (Maybe.withDefault "" model.signUpProblem) ]
+    , p [ A.class "auth-note" ]
+      [ text "Read our "
+      , a [ A.href "?privacy", A.class "link" ]
+        [ text "Privacy policy" ]
+      , text " to see what we do with these data."
+      ]
+    ]
+
 makeHeader : Api.GlobalModel m -> Model -> Bool -> List (Html Msg)
 makeHeader { session, zone } model frontPage =
   [ header
@@ -468,160 +691,13 @@ makeHeader { session, zone } model frontPage =
         ]
       Api.SignedOut ->
         [ headerWindow model "header-btn auth-btn" [ text "Log in" ] LoginWindow
-          [ form [ A.class "header-window", onSubmit Login ]
-            [ Input.myInput (Change LoginUsername)
-              { myInputDefaults
-              | labelText = "Username"
-              , placeholder = "billygamer5"
-              , name = "username"
-              , value = model.loginUsername.value
-              , validate = \value ->
-                if String.isEmpty value then
-                  Just ""
-                else
-                  Nothing
-              , id = Just "login-input"
-              , attributes =
-                [ A.attribute "autocapitalize" "none"
-                , A.attribute "autocorrect" "off"
-                ]
-              }
-            , Input.myInput (Change LoginPassword)
-              { myInputDefaults
-              | labelText = "Password"
-              , type_ = "password"
-              , placeholder = "hunter2"
-              , name = "password"
-              , value = model.loginPassword.value
-              , validate = \value ->
-                if String.isEmpty value then
-                  Just ""
-                else
-                  Nothing
-              }
-            , input
-              [ A.class "button submit-btn"
-              , A.classList [ ("loading", model.loginLoading) ]
-              , A.type_ "submit"
-              , A.value "Log in"
-              , A.disabled (model.loginLoading || not
-                (model.loginUsername.valid &&
-                model.loginPassword.valid))
-              ]
-              []
-            , span [ A.class "problematic-error" ]
-              [ text (Maybe.withDefault "" model.loginProblem) ]
-            , p [ A.class "auth-note" ]
-              [ text "If you forgot your password, message "
-              , Utils.extLink "Ovinus Real" "https://www.facebook.com/ovinus.real" "link"
-              , text " or email "
-              , a [ A.href "mailto:sy24484@pausd.us", A.class "link" ]
-                [ text "mailto:sy24484@pausd.us" ]
-              , text " for a password reset link."
-              ]
-            ]
+          [ if model.loginPage then
+            loginWindow model
+          else
+            forgotPasswordWindow model
           ]
         , headerWindow model "header-btn auth-btn" [ text "Sign up" ] SignUpWindow
-          [ form [ A.class "header-window", onSubmit SignUp ]
-            [ Input.myInput (Change SignUpUsername)
-              { myInputDefaults
-              | labelText = "Username"
-              , sublabel = [ text Api.Validate.usernameLabel ]
-              , type_ = "text"
-              , placeholder = "billygamer5"
-              , name = "username"
-              , value = model.signUpUsername.value
-              , validate = \value ->
-                if String.isEmpty value then
-                  Just ""
-                else
-                  Api.Validate.usernameOk value
-              , maxChars = Just 20
-              , id = Just "sign-up-input"
-              , attributes =
-                [ A.attribute "autocapitalize" "none"
-                , A.attribute "autocorrect" "off"
-                ]
-              }
-            , Input.myInput (Change SignUpName)
-              { myInputDefaults
-              | labelText = "Full name"
-              , sublabel = [ text Api.Validate.nameLabel ]
-              , placeholder = "Billy Chelontuvier"
-              , value = model.signUpName.value
-              , name = "name"
-              , validate = \value ->
-                if String.isEmpty value then
-                  Just ""
-                else
-                  Api.Validate.nameOk value
-              , maxChars = Just 50
-              }
-            , Input.myInput (Change SignUpEmail)
-              { myInputDefaults
-              | labelText = "Email"
-              , sublabel = [ text Api.Validate.emailLabel ]
-              , type_ = "email"
-              , placeholder = "billygamer5@example.com"
-              , name = "email"
-              , value = model.signUpEmail.value
-              , validate = \value ->
-                if String.isEmpty value then
-                  Just ""
-                else
-                  Api.Validate.emailOk value
-              , maxChars = Just 320
-              }
-            , Input.myInput (Change SignUpPassword)
-              { myInputDefaults
-              | labelText = "Password"
-              , sublabel = [ text Api.Validate.passwordLabel ]
-              , type_ = "password"
-              , placeholder = "hunter2"
-              , name = "password"
-              , value = model.signUpPassword.value
-              , validate = \value ->
-                if String.isEmpty value then
-                  Just ""
-                else
-                  Api.Validate.passwordOk value
-              , maxChars = Just 200
-              }
-            , Input.myInput (Change SignUpPasswordAgain)
-              { myInputDefaults
-              | labelText = "Password again"
-              , type_ = "password"
-              , placeholder = "hunter2"
-              , name = "password"
-              , value = model.signUpPasswordAgain.value
-              , validate = \value ->
-                if value /= model.signUpPassword.value then
-                  Just "Passwords do not match!"
-                else
-                  Nothing
-              }
-            , input
-              [ A.class "button submit-btn"
-              , A.classList [ ("loading", model.signUpLoading) ]
-              , A.type_ "submit"
-              , A.value "Sign up"
-              , A.disabled (model.signUpLoading || not
-                (model.signUpUsername.valid &&
-                model.signUpName.valid &&
-                model.signUpEmail.valid &&
-                model.signUpPassword.valid &&
-                model.signUpPasswordAgain.valid))
-              ]
-              []
-            , span [ A.class "problematic-error" ]
-              [ text (Maybe.withDefault "" model.signUpProblem) ]
-            , p [ A.class "auth-note" ]
-              [ text "Read our "
-              , a [ A.href "?privacy", A.class "link" ]
-                [ text "Privacy policy" ]
-              , text " to see what we do with these data."
-              ]
-            ]
+          [ signUpWindow model
           ]
         ]
   ]
