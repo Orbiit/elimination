@@ -162,10 +162,19 @@ setSettings : GlobalModel m -> ResultMsg () msg -> E.Value -> Cmd msg
 setSettings global msg changes =
   post global "user-settings" msg changes (D.succeed ())
 
+forgotPassword : GlobalModel m -> ResultMsg () msg -> String -> Cmd msg
+forgotPassword global msg username =
+  post global "forgot-password" msg (E.object [ ("username", E.string username) ])
+    (D.succeed ())
+
 makeReset : GlobalModel m -> ResultMsg String msg -> String -> Cmd msg
 makeReset global msg username =
   post global "user-settings" msg (E.object [ ("username", E.string username) ])
     (D.field "make-reset" D.string)
+
+resetPasswordExists : GlobalModel m -> ResultMsg Bool msg -> String -> Cmd msg
+resetPasswordExists global msg id =
+  get global ("reset-password-info?id=" ++ id) msg (D.field "exists" D.bool)
 
 resetPassword : GlobalModel m -> ResultMsg (String, String) msg -> String -> String -> Cmd msg
 resetPassword global msg id password =
