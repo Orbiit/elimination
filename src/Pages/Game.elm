@@ -16,9 +16,12 @@ import Utils.MarkupSimpleRegex as Markup
 import Pages
 import NProgress
 
+type alias ElimTimes = Dict String Api.Timestamp
+
 type alias Model =
   { game : Api.GameID
   , info : Api.Game
+  , elimTimes : ElimTimes
   , description : List (Html Msg)
   , password : String
   , modal : Bool
@@ -39,6 +42,7 @@ init =
     , time = 0
     , announcements = []
     }
+  , elimTimes = Dict.empty
   , description = []
   , password = ""
   , modal = False
@@ -61,6 +65,30 @@ type BtnAction
   = Joining String
   | Leaving String
 
+-- Get the last time a player killed someone
+getElimTime : Api.GamePlayer -> ElimTimes -> ElimTimes
+getElimTime player times =
+  case (player.killer, player.killTime) of
+    -- If player was killed
+    (Just killer, Just killTime) ->
+      let
+        time =
+          -- Find their killer
+          case Dict.get killer times of
+            Just otherKillTime ->
+              -- Take most recent kill
+              max otherKillTime killTime
+            Nothing ->
+              killTime
+      in
+      Dict.insert killer time times
+    _ ->
+      times
+
+getElimTimes : List Api.GamePlayer -> ElimTimes
+getElimTimes players =
+  List.foldl getElimTime Dict.empty players
+
 update : Msg -> Api.GlobalModel m -> Model -> (Model, Cmd Msg, Api.PageCmd)
 update msg global model =
   case msg of
@@ -70,7 +98,12 @@ update msg global model =
           let
             description = Markup.markup Nothing game.description
           in
-          ( { model | game = gameID, info = game, description = description.html }
+          ( { model
+            | game = gameID
+            , info = game
+            , elimTimes = getElimTimes game.players
+            , description = description.html
+            }
           , Cmd.batch
             [ NProgress.done ()
             , if List.isEmpty description.gameIDs then
@@ -332,7 +365,11 @@ view global model =
                   (Just _, Nothing) ->
                     GT
                   (Nothing, Nothing) ->
-                    compare b.joined a.joined
+                    case (Dict.get a.username model.elimTimes, Dict.get b.username model.elimTimes) of
+                      (Just aKillTime, Just bKillTime) ->
+                        compare bKillTime aKillTime
+                      _ ->
+                        compare b.joined a.joined
               _ as order ->
                 order
           )
