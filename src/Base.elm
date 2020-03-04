@@ -485,7 +485,7 @@ forgotPasswordWindow model =
       , Utils.extLink "Ovinus Real" "https://www.facebook.com/ovinus.real" "link"
       , text " or email "
       , a [ A.href "mailto:sy24484@pausd.us", A.class "link" ]
-        [ text "mailto:sy24484@pausd.us" ]
+        [ text "sy24484@pausd.us" ]
       , text " for a password reset link."
       ]
     ]
