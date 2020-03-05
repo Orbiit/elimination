@@ -30,7 +30,7 @@ view =
     , h2 [ A.id "elimination-sequences" ]
       [ text "What are elimination sequences?" ]
     , p []
-      [ text "When a game starts, each player is assigned an elimination sequence and a target. The player must locate their target and \"eliminate\" them according to the game's rules. Then, the target is obligated to their elimination sequence to the player. On the website, the player clicks the \"Eliminate\" button and enters in their target's elimination sequence to eliminate them, and the website will assign them a new target to find." ]
+      [ text "When a game starts, each player is assigned an elimination sequence and a target. The player must locate their target and \"eliminate\" them according to the game's rules. Then, the target is obligated to reveal their elimination sequence to the player. On the website, the player clicks the \"Eliminate\" button and enters in their target's elimination sequence to eliminate them, and the website will assign them a new target to find." ]
     , h2 [ A.id "formatting" ]
       [ text "Formatting" ]
     , p []
