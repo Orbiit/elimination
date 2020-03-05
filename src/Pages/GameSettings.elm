@@ -352,6 +352,8 @@ renderPlayer model zone player =
           , if player.alive then "Alive" else "Eliminated"
           ]
         ]
+      , span [ A.class "member-info" ]
+        [ text ("Elimination sequence: " ++ player.code) ]
       ]
     , if model.state == Api.Ended then
       text ""
@@ -549,7 +551,7 @@ view { zone } model =
                     , onCheck ChangeIncludeDead
                     ]
                     []
-                  , text " Also send to eliminated players"
+                  , text " Also send a notification to eliminated players"
                   ]
                 ]
               else

@@ -206,6 +206,7 @@ type alias GameSettingsPlayer =
   , alive : Bool
   , kills : Int
   , joined : Timestamp
+  , code : String
   }
 
 type alias GameSettingsInfo =
@@ -225,12 +226,13 @@ getGameSettings global msg game =
       (D.field "description" D.string)
       (D.field "password" D.string)
       (D.field "joinDisabled" D.bool)
-      (D.field "players" (D.list (D.map5 GameSettingsPlayer
+      (D.field "players" (D.list (D.map6 GameSettingsPlayer
         (D.field "username" D.string)
         (D.field "name" D.string)
         (D.field "alive" D.bool)
         (D.field "kills" D.int)
         (D.field "joined" D.int)
+        (D.field "code" D.string)
       )))
       (D.field "state" gameStateParser)
 
