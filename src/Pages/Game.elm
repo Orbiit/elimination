@@ -27,6 +27,7 @@ type alias Model =
   , modal : Bool
   , loading : Bool
   , problem : Maybe String
+  , showingAll : Bool
   }
 
 init : Model
@@ -48,6 +49,7 @@ init =
   , modal = False
   , loading = False
   , problem = Nothing
+  , showingAll = False
   }
 
 type Msg
@@ -59,6 +61,7 @@ type Msg
   | Join
   | Leave
   | Done BtnAction (Api.Response String)
+  | ShowAll
   | DoNothing
 
 type BtnAction
@@ -103,6 +106,7 @@ update msg global model =
             , info = game
             , elimTimes = getElimTimes game.players
             , description = description.html
+            , showingAll = False
             }
           , Cmd.batch
             [ NProgress.done ()
@@ -191,6 +195,8 @@ update msg global model =
           , Cmd.none
           , Api.None
           )
+    ShowAll ->
+      ({ model | showingAll = True }, Cmd.none, Api.None)
     DoNothing ->
       (model, Cmd.none, Api.None)
 
@@ -340,11 +346,19 @@ view global model =
         text ""
       else
         section [ A.class "list" ] <|
-          (h2 [] [ text "Announcements" ])
-          :: (model.info.announcements
-            |> List.sortBy .time
-            |> List.reverse
-            |> List.map (renderAnnouncement global))
+          (h2 [] [ text "Announcements" ]) ::
+          let
+            announcements =
+              model.info.announcements
+                |> List.sortBy .time
+                |> List.reverse
+                |> List.map (renderAnnouncement global)
+          in
+          if model.showingAll || List.length announcements <= 5 then
+            announcements
+          else
+            (List.take 5 announcements) ++
+            [ button [ A.class "button", onClick ShowAll ] [ text "Show all" ] ]
       , section [ A.class "list" ] <|
         (h2 []
           [ text
