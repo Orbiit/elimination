@@ -141,7 +141,6 @@ type alias Model =
   { page : Pages.Page
   , url : Url
   , key : Nav.Key
-  , zone : Time.Zone
   , session : Api.Session
   , host : String
   , askDiscardChanges : ConfirmDiscard
@@ -164,7 +163,7 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
         (_, _) ->
           Api.SignedOut
     semiGlobal =
-      { session = session, zone = Time.utc, host = host }
+      { session = session, host = host }
     (page, cmd) =
       case urlToPage semiGlobal url of
         SwitchPage pageType ->
@@ -178,7 +177,6 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
     ( { page = page
       , url = url
       , key = navKey
-      , zone = Time.utc
       , session = session
       , host = host
       , askDiscardChanges = Hidden
@@ -196,7 +194,6 @@ init (host, sessionMaybe, usernameMaybe) url navKey =
         else
           cmd
       , Cmd.map BaseMsg headerCmd
-      , Task.perform AdjustTimeZone Time.here
       , Utils.scrollIfNeeded DoNothing url.fragment
       ]
     )
@@ -299,7 +296,6 @@ type Msg
   = ClickedLink Bool Browser.UrlRequest
   | ChangedUrl Url
   | CloseConfirmLeave
-  | AdjustTimeZone Time.Zone
   | BaseMsg Base.Msg
   | UserSettingsMsg Pages.UserSettings.Msg
   | UserMsg Pages.User.Msg
@@ -442,8 +438,6 @@ update msg model =
         ({ newModel | url = url }, cmd)
     CloseConfirmLeave ->
       ({ model | askDiscardChanges = Hidden }, Cmd.none)
-    AdjustTimeZone zone ->
-      ({ model | zone = zone }, Cmd.none)
     BaseMsg subMsg ->
       let
         (subModel, subCmd, pageCmd) = Base.update subMsg model model.header

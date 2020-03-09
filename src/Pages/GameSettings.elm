@@ -5,7 +5,6 @@ import Html.Attributes as A
 import Html.Events exposing (onSubmit, stopPropagationOn, onClick, onCheck)
 import Json.Decode as D
 import Json.Encode as E
-import Time
 import Browser.Dom as Dom
 import Task
 
@@ -333,8 +332,8 @@ discardChanges model =
   , includeDead = False
   }
 
-renderPlayer : Model -> Time.Zone -> Api.GameSettingsPlayer -> Html Msg
-renderPlayer model zone player =
+renderPlayer : Model -> Api.GameSettingsPlayer -> Html Msg
+renderPlayer model player =
   div
     [ A.class "member-item"
     , A.classList [ ("member-dead", not player.alive) ]
@@ -343,9 +342,10 @@ renderPlayer model zone player =
       [ a [ A.class "link member-link", A.href ("?@" ++ player.username) ]
         [ text player.name ]
       , span [ A.class "member-info" ]
-        [ text <| String.concat
-          [ "Joined " ++ HumanTime.display zone player.joined
-          , " " ++ char Middot ++ " "
+        [ text "Joined "
+        , HumanTime.display player.joined
+        , text <| String.concat
+          [ " " ++ char Middot ++ " "
           , String.fromInt player.kills
           , if player.kills == 1 then " elimination" else " eliminations"
           , " " ++ char Middot ++ " "
@@ -406,7 +406,7 @@ hasUnsavedChanges model =
     Tuple.first model.joinable /= Tuple.second model.joinable
 
 view : Api.GlobalModel m -> Model -> List (Html Msg)
-view { zone } model =
+view global model =
   [ div [ A.class "main content settings" ]
     [ h1 []
       (Utils.filter
@@ -620,6 +620,6 @@ view { zone } model =
         model.players
           |> List.sortBy .joined
           |> List.reverse
-          |> List.map (renderPlayer model zone)
+          |> List.map (renderPlayer model)
     ]
   ]

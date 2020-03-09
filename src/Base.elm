@@ -5,7 +5,6 @@ import Html.Attributes as A
 import Html.Events exposing (stopPropagationOn, onSubmit, onClick)
 import Json.Decode as D
 import Http
-import Time
 import Browser.Dom as Dom
 import Task
 
@@ -276,14 +275,14 @@ headerWindow model btnClass btnLabel window windowContent =
       btnLabel
       :: windowContent
 
-renderNotification : Time.Zone -> Api.NotificationMessage -> Html msg
-renderNotification zone { time, read, message } =
+renderNotification : Api.NotificationMessage -> Html msg
+renderNotification { time, read, message } =
   div
     [ A.class "notif"
     , A.classList [ ("unread", not read) ]
     ]
     [ span [ A.class "notif-timestamp" ]
-      [ text (HumanTime.display zone time) ]
+      [ HumanTime.display time ]
     , case message of
       Api.GameStarted gameID gameName maybeTarget maybeTargetName ->
         case (maybeTarget, maybeTargetName) of
@@ -594,7 +593,7 @@ signUpWindow model =
     ]
 
 makeHeader : Api.GlobalModel m -> Model -> Bool -> List (Html Msg)
-makeHeader { session, zone } model frontPage =
+makeHeader { session } model frontPage =
   [ header
     [ A.class "header"
     , A.classList
@@ -654,7 +653,7 @@ makeHeader { session, zone } model frontPage =
               --   , text "Send notifications to my email"
               --   ]
               ]
-            , div [] (List.map (renderNotification zone) model.notifs.notifications)
+            , div [] (List.map renderNotification model.notifs.notifications)
             , case model.notifsProblem of
               Just errorText ->
                 span [ A.class "problematic-error" ]

@@ -65,16 +65,16 @@ renderMyGame global game =
   a [ A.class "item", A.href ("?!" ++ game.game) ]
     [ span [ A.class "item-name" ]
       [ text game.name ]
-    , span [ A.class "item-info" ]
-      [ text
-        (String.fromInt game.players
-        ++ (if game.players == 1 then
+    , span [ A.class "item-info" ] <|
+      [ text <| String.concat
+        [ String.fromInt game.players
+        , if game.players == 1 then
           " participant"
         else
-          " participants")
-        ++ " " ++ char Middot ++ " "
-        ++ Api.gameStateNameWithTime global.zone game.state game.time
-        )
+          " participants"
+        , " " ++ char Middot ++ " "
+        ]
+      , Api.gameStateNameWithTime game.state game.time
       ]
     ]
 

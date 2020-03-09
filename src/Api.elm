@@ -3,9 +3,9 @@ module Api exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 import Http
-import Time
 import Url.Builder as Builder
 import Dict exposing (Dict)
+import Html exposing (Html, text, span)
 
 import Utils
 import Utils.Request as Request
@@ -21,7 +21,6 @@ type Session
 type alias GlobalModel m =
   { m
   | session : Session
-  , zone : Time.Zone
   , host : String
   }
 
@@ -72,16 +71,19 @@ gameStateName state =
     Ended ->
       "Ended"
 
-gameStateNameWithTime : Time.Zone -> GameState -> Timestamp -> String
-gameStateNameWithTime zone state time =
-  (case state of
-    WillStart ->
-      "Awaiting players since "
-    Started ->
-      "Ongoing since "
-    Ended ->
-      "Ended on ")
-    ++ HumanTime.display zone time
+gameStateNameWithTime : GameState -> Timestamp -> Html msg
+gameStateNameWithTime state time =
+  span []
+    [ text <|
+      case state of
+        WillStart ->
+          "Awaiting players since "
+        Started ->
+          "Ongoing since "
+        Ended ->
+          "Ended on "
+    , HumanTime.display time
+    ]
 
 type alias Response a = Result Request.HttpError a
 type alias ResultMsg a msg = Response a -> msg

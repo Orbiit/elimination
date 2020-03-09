@@ -209,15 +209,17 @@ renderPlayer global ended player =
     ]
     [ span [ A.class "item-name" ]
       [ text player.name ]
-    , span [ A.class "item-info" ]
+    , span [ A.class "item-info" ] <|
+      (case (player.killTime, player.killer, player.killerName) of
+        (Just time, Just killer, Just killerName) ->
+          [ text "Eliminated on "
+          , HumanTime.display time
+          , text (" by " ++ killerName)
+          ]
+        _ ->
+          [ text (if ended then "Winner" else "Alive") ]) ++
       [ text <| String.concat
-        [ case (player.killTime, player.killer, player.killerName) of
-          (Just time, Just killer, Just killerName) ->
-            "Eliminated on " ++ HumanTime.display global.zone time ++
-              " by " ++ killerName
-          _ ->
-            if ended then "Winner" else "Alive"
-        , " " ++ char Middot ++ " "
+        [ " " ++ char Middot ++ " "
         , String.fromInt player.kills
         , if player.kills == 1 then
           " elimination"
@@ -233,9 +235,9 @@ renderAnnouncement global announcement =
     [ div [ A.class "announcement" ]
       [ text announcement.message ]
     , span [ A.class "item-info" ]
-      [ text <| String.concat
-        [ HumanTime.display global.zone announcement.time
-        , " " ++ char Middot ++ " "
+      [ HumanTime.display announcement.time
+      , text <| String.concat
+        [ " " ++ char Middot ++ " "
         , if announcement.includedDead then
           "To all players"
         else
@@ -333,13 +335,15 @@ view global model =
       , p [ A.class "profile-desc" ]
         model.description
       , p [ A.class "profile-desc profile-stats" ]
-        [ text (Api.gameStateNameWithTime global.zone model.info.state model.info.time
-          ++ " " ++ char Middot ++ " "
-          ++ String.fromInt (List.length (List.filter (\player -> player.alive) model.info.players))
-          ++ " of " ++ String.fromInt (List.length model.info.players)
-          ++ (if List.length model.info.players == 1 then " participant" else " participants")
-          ++ " alive"
-        ) ]
+        [ Api.gameStateNameWithTime model.info.state model.info.time
+        , text <| String.concat
+          [ " " ++ char Middot ++ " "
+          , String.fromInt (List.length (List.filter (\player -> player.alive) model.info.players))
+          , " of " ++ String.fromInt (List.length model.info.players)
+          , if List.length model.info.players == 1 then " participant" else " participants"
+          , " alive"
+          ]
+        ]
       ]
     , div [ A.class "lists" ]
       [ if List.isEmpty model.info.announcements then

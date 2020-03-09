@@ -2,6 +2,7 @@ import Elm from './Main.elm'
 import NProgress from 'nprogress'
 // import ClipboardJS from 'clipboard'
 import '../js/tab-key-focus.js'
+import '@github/time-elements'
 
 import '../css/nprogress.css'
 import '../css/main.css'
