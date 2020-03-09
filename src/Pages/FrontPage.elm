@@ -285,10 +285,16 @@ view global model =
         ]
     Api.SignedOut ->
       [ div [ A.class "main front-text" ]
-        [ h1 [ A.class "website-title" ]
+        [ iframe
+          [ A.class "video-embed"
+          , A.src "https://www.youtube.com/embed/ECQi_w-MJ84?autoplay=1&mute=1&controls=0&loop=1&playlist=ECQi_w-MJ84"
+          ]
+          []
+        , h1 [ A.class "website-title" ]
           [ text "Elimination" ]
         , a [ A.class "button temp-btn", A.href "?!bbdd6" ]
           [ text "Gunn Elimination 2020" ]
+        , Utils.extLink "Watch the video" "https://www.youtube.com/watch?v=ECQi_w-MJ84" "link watch-video-link"
         ]
       , article [ A.class "main content welcome" ]
         [ p []
