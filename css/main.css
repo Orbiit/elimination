@@ -409,14 +409,3 @@ a {
 .footer .link {
   color: #faa;
 }
-
-/* TEMP */
-.maintenance-warning {
-  z-index: 50;
-  padding: 10px;
-  left: 0;
-  top: 0;
-  right: 0;
-  font-size: 16px;
-  background-color: var(--blood);
-}

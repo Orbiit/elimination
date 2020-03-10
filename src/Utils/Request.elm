@@ -30,7 +30,7 @@ parseResponse decoder response =
     Http.Timeout_ ->
       Err (ErrorStatusText "Timeout", "The server took too long.")
     Http.NetworkError_ ->
-      Err (ErrorStatusText "Offline", "The server is probably down for maintenance at this moment. Either that or you are offline.")
+      Err (ErrorStatusText "Offline", "Either you or the server is offline.")
     Http.BadStatus_ metadata body ->
       Err
         ( StatusCode metadata.statusCode
