@@ -278,7 +278,8 @@ view model =
       title model ++ append ++ " | Elimination"
   , body =
     List.concat
-      [ Base.makeHeader model model.header (model.page == Pages.FrontPage)
+      [ Base.makeMaintenanceWarning
+      , Base.makeHeader model model.header (model.page == Pages.FrontPage)
         |> List.map (Html.map BaseMsg)
       , content model
       , case model.askDiscardChanges of

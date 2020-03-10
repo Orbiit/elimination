@@ -751,3 +751,9 @@ makeFooter =
       ]
     ]
   ]
+
+makeMaintenanceWarning : List (Html msg)
+makeMaintenanceWarning =
+  [ div [ A.class "maintenance-warning" ]
+    [ text "Soon, the server will probably go down for some server maintenance. Sorry for the inconvenience this will cause." ]
+  ]
