@@ -1,3 +1,5 @@
+/* global localStorage */
+
 import Elm from './Main.elm'
 import NProgress from 'nprogress'
 // import ClipboardJS from 'clipboard'

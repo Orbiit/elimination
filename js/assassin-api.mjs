@@ -1,3 +1,5 @@
+/* global fetch */
+
 const HOST = 'https://sheep.thingkingland.app/assassin/'
 
 function get (path, session) {
