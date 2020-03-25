@@ -352,8 +352,12 @@ renderPlayer model player =
           , if player.alive then "Alive" else "Eliminated"
           ]
         ]
-      , span [ A.class "member-info" ]
-        [ text ("Elimination sequence: " ++ player.code) ]
+      , case player.code of
+        Just code ->
+          span [ A.class "member-info" ]
+            [ text ("Elimination sequence: " ++ code) ]
+        Nothing ->
+          text ""
       ]
     , if model.state == Api.Ended then
       text ""

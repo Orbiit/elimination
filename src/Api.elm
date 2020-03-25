@@ -208,7 +208,7 @@ type alias GameSettingsPlayer =
   , alive : Bool
   , kills : Int
   , joined : Timestamp
-  , code : String
+  , code : Maybe String
   }
 
 type alias GameSettingsInfo =
@@ -234,7 +234,7 @@ getGameSettings global msg game =
         (D.field "alive" D.bool)
         (D.field "kills" D.int)
         (D.field "joined" D.int)
-        (D.field "code" D.string)
+        (D.maybe (D.field "code" D.string))
       )))
       (D.field "state" gameStateParser)
 
