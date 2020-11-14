@@ -48,8 +48,8 @@ view =
       ]
     , p []
       [ text "If you would like to download or delete all your data, please email "
-      , a [ A.href "mailto:sy24484@pausd.us", A.class "link" ]
-        [ text "sy24484@pausd.us" ]
+      , a [ A.href "mailto:seanthesheep22+elim@outlook.com", A.class "link" ]
+        [ text "seanthesheep22+elim@outlook.com" ]
       , text ". This is not because we want to discourage users from doing this; rather, we have not gotten to implementing an automatic and more user-friendly method yet."
       ]
     ]

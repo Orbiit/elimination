@@ -483,8 +483,8 @@ forgotPasswordWindow model =
       [ text "If receiving the email doesn't work, check your spam folder, then message "
       , Utils.extLink "Ovinus Real" "https://www.facebook.com/ovinus.real" "link"
       , text " or email "
-      , a [ A.href "mailto:sy24484@pausd.us", A.class "link" ]
-        [ text "sy24484@pausd.us" ]
+      , a [ A.href "mailto:seanthesheep22+elim@outlook.com", A.class "link" ]
+        [ text "seanthesheep22+elim@outlook.com" ]
       , text " for a password reset link."
       ]
     ]

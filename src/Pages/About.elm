@@ -11,8 +11,8 @@ view =
       [ text "About and help" ]
     , p []
       [ text "If you have any questions or something isn't working, you can email "
-      , a [ A.class "link", A.href "mailto:sy24484@pausd.us" ]
-        [ text "sy24484@pausd.us" ]
+      , a [ A.class "link", A.href "mailto:seanthesheep22+elim@outlook.com" ]
+        [ text "seanthesheep22+elim@outlook.com" ]
       , text " or send a message to "
       , Utils.extLink "Ovinus Real" "https://www.facebook.com/ovinus.genuine" "link"
       , text " on Facebook."
