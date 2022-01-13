@@ -613,11 +613,6 @@ makeHeader { session } model frontPage =
     ++ case session of
       Api.SignedIn { username } ->
         [ if frontPage then
-          a [ A.class "button create-game-btn", A.href "?!bbdd6" ]
-            [ text "Gunn Elimination 2020" ]
-        else
-          text ""
-        , if frontPage then
           a [ A.class "button create-game-btn", A.href "?create-game" ]
             [ text "Create game" ]
         else

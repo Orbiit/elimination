@@ -260,9 +260,7 @@ view global model =
     Api.SignedIn _ ->
       [ div [ A.class "main targets" ] <|
         List.concat
-          [ [ a [ A.class "button small-screen-create-game-btn", A.href "?!bbdd6" ]
-              [ text "Gunn Elimination 2020" ]
-            , a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]
+          [ [ a [ A.class "button small-screen-create-game-btn", A.href "?create-game" ]
               [ text "Create game" ]
             ]
           , if List.isEmpty model.statuses then
@@ -292,8 +290,6 @@ view global model =
           []
         , h1 [ A.class "website-title" ]
           [ text "Elimination" ]
-        , a [ A.class "button temp-btn", A.href "?!bbdd6" ]
-          [ text "Gunn Elimination 2020" ]
         , Utils.extLink "Watch the video" "https://www.youtube.com/watch?v=ECQi_w-MJ84" "link watch-video-link"
         ]
       , article [ A.class "main content welcome" ]
