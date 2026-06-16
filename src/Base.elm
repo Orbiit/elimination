@@ -391,7 +391,12 @@ loginWindow : Model -> Html Msg
 loginWindow model =
   div [ A.class "header-window" ]
     [ form [ onSubmit Login ]
-      [ Input.myInput (Change LoginUsername)
+      [ p [ A.class "auth-note" ]
+        [ text "The website has been archived, and accounts are no longer available. "
+        , a [ A.href "https://sheeptester.github.io/longer-tweets/web-server/#elimination", A.class "link" ]
+          [ text "Learn more." ]
+        ]
+      , Input.myInput (Change LoginUsername)
         { myInputDefaults
         | labelText = "Username"
         , placeholder = "billygamer5"
@@ -426,7 +431,7 @@ loginWindow model =
         , A.classList [ ("loading", model.loginLoading) ]
         , A.type_ "submit"
         , A.value "Log in"
-        , A.disabled (model.loginLoading || not
+        , A.disabled (True || model.loginLoading || not
           (model.loginUsername.valid &&
           model.loginPassword.valid))
         ]
@@ -446,6 +451,11 @@ forgotPasswordWindow model =
     [ p [ A.class "auth-note" ]
       [ button [ A.class "link", onClick ToggleLoginTab ]
         [ text "Back" ]
+      ]
+    , p [ A.class "auth-note" ]
+      [ text "The website has been archived, and accounts are no longer available. "
+      , a [ A.href "https://sheeptester.github.io/longer-tweets/web-server/#elimination", A.class "link" ]
+        [ text "Learn more." ]
       ]
     , p [ A.class "auth-note" ]
       [ text "We'll send instructions for resetting your password to the email with which you signed up."
@@ -473,7 +483,7 @@ forgotPasswordWindow model =
         , A.classList [ ("loading", model.loginLoading) ]
         , A.type_ "submit"
         , A.value "Send"
-        , A.disabled (model.loginLoading || not model.loginUsername.valid)
+        , A.disabled (True || model.loginLoading || not model.loginUsername.valid)
         ]
         []
       ]
@@ -492,7 +502,12 @@ forgotPasswordWindow model =
 signUpWindow : Model -> Html Msg
 signUpWindow model =
   form [ A.class "header-window", onSubmit SignUp ]
-    [ Input.myInput (Change SignUpUsername)
+    [ p [ A.class "auth-note" ]
+      [ text "The website has been archived, and accounts are no longer available. "
+      , a [ A.href "https://sheeptester.github.io/longer-tweets/web-server/#elimination", A.class "link" ]
+        [ text "Learn more." ]
+      ]
+    , Input.myInput (Change SignUpUsername)
       { myInputDefaults
       | labelText = "Username"
       , sublabel = [ text Api.Validate.usernameLabel ]
@@ -574,7 +589,7 @@ signUpWindow model =
       , A.classList [ ("loading", model.signUpLoading) ]
       , A.type_ "submit"
       , A.value "Sign up"
-      , A.disabled (model.signUpLoading || not
+      , A.disabled (True || model.signUpLoading || not
         (model.signUpUsername.valid &&
         model.signUpName.valid &&
         model.signUpEmail.valid &&

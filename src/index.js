@@ -22,15 +22,15 @@ const USERNAME_KEY = '[elimination] username'
 const app = Elm.Main.init({
   flags: [
     // process.env.NODE_ENV === 'production' ? 'https://sheep.thingkingland.app/assassin/' : 'http://localhost:3000/assassin/',
-    'https://sheep.thingkingland.app/assassin/',
-    localStorage.getItem(SESSION_KEY),
-    localStorage.getItem(USERNAME_KEY)
+    'https://sheep.thingkingland.app/assassin/', null, null
+    // localStorage.getItem(SESSION_KEY),
+    // localStorage.getItem(USERNAME_KEY)
   ]
 })
 
 app.ports.saveSession.subscribe(([session, username]) => {
-  localStorage.setItem(SESSION_KEY, session)
-  localStorage.setItem(USERNAME_KEY, username)
+  // localStorage.setItem(SESSION_KEY, session)
+  // localStorage.setItem(USERNAME_KEY, username)
 })
 app.ports.logout.subscribe(() => {
   localStorage.removeItem(SESSION_KEY)
