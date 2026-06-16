@@ -21,7 +21,8 @@ const USERNAME_KEY = '[elimination] username'
 
 const app = Elm.Main.init({
   flags: [
-    process.env.NODE_ENV === 'production' ? 'https://sheep.thingkingland.app/assassin/' : 'http://localhost:3000/assassin/',
+    // process.env.NODE_ENV === 'production' ? 'https://sheep.thingkingland.app/assassin/' : 'http://localhost:3000/assassin/',
+    'https://sheep.thingkingland.app/assassin/',
     localStorage.getItem(SESSION_KEY),
     localStorage.getItem(USERNAME_KEY)
   ]
